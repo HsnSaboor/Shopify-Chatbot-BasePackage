@@ -2,9 +2,7 @@
   // Configuration
   const CHATBOT_CONFIG = {
     apiUrl: window.CHATBOT_API_URL || "https://shopify-ai-chatbot-v2.vercel.app",
-    containerId: "shopify-ai-chatbot",
     debug: false,
-    embedMode: window.CHATBOT_EMBED_MODE || "iframe", // "iframe" or "direct"
   }
 
   function log(...args) {
@@ -42,70 +40,6 @@
     }
   }
 
-  function createChatbotContainer() {
-    // Remove existing container
-    const existing = document.getElementById(CHATBOT_CONFIG.containerId)
-    if (existing) {
-      existing.remove()
-    }
-
-    const container = document.createElement("div")
-    container.id = CHATBOT_CONFIG.containerId
-
-    if (CHATBOT_CONFIG.embedMode === "iframe") {
-      container.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        width: 70px;
-        height: 70px;
-        pointer-events: auto;
-        z-index: 9999;
-        transition: all 0.3s ease;
-      `
-
-      const shopifyData = extractShopifyData()
-      const iframe = document.createElement("iframe")
-      iframe.src = `${CHATBOT_CONFIG.apiUrl}/chatbot?shopifyData=${encodeURIComponent(JSON.stringify(shopifyData))}`
-      iframe.style.cssText = `
-        width: 100%;
-        height: 100%;
-        border: none;
-        border-radius: 12px;
-        background: transparent;
-      `
-      iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation")
-
-      container.appendChild(iframe)
-    } else {
-      container.style.cssText = `
-        position: fixed;
-        bottom: 0;
-        right: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-        z-index: 9999;
-        background: transparent;
-      `
-
-      // Load the chatbot widget directly
-      const script = document.createElement("script")
-      script.type = "module"
-      script.innerHTML = `
-        import('${CHATBOT_CONFIG.apiUrl}/chatbot-widget-embed.js').then(module => {
-          const shopifyData = ${JSON.stringify(extractShopifyData())};
-          module.initChatbot(shopifyData);
-        }).catch(console.error);
-      `
-      container.appendChild(script)
-    }
-
-    document.body.appendChild(container)
-    log(`Chatbot container created in ${CHATBOT_CONFIG.embedMode} mode`)
-    return container
-  }
-
   function setupMessageListener() {
     window.addEventListener("message", (event) => {
       const allowedOrigins = [CHATBOT_CONFIG.apiUrl.replace(/https?:\/\//, ""), "localhost:3000", "127.0.0.1:3000"]
@@ -120,12 +54,6 @@
       console.log("[v0] Received message:", type, data)
 
       switch (type) {
-        case "CHATBOT_RESIZE":
-          handleChatbotResize(data)
-          break
-        case "CHATBOT_STATE_CHANGED":
-          handleChatbotResize({ isOpen: data.isOpen, width: data.isOpen ? 400 : 70, height: data.isOpen ? 600 : 70 })
-          break
         case "ADD_TO_CART":
           handleAddToCart(data)
           break
@@ -139,29 +67,8 @@
     })
   }
 
-  function handleChatbotResize(data) {
-    const container = document.getElementById(CHATBOT_CONFIG.containerId)
-    if (!container) return
-
-    const { width, height, isOpen } = data
-
-    if (CHATBOT_CONFIG.embedMode === "iframe") {
-      if (isOpen) {
-        container.style.width = "400px"
-        container.style.height = "600px"
-        container.style.maxWidth = "calc(100vw - 40px)"
-        container.style.maxHeight = "calc(100vh - 120px)"
-      } else {
-        container.style.width = "70px"
-        container.style.height = "70px"
-      }
-
-      console.log("[v0] Chatbot resized:", { isOpen, width, height })
-    }
-  }
-
   function sendShopifyDataToIframe() {
-    const iframe = document.querySelector(`#${CHATBOT_CONFIG.containerId} iframe`)
+    const iframe = document.querySelector("#shopify-ai-chatbot iframe")
     if (iframe?.contentWindow) {
       iframe.contentWindow.postMessage(
         {
@@ -202,7 +109,7 @@
           el.textContent = currentCount + quantity
         })
 
-        const iframe = document.querySelector(`#${CHATBOT_CONFIG.containerId} iframe`)
+        const iframe = document.querySelector("#shopify-ai-chatbot iframe")
         if (iframe?.contentWindow) {
           iframe.contentWindow.postMessage(
             {
@@ -221,7 +128,7 @@
       })
       .catch((error) => {
         log("Failed to add to cart:", error)
-        const iframe = document.querySelector(`#${CHATBOT_CONFIG.containerId} iframe`)
+        const iframe = document.querySelector("#shopify-ai-chatbot iframe")
         if (iframe?.contentWindow) {
           iframe.contentWindow.postMessage(
             {
@@ -234,35 +141,22 @@
       })
   }
 
-  function initializeChatbot() {
-    log("Initializing chatbot...")
-    createChatbotContainer()
+  function initializeHelper() {
+    log("Initializing Shopify helper...")
     setupMessageListener()
-    log("Chatbot initialized successfully")
+    log("Shopify helper initialized successfully")
   }
 
   window.ShopifyAIChatbot = {
-    reload: () => {
-      const container = document.getElementById(CHATBOT_CONFIG.containerId)
-      if (container) {
-        container.remove()
-        initializeChatbot()
-      }
-    },
-    toggle: () => {
-      const iframe = document.querySelector(`#${CHATBOT_CONFIG.containerId} iframe`)
-      if (iframe?.contentWindow) {
-        iframe.contentWindow.postMessage({ type: "TOGGLE_CHATBOT" }, "*")
-      }
-    },
+    extractShopifyData,
     updateShopifyData: () => {
       sendShopifyDataToIframe()
     },
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initializeChatbot)
+    document.addEventListener("DOMContentLoaded", initializeHelper)
   } else {
-    initializeChatbot()
+    initializeHelper()
   }
 })()
