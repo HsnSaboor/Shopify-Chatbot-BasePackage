@@ -121,12 +121,13 @@
           position: absolute;
           bottom: 0;
           right: 0;
-          width: 400px;
-          height: 600px;
+          width: 70px;
+          height: 70px;
           background: transparent;
           display: block;
           pointer-events: auto;
           z-index: 9999;
+          transition: all 0.3s ease;
         ">
           <iframe 
             src="${CHATBOT_CONFIG.apiUrl}/chatbot-widget?mode=direct&shopifyData=${encodeURIComponent(JSON.stringify(extractShopifyData()))}"
@@ -237,6 +238,20 @@
       switch (type) {
         case "CHATBOT_STATE_CHANGED":
           log("Chatbot state changed:", data)
+          if (CHATBOT_CONFIG.embedMode === "direct") {
+            const widget = document.querySelector("#chatbot-direct-widget")
+            if (widget) {
+              if (data.isOpen) {
+                // Chatbot is open - resize iframe to accommodate chat window
+                widget.style.width = "420px"
+                widget.style.height = "520px"
+              } else {
+                // Chatbot is closed - minimize iframe to just show button
+                widget.style.width = "70px"
+                widget.style.height = "70px"
+              }
+            }
+          }
           break
 
         case "ADD_TO_CART":
