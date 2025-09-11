@@ -121,19 +121,16 @@
           position: absolute;
           bottom: 0;
           right: 0;
-          width: 400px;
-          height: 600px;
-          max-width: calc(100vw - 40px);
-          max-height: calc(100vh - 40px);
+          width: 0;
+          height: 0;
           background: transparent;
-          border-radius: 12px;
           display: block;
-          pointer-events: auto;
+          pointer-events: none;
           z-index: 9999;
         ">
           <iframe 
             src="${CHATBOT_CONFIG.apiUrl}/chatbot-widget?mode=direct&shopifyData=${encodeURIComponent(JSON.stringify(extractShopifyData()))}"
-            style="width: 100%; height: 100%; border: none; border-radius: 12px;"
+            style="width: 0; height: 0; border: none; pointer-events: auto;"
             sandbox="allow-scripts allow-same-origin allow-forms allow-popups">
           </iframe>
         </div>

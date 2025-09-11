@@ -161,6 +161,7 @@ export function ChatbotWidget({ isPreview = false, mockMessages = [], onMockInte
   const [showCartPopup, setShowCartPopup] = useState(false)
   const [cartData, setCartData] = useState<CartResponse | null>(null)
   const [isMobile, setIsMobile] = useState(false)
+  const [isDirectMode, setIsDirectMode] = useState(false)
 
   const [messages, setMessages] = useState<Message[]>(
     isPreview && mockMessages.length > 0
@@ -317,6 +318,12 @@ export function ChatbotWidget({ isPreview = false, mockMessages = [], onMockInte
     window.addEventListener("resize", checkMobile)
 
     return () => window.removeEventListener("resize", checkMobile)
+  }, [])
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const mode = urlParams.get("mode")
+    setIsDirectMode(mode === "direct")
   }, [])
 
   const scrollToBottom = () => {
@@ -703,9 +710,10 @@ export function ChatbotWidget({ isPreview = false, mockMessages = [], onMockInte
       <Button
         onClick={() => setIsOpen(true)}
         className={cn(
-          "fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-xl transition-all duration-300 hover:scale-110 z-[9998]",
+          "h-16 w-16 rounded-full shadow-xl transition-all duration-300 hover:scale-110 z-[9998]",
           "bg-blue-600 hover:bg-blue-700 text-white border-2 border-white",
           isOpen && "scale-0 opacity-0",
+          isDirectMode ? "absolute bottom-4 right-4" : "fixed bottom-6 right-6",
         )}
         size="icon"
         style={{
@@ -718,12 +726,14 @@ export function ChatbotWidget({ isPreview = false, mockMessages = [], onMockInte
       {/* Chat Window */}
       <div
         className={cn(
-          "fixed bg-white dark:bg-gray-900 rounded-xl shadow-2xl border transition-all duration-300 flex flex-col z-[9999]",
+          "bg-white dark:bg-gray-900 rounded-xl shadow-2xl border transition-all duration-300 flex flex-col z-[9999]",
           "backdrop-blur-sm border-gray-200 dark:border-gray-700",
           isOpen ? "scale-100 opacity-100" : "scale-0 opacity-0 pointer-events-none",
           isMobile
             ? "inset-0 rounded-none" // Fullscreen on mobile
-            : "bottom-6 right-6 max-w-[500px] w-[500px] h-[600px]", // Fixed size on desktop
+            : isDirectMode
+              ? "absolute bottom-4 right-4 max-w-[400px] w-[400px] h-[500px]" // Smaller size and absolute positioning for direct mode
+              : "fixed bottom-6 right-6 max-w-[500px] w-[500px] h-[600px]", // Fixed size on desktop
         )}
         style={
           isMobile
