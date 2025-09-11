@@ -336,6 +336,24 @@ export function ChatbotWidget({
     }
   }, [hideToggle])
 
+  useEffect(() => {
+    if (isPreview) return
+
+    if (window.parent !== window) {
+      window.parent.postMessage(
+        {
+          type: "CHATBOT_RESIZE",
+          data: {
+            isOpen: isOpen || hideToggle,
+            width: isOpen || hideToggle ? 400 : 70,
+            height: isOpen || hideToggle ? 600 : 70,
+          },
+        },
+        "*",
+      )
+    }
+  }, [isOpen, hideToggle, isPreview])
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }

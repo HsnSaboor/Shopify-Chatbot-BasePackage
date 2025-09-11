@@ -108,13 +108,23 @@
 
   function setupMessageListener() {
     window.addEventListener("message", (event) => {
-      if (!event.origin.includes(CHATBOT_CONFIG.apiUrl.replace(/https?:\/\//, ""))) return
+      const allowedOrigins = [CHATBOT_CONFIG.apiUrl.replace(/https?:\/\//, ""), "localhost:3000", "127.0.0.1:3000"]
+
+      const eventOrigin = event.origin.replace(/https?:\/\//, "")
+      if (!allowedOrigins.some((origin) => eventOrigin.includes(origin))) {
+        console.log("[v0] Message from unauthorized origin:", event.origin)
+        return
+      }
 
       const { type, data } = event.data
+      console.log("[v0] Received message:", type, data)
 
       switch (type) {
         case "CHATBOT_RESIZE":
           handleChatbotResize(data)
+          break
+        case "CHATBOT_STATE_CHANGED":
+          handleChatbotResize({ isOpen: data.isOpen, width: data.isOpen ? 400 : 70, height: data.isOpen ? 600 : 70 })
           break
         case "ADD_TO_CART":
           handleAddToCart(data)
@@ -145,6 +155,8 @@
         container.style.width = "70px"
         container.style.height = "70px"
       }
+
+      console.log("[v0] Chatbot resized:", { isOpen, width, height })
     }
   }
 
@@ -184,14 +196,12 @@
       .then((result) => {
         log("Successfully added to cart:", result)
 
-        // Update cart count in UI if available
         const cartCountElements = document.querySelectorAll("[data-cart-count], .cart-count, #cart-count")
         cartCountElements.forEach((el) => {
           const currentCount = Number.parseInt(el.textContent) || 0
           el.textContent = currentCount + quantity
         })
 
-        // Send success message to iframe
         const iframe = document.querySelector(`#${CHATBOT_CONFIG.containerId} iframe`)
         if (iframe?.contentWindow) {
           iframe.contentWindow.postMessage(
@@ -203,12 +213,10 @@
           )
         }
 
-        // Trigger Shopify cart update events
         if (window.Shopify && window.Shopify.onCartUpdate) {
           window.Shopify.onCartUpdate(result)
         }
 
-        // Dispatch custom event for theme compatibility
         window.dispatchEvent(new CustomEvent("cart:updated", { detail: result }))
       })
       .catch((error) => {
@@ -252,7 +260,6 @@
     },
   }
 
-  // Initialize when DOM is ready
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initializeChatbot)
   } else {
