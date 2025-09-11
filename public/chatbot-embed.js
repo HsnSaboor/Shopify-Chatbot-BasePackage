@@ -1,10 +1,8 @@
 ;(() => {
   // Configuration
   const CHATBOT_CONFIG = {
-    apiUrl: window.CHATBOT_API_URL || "https://shopify-ai-chatbot-v2.vercel.app/chatbot",
+    apiUrl: window.CHATBOT_API_URL || "https://shopify-ai-chatbot-v2.vercel.app",
     containerId: "shopify-ai-chatbot",
-    storageKey: "shopify_chatbot_state",
-    autoReopenDelay: 1000,
     debug: false,
     embedMode: window.CHATBOT_EMBED_MODE || "iframe", // "iframe" or "direct"
   }
@@ -16,6 +14,7 @@
   }
 
   function extractShopifyData() {
+    // Use provided store data or extract from cookies
     if (window.SHOPIFY_STORE_DATA) {
       return window.SHOPIFY_STORE_DATA
     }
@@ -40,11 +39,11 @@
       customerToken: cookies._shopify_sa_t || null,
       trackingConsent: cookies._tracking_consent || null,
       theme: cookies.theme || null,
-      cartData: null,
     }
   }
 
   function createChatbotContainer() {
+    // Remove existing container
     const existing = document.getElementById(CHATBOT_CONFIG.containerId)
     if (existing) {
       existing.remove()
@@ -53,7 +52,32 @@
     const container = document.createElement("div")
     container.id = CHATBOT_CONFIG.containerId
 
-    if (CHATBOT_CONFIG.embedMode === "direct") {
+    if (CHATBOT_CONFIG.embedMode === "iframe") {
+      container.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 70px;
+        height: 70px;
+        pointer-events: auto;
+        z-index: 9999;
+        transition: all 0.3s ease;
+      `
+
+      const shopifyData = extractShopifyData()
+      const iframe = document.createElement("iframe")
+      iframe.src = `${CHATBOT_CONFIG.apiUrl}/chatbot?shopifyData=${encodeURIComponent(JSON.stringify(shopifyData))}`
+      iframe.style.cssText = `
+        width: 100%;
+        height: 100%;
+        border: none;
+        border-radius: 12px;
+        background: transparent;
+      `
+      iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation")
+
+      container.appendChild(iframe)
+    } else {
       container.style.cssText = `
         position: fixed;
         bottom: 0;
@@ -61,10 +85,11 @@
         width: 100%;
         height: 100%;
         pointer-events: none;
-        z-index: 9997;
+        z-index: 9999;
         background: transparent;
       `
 
+      // Load the chatbot widget directly
       const script = document.createElement("script")
       script.type = "module"
       script.innerHTML = `
@@ -74,26 +99,6 @@
         }).catch(console.error);
       `
       container.appendChild(script)
-    } else {
-      container.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        width: 400px;
-        height: 600px;
-        max-width: calc(100vw - 40px);
-        max-height: calc(100vh - 120px);
-        pointer-events: auto;
-        z-index: 9997;
-      `
-
-      container.innerHTML = `
-        <iframe 
-          src="${CHATBOT_CONFIG.apiUrl}/chatbot?shopifyData=${encodeURIComponent(JSON.stringify(extractShopifyData()))}"
-          style="width: 100%; height: 100%; border: none; border-radius: 12px; background: transparent;"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-popups">
-        </iframe>
-      `
     }
 
     document.body.appendChild(container)
@@ -102,21 +107,57 @@
   }
 
   function setupMessageListener() {
+    window.addEventListener("message", (event) => {
+      if (!event.origin.includes(CHATBOT_CONFIG.apiUrl.replace(/https?:\/\//, ""))) return
+
+      const { type, data } = event.data
+
+      switch (type) {
+        case "CHATBOT_RESIZE":
+          handleChatbotResize(data)
+          break
+        case "ADD_TO_CART":
+          handleAddToCart(data)
+          break
+        case "NAVIGATE_TO_PRODUCT":
+          if (data.url) window.location.href = data.url
+          break
+        case "GET_SHOPIFY_DATA":
+          sendShopifyDataToIframe()
+          break
+      }
+    })
+  }
+
+  function handleChatbotResize(data) {
+    const container = document.getElementById(CHATBOT_CONFIG.containerId)
+    if (!container) return
+
+    const { width, height, isOpen } = data
+
     if (CHATBOT_CONFIG.embedMode === "iframe") {
-      window.addEventListener("message", (event) => {
-        if (event.origin !== CHATBOT_CONFIG.apiUrl) return
+      if (isOpen) {
+        container.style.width = "400px"
+        container.style.height = "600px"
+        container.style.maxWidth = "calc(100vw - 40px)"
+        container.style.maxHeight = "calc(100vh - 120px)"
+      } else {
+        container.style.width = "70px"
+        container.style.height = "70px"
+      }
+    }
+  }
 
-        const { type, data } = event.data
-
-        switch (type) {
-          case "ADD_TO_CART":
-            handleAddToCart(data)
-            break
-          case "NAVIGATE_TO_PRODUCT":
-            if (data.url) window.location.href = data.url
-            break
-        }
-      })
+  function sendShopifyDataToIframe() {
+    const iframe = document.querySelector(`#${CHATBOT_CONFIG.containerId} iframe`)
+    if (iframe?.contentWindow) {
+      iframe.contentWindow.postMessage(
+        {
+          type: "SHOPIFY_DATA_RESPONSE",
+          data: extractShopifyData(),
+        },
+        "*",
+      )
     }
   }
 
@@ -126,24 +167,61 @@
 
     fetch("/cart/add.js", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+      },
       body: JSON.stringify({
         items: [{ id: Number.parseInt(variantId), quantity }],
       }),
     })
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        return response.json()
+      })
       .then((result) => {
         log("Successfully added to cart:", result)
+
+        // Update cart count in UI if available
+        const cartCountElements = document.querySelectorAll("[data-cart-count], .cart-count, #cart-count")
+        cartCountElements.forEach((el) => {
+          const currentCount = Number.parseInt(el.textContent) || 0
+          el.textContent = currentCount + quantity
+        })
+
+        // Send success message to iframe
         const iframe = document.querySelector(`#${CHATBOT_CONFIG.containerId} iframe`)
         if (iframe?.contentWindow) {
-          iframe.contentWindow.postMessage({ type: "ADD_TO_CART_SUCCESS", data: result }, "*")
+          iframe.contentWindow.postMessage(
+            {
+              type: "ADD_TO_CART_SUCCESS",
+              data: result,
+            },
+            "*",
+          )
         }
+
+        // Trigger Shopify cart update events
+        if (window.Shopify && window.Shopify.onCartUpdate) {
+          window.Shopify.onCartUpdate(result)
+        }
+
+        // Dispatch custom event for theme compatibility
+        window.dispatchEvent(new CustomEvent("cart:updated", { detail: result }))
       })
       .catch((error) => {
         log("Failed to add to cart:", error)
         const iframe = document.querySelector(`#${CHATBOT_CONFIG.containerId} iframe`)
         if (iframe?.contentWindow) {
-          iframe.contentWindow.postMessage({ type: "ADD_TO_CART_ERROR", error: error.message }, "*")
+          iframe.contentWindow.postMessage(
+            {
+              type: "ADD_TO_CART_ERROR",
+              error: error.message,
+            },
+            "*",
+          )
         }
       })
   }
@@ -157,10 +235,20 @@
 
   window.ShopifyAIChatbot = {
     reload: () => {
-      const iframe = document.querySelector(`#${CHATBOT_CONFIG.containerId} iframe`)
-      if (iframe) {
-        iframe.src = iframe.src
+      const container = document.getElementById(CHATBOT_CONFIG.containerId)
+      if (container) {
+        container.remove()
+        initializeChatbot()
       }
+    },
+    toggle: () => {
+      const iframe = document.querySelector(`#${CHATBOT_CONFIG.containerId} iframe`)
+      if (iframe?.contentWindow) {
+        iframe.contentWindow.postMessage({ type: "TOGGLE_CHATBOT" }, "*")
+      }
+    },
+    updateShopifyData: () => {
+      sendShopifyDataToIframe()
     },
   }
 

@@ -1,13 +1,13 @@
 <!-- 
-SHOPIFY AI CHATBOT INTEGRATION
-==============================
+SHOPIFY AI CHATBOT INTEGRATION - UPDATED VERSION
+===============================================
 
 STEP 1: Add this script to your theme.liquid file before </body>
 STEP 2: Replace "your-chatbot-domain.com" with your actual chatbot domain
-STEP 3: Choose either IFRAME MODE (recommended) or DIRECT MODE below
+STEP 3: Choose IFRAME MODE (recommended) - no white space, dynamic sizing
 -->
 
-<!-- IFRAME MODE (RECOMMENDED): Clean iframe embedding using /chatbot page -->
+<!-- IFRAME MODE (RECOMMENDED): Clean embedding with dynamic sizing -->
 <script>
 // Configuration
 window.CHATBOT_API_URL = "https://your-chatbot-domain.com";
@@ -26,81 +26,66 @@ window.SHOPIFY_STORE_DATA = {
   customerEmail: "{% if customer %}{{ customer.email }}{% endif %}",
   customerFirstName: "{% if customer %}{{ customer.first_name }}{% endif %}",
   customerLastName: "{% if customer %}{{ customer.last_name }}{% endif %}",
+  customerTags: {% if customer %}{{ customer.tags | json }}{% else %}[]{% endif %},
+  customerOrdersCount: {% if customer %}{{ customer.orders_count }}{% else %}0{% endif %},
   
   // Cart information
   cartToken: "{{ cart.token }}",
   cartItemCount: {{ cart.item_count }},
   cartTotalPrice: {{ cart.total_price }},
   cartId: "{{ cart.id }}",
+  cartItems: {{ cart.items | json }},
   
   // Page context
   pageType: "{{ request.page_type }}",
   pageHandle: "{{ page.handle | default: product.handle | default: collection.handle }}",
   productId: {% if product %}{{ product.id }}{% else %}null{% endif %},
+  productHandle: "{% if product %}{{ product.handle }}{% endif %}",
+  productTitle: "{% if product %}{{ product.title }}{% endif %}",
+  productPrice: {% if product %}{{ product.price }}{% else %}null{% endif %},
+  productVariants: {% if product %}{{ product.variants | json }}{% else %}[]{% endif %},
   collectionId: {% if collection %}{{ collection.id }}{% else %}null{% endif %},
+  collectionHandle: "{% if collection %}{{ collection.handle }}{% endif %}",
   
   // Theme and settings
   theme: "{{ settings.theme_name | default: 'default' }}",
-  timestamp: new Date().toISOString()
+  timestamp: new Date().toISOString(),
+  
+  // Additional context
+  requestPath: "{{ request.path }}",
+  userAgent: navigator.userAgent,
+  referrer: document.referrer
 };
 </script>
 <script src="https://your-chatbot-domain.com/chatbot-embed.js"></script>
-
-<!-- DIRECT MODE: Embeds chatbot widget directly without iframe -->
-<!--
-<script>
-window.CHATBOT_API_URL = "https://your-chatbot-domain.com";
-window.CHATBOT_EMBED_MODE = "direct";
-
-window.SHOPIFY_STORE_DATA = {
-  shop: "{{ shop.domain }}",
-  shopName: "{{ shop.name }}",
-  currency: "{{ cart.currency.iso_code }}",
-  locale: "{{ request.locale.iso_code }}",
-  country: "{{ localization.country.iso_code }}",
-  customerId: {% if customer %}{{ customer.id }}{% else %}null{% endif %},
-  customerEmail: "{% if customer %}{{ customer.email }}{% endif %}",
-  customerFirstName: "{% if customer %}{{ customer.first_name }}{% endif %}",
-  customerLastName: "{% if customer %}{{ customer.last_name }}{% endif %}",
-  cartToken: "{{ cart.token }}",
-  cartItemCount: {{ cart.item_count }},
-  cartTotalPrice: {{ cart.total_price }},
-  cartId: "{{ cart.id }}",
-  pageType: "{{ request.page_type }}",
-  pageHandle: "{{ page.handle | default: product.handle | default: collection.handle }}",
-  productId: {% if product %}{{ product.id }}{% else %}null{% endif %},
-  collectionId: {% if collection %}{{ collection.id }}{% else %}null{% endif %},
-  theme: "{{ settings.theme_name | default: 'default' }}",
-  timestamp: new Date().toISOString()
-};
-</script>
-<script src="https://your-chatbot-domain.com/chatbot-embed.js"></script>
--->
 
 <!-- 
 FEATURES INCLUDED:
 ==================
-✅ Add to Cart functionality
-✅ Shopify cookie extraction
-✅ Customer data access
-✅ Cart management
-✅ Product recommendations
-✅ Order tracking
-✅ Multi-language support
-✅ Responsive design
-✅ Clean iframe embedding (/chatbot page)
+✅ NO white space when closed (starts at 70x70px, expands to 400x600px when opened)
+✅ NO external buttons (uses chatbot's internal toggle)
+✅ Add to Cart functionality with Shopify integration
+✅ Enhanced Shopify cookie and data extraction
+✅ Customer data access and cart management
+✅ Product recommendations with full context
+✅ Responsive design for all devices
+✅ Smooth animations and transitions
+✅ Error handling and retry logic
+✅ Theme compatibility
 
-USAGE:
-======
-1. The chatbot will appear as a blue button in bottom-right corner
-2. Click to open/close the chat interface
-3. Supports both desktop and mobile devices
-4. Automatically extracts Shopify store data
-5. Handles add-to-cart operations seamlessly
+HOW IT WORKS:
+=============
+1. Chatbot appears as small 70x70px button in bottom-right
+2. Clicking opens full 400x600px chat interface
+3. Automatically extracts all Shopify store data
+4. Handles add-to-cart operations seamlessly
+5. Updates cart count in real-time
+6. No white space or layout issues
 
 CUSTOMIZATION:
 ==============
-- Modify CHATBOT_API_URL to your deployed chatbot domain
-- Choose between iframe (recommended) or direct embedding mode
-- Additional styling can be applied via CSS targeting #shopify-ai-chatbot
+- The chatbot automatically adapts to your store's theme
+- Modify CHATBOT_API_URL to your deployed domain
+- Additional CSS can target #shopify-ai-chatbot for styling
+- All Shopify Liquid variables are automatically extracted
 -->
