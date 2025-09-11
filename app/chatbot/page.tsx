@@ -6,11 +6,10 @@ import { useSearchParams } from "next/navigation"
 
 function ChatbotContent() {
   const searchParams = useSearchParams()
-  const hideToggle = searchParams.get("hideToggle") === "true"
 
   return (
     <div className="h-screen w-full bg-transparent overflow-hidden">
-      <ChatbotWidget hideToggle={hideToggle} />
+      <ChatbotWidget />
     </div>
   )
 }
