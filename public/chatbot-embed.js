@@ -1,7 +1,7 @@
 ;(() => {
   // Configuration
   const CHATBOT_CONFIG = {
-    apiUrl: window.CHATBOT_API_URL || "https://your-domain.com",
+    apiUrl: window.CHATBOT_API_URL || "https://shopify-ai-chatbot-v2.vercel.app/chatbot",
     containerId: "shopify-ai-chatbot",
     storageKey: "shopify_chatbot_state",
     autoReopenDelay: 1000,
@@ -79,8 +79,8 @@
         position: fixed;
         bottom: 20px;
         right: 20px;
-        width: 0;
-        height: 0;
+        width: 60px;
+        height: 60px;
         pointer-events: none;
         z-index: 9997;
       `
@@ -88,22 +88,23 @@
       container.innerHTML = `
         <div id="chatbot-iframe-widget" style="
           position: absolute;
-          bottom: 80px;
+          bottom: 0;
           right: 0;
           width: 400px;
           height: 600px;
           max-width: calc(100vw - 40px);
           max-height: calc(100vh - 120px);
-          background: white;
+          background: transparent;
           border-radius: 12px;
           box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
           display: none;
           pointer-events: auto;
           z-index: 9999;
+          transform-origin: bottom right;
         ">
           <iframe 
-            src="${CHATBOT_CONFIG.apiUrl}/chatbot?shopifyData=${encodeURIComponent(JSON.stringify(extractShopifyData()))}"
-            style="width: 100%; height: 100%; border: none; border-radius: 12px;"
+            src="${CHATBOT_CONFIG.apiUrl}/chatbot?shopifyData=${encodeURIComponent(JSON.stringify(extractShopifyData()))}&hideToggle=true"
+            style="width: 100%; height: 100%; border: none; border-radius: 12px; background: transparent;"
             sandbox="allow-scripts allow-same-origin allow-forms allow-popups">
           </iframe>
         </div>
@@ -136,7 +137,24 @@
 
       toggleBtn.addEventListener("click", () => {
         const isVisible = widget.style.display !== "none"
-        widget.style.display = isVisible ? "none" : "block"
+        if (isVisible) {
+          widget.style.transform = "scale(0.8) translateY(20px)"
+          widget.style.opacity = "0"
+          setTimeout(() => {
+            widget.style.display = "none"
+            widget.style.transform = ""
+            widget.style.opacity = ""
+          }, 200)
+        } else {
+          widget.style.display = "block"
+          widget.style.transform = "scale(0.8) translateY(20px)"
+          widget.style.opacity = "0"
+          setTimeout(() => {
+            widget.style.transform = "scale(1)"
+            widget.style.opacity = "1"
+          }, 10)
+        }
+
         toggleBtn.innerHTML = isVisible
           ? '<svg width="24" height="24" fill="white" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>'
           : '<svg width="24" height="24" fill="white" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>'

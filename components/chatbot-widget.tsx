@@ -154,9 +154,15 @@ interface ChatbotWidgetProps {
   isPreview?: boolean
   mockMessages?: Message[]
   onMockInteraction?: (action: string, data: any) => void
+  hideToggle?: boolean
 }
 
-export function ChatbotWidget({ isPreview = false, mockMessages = [], onMockInteraction }: ChatbotWidgetProps = {}) {
+export function ChatbotWidget({
+  isPreview = false,
+  mockMessages = [],
+  onMockInteraction,
+  hideToggle = false,
+}: ChatbotWidgetProps = {}) {
   const [isOpen, setIsOpen] = useState(false)
   const [showCartPopup, setShowCartPopup] = useState(false)
   const [cartData, setCartData] = useState<CartResponse | null>(null)
@@ -324,7 +330,11 @@ export function ChatbotWidget({ isPreview = false, mockMessages = [], onMockInte
     const urlParams = new URLSearchParams(window.location.search)
     const mode = urlParams.get("mode")
     setIsDirectMode(mode === "direct")
-  }, [])
+
+    if (hideToggle) {
+      setIsOpen(true)
+    }
+  }, [hideToggle])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -707,32 +717,34 @@ export function ChatbotWidget({ isPreview = false, mockMessages = [], onMockInte
   return (
     <>
       {/* Chat Widget Button */}
-      <Button
-        onClick={() => setIsOpen(true)}
-        className={cn(
-          "h-16 w-16 rounded-full shadow-xl transition-all duration-300 hover:scale-110 z-[9998]",
-          "bg-blue-600 hover:bg-blue-700 text-white border-2 border-white",
-          isOpen && "scale-0 opacity-0",
-          isDirectMode ? "absolute bottom-4 right-4" : "fixed bottom-6 right-6",
-        )}
-        size="icon"
-        style={{
-          boxShadow: "0 8px 32px rgba(37, 99, 235, 0.3)",
-        }}
-      >
-        <MessageCircleIcon />
-      </Button>
+      {!hideToggle && (
+        <Button
+          onClick={() => setIsOpen(true)}
+          className={cn(
+            "h-16 w-16 rounded-full shadow-xl transition-all duration-300 hover:scale-110 z-[9998]",
+            "bg-blue-600 hover:bg-blue-700 text-white border-2 border-white",
+            isOpen && "scale-0 opacity-0",
+            isDirectMode ? "absolute bottom-4 right-4" : "fixed bottom-6 right-6",
+          )}
+          size="icon"
+          style={{
+            boxShadow: "0 8px 32px rgba(37, 99, 235, 0.3)",
+          }}
+        >
+          <MessageCircleIcon />
+        </Button>
+      )}
 
       {/* Chat Window */}
       <div
         className={cn(
           "bg-white dark:bg-gray-900 rounded-xl shadow-2xl border transition-all duration-300 flex flex-col z-[9999]",
           "backdrop-blur-sm border-gray-200 dark:border-gray-700",
-          isOpen ? "scale-100 opacity-100" : "scale-0 opacity-0 pointer-events-none",
+          isOpen || hideToggle ? "scale-100 opacity-100" : "scale-0 opacity-0 pointer-events-none",
           isMobile
             ? "inset-0 rounded-none" // Fullscreen on mobile
-            : isDirectMode
-              ? "absolute bottom-4 right-4 max-w-[400px] w-[400px] h-[500px]" // Smaller size and absolute positioning for direct mode
+            : isDirectMode || hideToggle
+              ? "absolute bottom-0 right-0 max-w-[400px] w-[400px] h-[500px]" // Smaller size and absolute positioning for direct mode or embedded
               : "fixed bottom-6 right-6 max-w-[500px] w-[500px] h-[600px]", // Fixed size on desktop
         )}
         style={
@@ -741,10 +753,15 @@ export function ChatbotWidget({ isPreview = false, mockMessages = [], onMockInte
                 transformOrigin: "center",
                 boxShadow: "none",
               }
-            : {
-                transformOrigin: "bottom right",
-                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05)",
-              }
+            : hideToggle
+              ? {
+                  transformOrigin: "bottom right",
+                  boxShadow: "none", // Remove shadow when embedded
+                }
+              : {
+                  transformOrigin: "bottom right",
+                  boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05)",
+                }
         }
       >
         {/* Header */}
@@ -805,31 +822,33 @@ export function ChatbotWidget({ isPreview = false, mockMessages = [], onMockInte
                 </svg>
               </Button>
             )}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsOpen(false)}
-              className="h-8 w-8 hover:bg-white/20 rounded-full transition-colors"
-              style={{ color: "white" }}
-              title={isMobile ? "Minimize" : "Close"}
-            >
-              {isMobile ? (
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              ) : (
-                <XIcon />
-              )}
-            </Button>
+            {!hideToggle && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsOpen(false)}
+                className="h-8 w-8 hover:bg-white/20 rounded-full transition-colors"
+                style={{ color: "white" }}
+                title={isMobile ? "Minimize" : "Close"}
+              >
+                {isMobile ? (
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                ) : (
+                  <XIcon />
+                )}
+              </Button>
+            )}
           </div>
         </div>
 
