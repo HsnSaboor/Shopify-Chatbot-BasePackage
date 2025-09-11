@@ -125,6 +125,29 @@
           height: 600px;
           max-width: calc(100vw - 40px);
           max-height: calc(100vh - 40px);
+          background: transparent;
+          border-radius: 12px;
+          display: block;
+          pointer-events: auto;
+          z-index: 9999;
+        ">
+          <iframe 
+            src="${CHATBOT_CONFIG.apiUrl}/chatbot-widget?mode=direct&shopifyData=${encodeURIComponent(JSON.stringify(extractShopifyData()))}"
+            style="width: 100%; height: 100%; border: none; border-radius: 12px;"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups">
+          </iframe>
+        </div>
+      `
+    } else {
+      container.innerHTML = `
+        <div id="chatbot-iframe-widget" style="
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          width: 400px;
+          height: 600px;
+          max-width: calc(100vw - 40px);
+          max-height: calc(100vh - 40px);
           background: white;
           border-radius: 12px;
           box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
@@ -133,7 +156,7 @@
           z-index: 9999;
         ">
           <iframe 
-            src="${CHATBOT_CONFIG.apiUrl}/chatbot-widget?mode=direct&shopifyData=${encodeURIComponent(JSON.stringify(extractShopifyData()))}"
+            src="${CHATBOT_CONFIG.apiUrl}/chatbot-widget?shopifyData=${encodeURIComponent(JSON.stringify(extractShopifyData()))}"
             style="width: 100%; height: 100%; border: none; border-radius: 12px;"
             sandbox="allow-scripts allow-same-origin allow-forms allow-popups">
           </iframe>
@@ -162,9 +185,9 @@
         </button>
       `
 
-      // Add toggle functionality
+      // Add toggle functionality for iframe mode
       const toggleBtn = container.querySelector("#chatbot-toggle-btn")
-      const widget = container.querySelector("#chatbot-direct-widget")
+      const widget = container.querySelector("#chatbot-iframe-widget")
 
       toggleBtn.addEventListener("click", () => {
         const isVisible = widget.style.display !== "none"
@@ -173,21 +196,6 @@
           ? '<svg width="24" height="24" fill="white" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>'
           : '<svg width="24" height="24" fill="white" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>'
       })
-    } else {
-      const iframe = document.createElement("iframe")
-      const shopifyData = extractShopifyData()
-      iframe.src = `${CHATBOT_CONFIG.apiUrl}/chatbot-widget?shopifyData=${encodeURIComponent(JSON.stringify(shopifyData))}`
-      iframe.style.cssText = `
-        width: 100%;
-        height: 100%;
-        border: none;
-        background: transparent;
-        pointer-events: auto;
-      `
-
-      // Allow iframe to access localStorage for state persistence
-      iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms allow-popups")
-      container.appendChild(iframe)
     }
 
     document.body.appendChild(container)
@@ -390,15 +398,7 @@
   window.ShopifyAIChatbot = {
     open: () => {
       if (CHATBOT_CONFIG.embedMode === "direct") {
-        const widget = document.querySelector("#chatbot-direct-widget")
-        const toggleBtn = document.querySelector("#chatbot-toggle-btn")
-        if (widget && toggleBtn) {
-          widget.style.display = "block"
-          toggleBtn.innerHTML =
-            '<svg width="24" height="24" fill="white" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>'
-        }
-      } else {
-        const iframe = document.querySelector(`#${CHATBOT_CONFIG.containerId} iframe`)
+        const iframe = document.querySelector("#chatbot-direct-widget iframe")
         if (iframe && iframe.contentWindow) {
           iframe.contentWindow.postMessage(
             {
@@ -407,20 +407,20 @@
             "*",
           )
         }
+      } else {
+        const widget = document.querySelector("#chatbot-iframe-widget")
+        const toggleBtn = document.querySelector("#chatbot-toggle-btn")
+        if (widget && toggleBtn) {
+          widget.style.display = "block"
+          toggleBtn.innerHTML =
+            '<svg width="24" height="24" fill="white" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>'
+        }
       }
     },
 
     close: () => {
       if (CHATBOT_CONFIG.embedMode === "direct") {
-        const widget = document.querySelector("#chatbot-direct-widget")
-        const toggleBtn = document.querySelector("#chatbot-toggle-btn")
-        if (widget && toggleBtn) {
-          widget.style.display = "none"
-          toggleBtn.innerHTML =
-            '<svg width="24" height="24" fill="white" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>'
-        }
-      } else {
-        const iframe = document.querySelector(`#${CHATBOT_CONFIG.containerId} iframe`)
+        const iframe = document.querySelector("#chatbot-direct-widget iframe")
         if (iframe && iframe.contentWindow) {
           iframe.contentWindow.postMessage(
             {
@@ -428,6 +428,14 @@
             },
             "*",
           )
+        }
+      } else {
+        const widget = document.querySelector("#chatbot-iframe-widget")
+        const toggleBtn = document.querySelector("#chatbot-toggle-btn")
+        if (widget && toggleBtn) {
+          widget.style.display = "none"
+          toggleBtn.innerHTML =
+            '<svg width="24" height="24" fill="white" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>'
         }
       }
     },
