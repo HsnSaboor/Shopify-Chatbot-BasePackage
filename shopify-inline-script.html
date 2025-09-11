@@ -1,11 +1,26 @@
-<!-- Add this to your Shopify theme.liquid file before </body> -->
+<!-- IFRAME MODE: Uses iframe pointing to clean /chatbot page -->
 <script>
 window.CHATBOT_API_URL = "https://your-chatbot-domain.com";
-window.CHATBOT_EMBED_MODE = "direct"; // "iframe" or "direct"
+window.CHATBOT_EMBED_MODE = "iframe";
+
+// Optional: Pass Shopify data directly using Liquid variables
+window.SHOPIFY_STORE_DATA = {
+  shop: "{{ shop.domain }}",
+  currency: "{{ cart.currency.iso_code }}",
+  customerId: "{{ customer.id }}",
+  customerEmail: "{{ customer.email }}",
+  cartToken: "{{ cart.token }}",
+  cartItemCount: {{ cart.item_count }},
+  cartTotalPrice: {{ cart.total_price }},
+  locale: "{{ request.locale.iso_code }}",
+  country: "{{ localization.country.iso_code }}",
+  theme: "{{ settings.theme_name | default: 'default' }}"
+};
 </script>
 <script src="https://your-chatbot-domain.com/chatbot-embed.js"></script>
 
-<!-- Alternative: Inline script with Shopify liquid variables -->
+<!-- DIRECT MODE: Embeds chatbot widget directly (requires chatbot-widget-embed.js) -->
+<!--
 <script>
 window.CHATBOT_API_URL = "https://your-chatbot-domain.com";
 window.CHATBOT_EMBED_MODE = "direct";
@@ -24,3 +39,4 @@ window.SHOPIFY_STORE_DATA = {
 };
 </script>
 <script src="https://your-chatbot-domain.com/chatbot-embed.js"></script>
+-->
