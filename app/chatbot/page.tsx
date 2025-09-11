@@ -8,7 +8,7 @@ function ChatbotContent() {
   const searchParams = useSearchParams()
 
   return (
-    <div className="h-screen w-full bg-transparent overflow-hidden">
+    <div className="bg-transparent overflow-hidden">
       <ChatbotWidget />
     </div>
   )
