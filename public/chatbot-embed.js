@@ -102,15 +102,15 @@
       existing.remove()
     }
 
-    // Create new container
+    // Create new container with minimal footprint
     const container = document.createElement("div")
     container.id = CHATBOT_CONFIG.containerId
     container.style.cssText = `
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      bottom: 20px;
+      right: 20px;
+      width: 0;
+      height: 0;
       pointer-events: none;
       z-index: 9997;
     `
@@ -118,9 +118,9 @@
     if (CHATBOT_CONFIG.embedMode === "direct") {
       container.innerHTML = `
         <div id="chatbot-direct-widget" style="
-          position: fixed;
-          bottom: 20px;
-          right: 20px;
+          position: absolute;
+          bottom: 0;
+          right: 0;
           width: 400px;
           height: 600px;
           max-width: calc(100vw - 40px);
@@ -141,13 +141,13 @@
     } else {
       container.innerHTML = `
         <div id="chatbot-iframe-widget" style="
-          position: fixed;
-          bottom: 20px;
-          right: 20px;
+          position: absolute;
+          bottom: 80px;
+          right: 0;
           width: 400px;
           height: 600px;
           max-width: calc(100vw - 40px);
-          max-height: calc(100vh - 40px);
+          max-height: calc(100vh - 120px);
           background: white;
           border-radius: 12px;
           box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
@@ -162,9 +162,9 @@
           </iframe>
         </div>
         <button id="chatbot-toggle-btn" style="
-          position: fixed;
-          bottom: 20px;
-          right: 20px;
+          position: absolute;
+          bottom: 0;
+          right: 0;
           width: 60px;
           height: 60px;
           border-radius: 50%;
