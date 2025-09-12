@@ -84,124 +84,139 @@
   }
 
   // === 2. TRANSPARENT IFRAME MANAGER ===
-  class TransparentIframeManager {
-    constructor() {
-      this.iframe = null;
-      this.container = null;
-      this.isCreated = false;
-    }
+class TransparentIframeManager {
+  constructor() {
+    this.iframe = null;
+    this.container = null;
+    this.isCreated = false;
+  }
 
-    createContainer() {
-      if (this.container) return this.container;
+  createContainer() {
+    if (this.container) return this.container;
 
-      this.container = document.createElement('div');
-      this.container.id = 'transparent-chatbot-container';
-      this.container.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: ${CHATBOT_CONFIG.iframe.style.zIndex};
-        pointer-events: none;
-        background: transparent;
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
+    this.container = document.createElement('div');
+    this.container.id = 'transparent-chatbot-container';
+    this.container.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: ${CHATBOT_CONFIG.iframe.style.zIndex};
+      pointer-events: none; /* container doesn’t block clicks */
+      background: transparent;
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    `;
+
+    return this.container;
+  }
+
+  createIframe() {
+    if (this.iframe) return this.iframe;
+
+    this.iframe = document.createElement('iframe');
+    this.iframe.id = 'transparent-chatbot-iframe';
+
+    // Data
+    const shopifyData = DataExtractor.extractShopifyData();
+    const src = `${CHATBOT_CONFIG.apiUrl}${CHATBOT_CONFIG.iframe.src}&shopifyData=${encodeURIComponent(JSON.stringify(shopifyData))}`;
+    this.iframe.src = src;
+
+    // Make iframe clickable but only inside its box
+    this.iframe.style.cssText = `
+      position: relative;
+      width: 100%;
+      max-width: 500px;
+      height: 800px;
+      max-height: 100vh;
+      border: none;
+      background: transparent;
+      pointer-events: auto;
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      border-radius: 12px;
+      overflow: hidden;
+      z-index: 99999;
+    `;
+
+    // Allow transparency in browsers
+    this.iframe.setAttribute("allowTransparency", "true");
+
+    // Responsive mobile fullscreen
+    const styleTag = document.createElement('style');
+    styleTag.textContent = `
+      @media (max-width: 768px) {
+        #transparent-chatbot-container {
+          bottom: 0 !important;
+          right: 0 !important;
+          width: 100% !important;
+          height: 100% !important;
+        }
+        #transparent-chatbot-iframe {
+          width: 100% !important;
+          height: 100% !important;
+          max-width: 100% !important;
+          max-height: 100% !important;
+          border-radius: 0 !important;
+        }
+      }
+    `;
+    document.head.appendChild(styleTag);
+
+    return this.iframe;
+  }
+
+  applyCSSReset() {
+    if (!document.getElementById('transparent-chatbot-css-reset')) {
+      const style = document.createElement('style');
+      style.id = 'transparent-chatbot-css-reset';
+      style.textContent = `
+        #transparent-chatbot-container,
+        #transparent-chatbot-container * {
+          margin: 0 !important;
+          padding: 0 !important;
+          box-sizing: border-box !important;
+        }
+        #transparent-chatbot-iframe {
+          background: transparent !important;
+        }
       `;
-
-      return this.container;
-    }
-
-    createIframe() {
-      if (this.iframe) return this.iframe;
-
-      this.iframe = document.createElement('iframe');
-      this.iframe.id = 'transparent-chatbot-iframe';
-      
-      // Set iframe properties
-      const shopifyData = DataExtractor.extractShopifyData();
-      const src = `${CHATBOT_CONFIG.apiUrl}${CHATBOT_CONFIG.iframe.src}&shopifyData=${encodeURIComponent(JSON.stringify(shopifyData))}`;
-      
-      this.iframe.src = src;
-      this.iframe.style.cssText = `
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        border: none;
-        background: transparent;
-        pointer-events: auto;
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      `;
-
-      // Set iframe attributes for transparency and security
-      this.iframe.setAttribute('allow', 'microphone');
-      this.iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups allow-modals');
-
-      return this.iframe;
-    }
-
-    applyCSSReset() {
-      // Apply global CSS reset for transparency
-      if (!document.getElementById('transparent-chatbot-css-reset')) {
-        const style = document.createElement('style');
-        style.id = 'transparent-chatbot-css-reset';
-        style.textContent = `
-          #transparent-chatbot-container,
-          #transparent-chatbot-container * {
-            margin: 0 !important;
-            padding: 0 !important;
-            box-sizing: border-box !important;
-          }
-          
-          #transparent-chatbot-iframe {
-            background: transparent !important;
-          }
-          
-          /* Ensure no spacing issues */
-          #transparent-chatbot-container {
-            border: none !important;
-            outline: none !important;
-          }
-        `;
-        document.head.appendChild(style);
-      }
-    }
-
-    mount() {
-      if (this.isCreated) return;
-
-      this.applyCSSReset();
-      
-      const container = this.createContainer();
-      const iframe = this.createIframe();
-      
-      container.appendChild(iframe);
-      document.body.appendChild(container);
-      
-      this.isCreated = true;
-      log('Transparent iframe mounted successfully');
-    }
-
-    destroy() {
-      if (this.container && this.container.parentNode) {
-        this.container.parentNode.removeChild(this.container);
-      }
-      this.iframe = null;
-      this.container = null;
-      this.isCreated = false;
-    }
-
-    sendMessage(message) {
-      if (this.iframe && this.iframe.contentWindow) {
-        this.iframe.contentWindow.postMessage(message, '*');
-      }
+      document.head.appendChild(style);
     }
   }
+
+  mount() {
+    if (this.isCreated) return;
+
+    this.applyCSSReset();
+
+    const container = this.createContainer();
+    const iframe = this.createIframe();
+
+    container.appendChild(iframe);
+    document.body.appendChild(container);
+
+    this.isCreated = true;
+    log('Transparent iframe mounted successfully');
+  }
+
+  destroy() {
+    if (this.container && this.container.parentNode) {
+      this.container.parentNode.removeChild(this.container);
+    }
+    this.iframe = null;
+    this.container = null;
+    this.isCreated = false;
+  }
+
+  sendMessage(message) {
+    if (this.iframe && this.iframe.contentWindow) {
+      this.iframe.contentWindow.postMessage(message, '*');
+    }
+  }
+}
+
 
   // === 3. STATE PERSISTENCE MANAGER ===
   class StatePersistenceManager {
