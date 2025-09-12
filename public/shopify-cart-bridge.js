@@ -1,5 +1,5 @@
 /**
- * Minimal Shopify Cart Bridge Script
+ * Enhanced Shopify Cart Bridge Script
  * This script runs on the Shopify store domain and handles cart operations
  * through postMessage communication with the chatbot iframe.
  */
@@ -7,19 +7,37 @@
 (() => {
   'use strict';
   
-  const CONFIG = {
-    allowedOrigins: [
-      'https://shopify-ai-chatbot-v2.vercel.app',
-      'http://localhost:3000'
-    ]
-  };
+  // Enhanced origin validation
+  function isAllowedOrigin(origin) {
+    // Allow same origin
+    if (origin === window.location.origin) {
+      return true;
+    }
+    
+    // Allow localhost for development
+    if (origin.includes('localhost')) {
+      return true;
+    }
+    
+    // Allow vercel app for production
+    if (origin.includes('shopify-ai-chatbot-v2.vercel.app')) {
+      return true;
+    }
+    
+    // Allow Shopify store domain
+    if (origin.includes('myshopify.com')) {
+      return true;
+    }
+    
+    return false;
+  }
   
   // Handle incoming messages
   window.addEventListener('message', (event) => {
     console.log('[ShopifyCartBridge] Received message:', event.data);
     
     // Validate origin
-    if (!CONFIG.allowedOrigins.includes(event.origin)) {
+    if (!isAllowedOrigin(event.origin)) {
       console.warn('[ShopifyCartBridge] Invalid origin:', event.origin);
       return;
     }
@@ -33,6 +51,26 @@
         break;
       case 'CART_GET':
         handleGetCart(event, id);
+        break;
+      case 'NAVIGATE_TO_CART':
+        handleNavigateToCart(event, id);
+        break;
+      case 'NAVIGATE_TO_CHECKOUT':
+        handleNavigateToCheckout(event, id);
+        break;
+      // Add handlers for known message types to prevent errors
+      case 'ADD_TO_CART_SUCCESS':
+      case 'CHATBOT_READY':
+      case 'CHATBOT_STATE_CHANGED':
+      case 'CHATBOT_RESIZE':
+      case 'CHATBOT_CLOSED_BY_USER':
+      case 'CHATBOT_OPENED_BY_USER':
+        // Acknowledge these messages but don't process them
+        sendResponse(event.source, event.origin, {
+          id,
+          success: true,
+          data: { message: 'Acknowledged' }
+        });
         break;
       default:
         console.warn('[ShopifyCartBridge] Unknown message type:', type);
@@ -52,7 +90,7 @@
       const formData = {
         items: [{
           id: payload.variantId,
-          quantity: payload.quantity
+          quantity: payload.quantity || 1
         }]
       };
       
@@ -60,16 +98,20 @@
       
       const response = await fetch('/cart/add.js', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
         body: JSON.stringify(formData)
       });
       
       console.log('[ShopifyCartBridge] Add to cart response status:', response.status);
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[ShopifyCartBridge] Add to cart error:', errorText);
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.message || `HTTP ${response.status}: ${response.statusText}`;
+        console.error('[ShopifyCartBridge] Add to cart error:', errorMessage);
+        throw new Error(errorMessage);
       }
       
       const result = await response.json();
@@ -78,17 +120,24 @@
       const cart = await getCart();
       console.log('[ShopifyCartBridge] Updated cart:', cart);
       
+      // Normalize cart data before sending
+      const normalizedCart = normalizeCartData(cart);
+      
       sendResponse(event.source, event.origin, {
         id,
         success: true,
-        data: { result, cart }
+        data: { 
+          result, 
+          cart: normalizedCart,
+          message: 'Item added to cart successfully'
+        }
       });
     } catch (error) {
       console.error('[ShopifyCartBridge] Failed to add to cart:', error);
       sendResponse(event.source, event.origin, {
         id,
         success: false,
-        error: error.message
+        error: error.message || 'Failed to add item to cart'
       });
     }
   }
@@ -99,17 +148,61 @@
       console.log('[ShopifyCartBridge] Getting cart');
       const cart = await getCart();
       console.log('[ShopifyCartBridge] Cart retrieved:', cart);
+      
+      // Normalize cart data before sending
+      const normalizedCart = normalizeCartData(cart);
+      
       sendResponse(event.source, event.origin, {
         id,
         success: true,
-        data: cart
+        data: normalizedCart
       });
     } catch (error) {
       console.error('[ShopifyCartBridge] Failed to get cart:', error);
       sendResponse(event.source, event.origin, {
         id,
         success: false,
-        error: error.message
+        error: error.message || 'Failed to get cart'
+      });
+    }
+  }
+  
+  // Handle navigation to cart
+  function handleNavigateToCart(event, id) {
+    try {
+      // Navigate the parent window, not the iframe
+      window.parent.location.href = '/cart';
+      sendResponse(event.source, event.origin, {
+        id,
+        success: true,
+        data: { message: 'Navigating to cart' }
+      });
+    } catch (error) {
+      console.error('[ShopifyCartBridge] Failed to navigate to cart:', error);
+      sendResponse(event.source, event.origin, {
+        id,
+        success: false,
+        error: error.message || 'Failed to navigate to cart'
+      });
+    }
+  }
+
+  // Handle navigation to checkout
+  function handleNavigateToCheckout(event, id) {
+    try {
+      // Navigate the parent window, not the iframe
+      window.parent.location.href = '/checkout';
+      sendResponse(event.source, event.origin, {
+        id,
+        success: true,
+        data: { message: 'Navigating to checkout' }
+      });
+    } catch (error) {
+      console.error('[ShopifyCartBridge] Failed to navigate to checkout:', error);
+      sendResponse(event.source, event.origin, {
+        id,
+        success: false,
+        error: error.message || 'Failed to navigate to checkout'
       });
     }
   }
@@ -129,6 +222,38 @@
     const cart = await response.json();
     console.log('[ShopifyCartBridge] Cart data:', cart);
     return cart;
+  }
+  
+  // Normalize cart data structure
+  function normalizeCartData(cart) {
+    return {
+      items: Array.isArray(cart.items) ? cart.items.map(item => ({
+        id: item.id?.toString() || '',
+        variantId: item.variant_id?.toString() || item.id?.toString() || '',
+        quantity: item.quantity || 0,
+        name: item.product_title || item.name || '',
+        price: formatPrice(item.price || 0, cart.currency),
+        image: item.image || ''
+      })) : [],
+      total_price: cart.total_price || 0,
+      item_count: cart.item_count || 0,
+      currency: cart.currency || 'USD',
+      token: cart.token || '',
+      note: cart.note || '',
+      attributes: cart.attributes || {}
+    };
+  }
+  
+  // Format price helper
+  function formatPrice(price, currency = 'USD') {
+    try {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currency,
+      }).format(price / 100); // Shopify prices are in cents
+    } catch (error) {
+      return `$${(price / 100).toFixed(2)}`;
+    }
   }
   
   // Send response
