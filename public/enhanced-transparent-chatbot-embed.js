@@ -219,6 +219,55 @@
       return this.getFallbackURL();
     }
     
+    // Fix: Improve hardcoded domain detection
+    static extractDomainFromURL(url) {
+      try {
+        const urlObj = new URL(url);
+        return urlObj.hostname;
+      } catch (error) {
+        Logger.warn('DataExtractor', 'Failed to extract domain from URL:', url, error.message);
+        return window.location.hostname; // Fallback to current domain
+      }
+    }
+    
+    // Fix: Enhanced validation to prevent false positives
+    static validateStoreURL(url) {
+      if (!url) return false;
+      
+      try {
+        const urlObj = new URL(url);
+        
+        // Must be HTTPS for security (except localhost)
+        if (urlObj.protocol !== 'https:' && urlObj.hostname !== 'localhost') {
+          Logger.warn('StoreDetection', 'Non-HTTPS URL rejected:', url);
+          return false;
+        }
+        
+        // Check for Shopify domains or likely store domains
+        const hostname = urlObj.hostname;
+        const isShopifyDomain = hostname.includes('.myshopify.com') || hostname.includes('.shopify.com');
+        const isValidDomain = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$/.test(hostname) || hostname === 'localhost';
+        
+        // Fix: Only flag as hardcoded if it's actually a hardcoded test domain
+        const hardcodedTestDomains = ['zenmato.myshopify.com', 'test-store.myshopify.com'];
+        if (hardcodedTestDomains.includes(hostname)) {
+          Logger.error('StoreDetection', 'Hardcoded test domain detected:', hostname);
+          return false;
+        }
+        
+        if (isShopifyDomain || (isValidDomain && this.isLikelyShopifyStore())) {
+          Logger.debug('StoreDetection', 'URL validation passed:', url);
+          return true;
+        }
+        
+        Logger.debug('StoreDetection', 'URL validation failed - not a valid store URL:', url);
+        return false;
+      } catch (error) {
+        Logger.warn('StoreDetection', 'URL validation error:', error.message);
+        return false;
+      }
+    }
+    
     static fromURLParams() {
       Logger.debug('StoreDetection', 'Checking URL parameters...');
       const urlParams = new URLSearchParams(window.location.search);
@@ -363,36 +412,6 @@
           return false;
         }
       });
-    }
-    
-    static validateStoreURL(url) {
-      if (!url) return false;
-      
-      try {
-        const urlObj = new URL(url);
-        
-        // Must be HTTPS for security
-        if (CHATBOT_CONFIG.storeDetection.validateSSL && urlObj.protocol !== 'https:') {
-          Logger.warn('StoreDetection', 'Non-HTTPS URL rejected:', url);
-          return false;
-        }
-        
-        // Check for Shopify domains or likely store domains
-        const hostname = urlObj.hostname;
-        const isShopifyDomain = hostname.includes('.myshopify.com') || hostname.includes('.shopify.com');
-        const isValidDomain = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$/.test(hostname) || hostname === 'localhost';
-        
-        if (isShopifyDomain || (isValidDomain && this.isLikelyShopifyStore())) {
-          Logger.debug('StoreDetection', 'URL validation passed:', url);
-          return true;
-        }
-        
-        Logger.debug('StoreDetection', 'URL validation failed - not a valid store URL:', url);
-        return false;
-      } catch (error) {
-        Logger.warn('StoreDetection', 'URL validation error:', error.message);
-        return false;
-      }
     }
     
     static getFallbackURL() {
@@ -553,6 +572,7 @@
       return cookieValue;
     }
     
+    // Fix: Improve cookie domain validation to handle cross-domain scenarios properly
     static validateCookieDomain(cookieName, expectedDomain) {
       if (!CHATBOT_CONFIG.cookies.validation.enabled) {
         Logger.debug('DataExtractor', 'Cookie domain validation disabled');
@@ -580,10 +600,10 @@
           return true;
         }
         
-        // Custom domain to Shopify domain mapping (common in Shopify setups)
-        if (currentDomain !== expectedDomain && !CHATBOT_CONFIG.cookies.validation.strictDomain) {
-          Logger.debug('DataExtractor', 'Allowing cross-domain cookie due to non-strict validation');
-          return true;
+        // Fix: Allow cross-domain cookies for embedded scenarios with warning
+        if (currentDomain !== expectedDomain) {
+          Logger.warn('DataExtractor', `Cross-domain cookie detected: ${cookieName} from ${expectedDomain} on ${currentDomain}`);
+          return true; // Allow but log warning
         }
         
         Logger.debug('DataExtractor', `Domain validation failed: ${cookieName} - current=${currentDomain}, expected=${expectedDomain}`);
@@ -732,6 +752,7 @@ class TransparentIframeManager {
     return this.iframe;
   }
 
+  // Fix: Add CSP-compliant styles
   addResponsiveStyles() {
     const styleId = 'transparent-chatbot-responsive-styles';
     
@@ -739,7 +760,7 @@ class TransparentIframeManager {
       const styleTag = document.createElement('style');
       styleTag.id = styleId;
       styleTag.textContent = `
-        /* PC styles - ensure minimum 500px width */
+        /* PC styles */
         @media (min-width: ${CHATBOT_CONFIG.responsive.desktopBreakpoint}px) {
           #transparent-chatbot-container {
             width: ${CHATBOT_CONFIG.iframe.dimensions.pc.containerWidth} !important;
@@ -752,7 +773,7 @@ class TransparentIframeManager {
           }
         }
         
-        /* Mobile styles - 100% screen coverage */
+        /* Mobile styles */
         @media (max-width: ${CHATBOT_CONFIG.responsive.mobileBreakpoint}px) {
           #transparent-chatbot-container {
             bottom: 0 !important;
@@ -771,6 +792,17 @@ class TransparentIframeManager {
             max-height: ${CHATBOT_CONFIG.iframe.dimensions.mobile.maxHeight} !important;
             border-radius: 0 !important;
           }
+        }
+        
+        /* Fix: Add critical CSS to prevent FOUC */
+        #transparent-chatbot-container,
+        #transparent-chatbot-iframe {
+          visibility: hidden;
+        }
+        
+        #transparent-chatbot-container.loaded,
+        #transparent-chatbot-iframe.loaded {
+          visibility: visible;
         }
       `;
       document.head.appendChild(styleTag);
@@ -830,6 +862,7 @@ class TransparentIframeManager {
     }
   }
 
+  // Fix: Wait for styles to load before showing elements
   mount() {
     if (this.isCreated) return;
 
@@ -840,6 +873,12 @@ class TransparentIframeManager {
 
     container.appendChild(iframe);
     document.body.appendChild(container);
+
+    // Fix: Wait for styles to load before showing elements
+    setTimeout(() => {
+      container.classList.add('loaded');
+      iframe.classList.add('loaded');
+    }, 100);
 
     this.isCreated = true;
     log('Transparent iframe mounted successfully');
@@ -1057,7 +1096,11 @@ class TransparentIframeManager {
     static bridgeReady = false;
     static storeInfo = null;
     static fallbackToDirectAPI = false;
-    static bridgeTimeout = 5000; // 5 seconds timeout for bridge communication
+    // Fix: Increase timeout to 10 seconds
+    static bridgeTimeout = 10000;
+    // Fix: Add retry configuration
+    static bridgeRetryAttempts = 3;
+    static bridgeRetryDelay = 1000;
     
     static init() {
       Logger.info('EnhancedCartBridge', 'Initializing Enhanced PostMessage Cart Bridge...');
@@ -1067,18 +1110,46 @@ class TransparentIframeManager {
         this.handleParentMessage(event);
       });
       
-      // Check if bridge is already ready
-      this.checkBridgeStatus();
-      
-      // Set up fallback timeout
-      setTimeout(() => {
-        if (!this.bridgeReady) {
-          Logger.warn('EnhancedCartBridge', 'Bridge not ready after timeout, enabling fallback mode');
-          this.fallbackToDirectAPI = true;
-        }
-      }, this.bridgeTimeout);
+      // Fix: Implement retry mechanism for bridge status
+      this.checkBridgeStatusWithRetry();
       
       Logger.debug('EnhancedCartBridge', 'Enhanced PostMessage Cart Bridge initialized');
+    }
+    
+    // Fix: Implement retry mechanism for bridge status
+    static async checkBridgeStatusWithRetry(attempt = 1) {
+      try {
+        this.checkBridgeStatus();
+        
+        // Wait for bridge to be ready
+        await new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error('Bridge status check timeout'));
+          }, this.bridgeTimeout);
+          
+          const checkInterval = setInterval(() => {
+            if (this.bridgeReady) {
+              clearTimeout(timeout);
+              clearInterval(checkInterval);
+              resolve(true);
+            }
+          }, 500);
+        });
+        
+        Logger.info('EnhancedCartBridge', 'Bridge ready after check');
+      } catch (error) {
+        Logger.warn('EnhancedCartBridge', `Bridge status check failed (attempt ${attempt}):`, error.message);
+        
+        if (attempt < this.bridgeRetryAttempts) {
+          Logger.info('EnhancedCartBridge', `Retrying bridge status check in ${this.bridgeRetryDelay}ms...`);
+          setTimeout(() => {
+            this.checkBridgeStatusWithRetry(attempt + 1);
+          }, this.bridgeRetryDelay);
+        } else {
+          Logger.warn('EnhancedCartBridge', 'Bridge not ready after all retries, enabling fallback mode');
+          this.fallbackToDirectAPI = true;
+        }
+      }
     }
     
     static handleParentMessage(event) {
@@ -1123,8 +1194,8 @@ class TransparentIframeManager {
       }
     }
     
-    static async sendMessageToParent(type, payload = {}, timeout = 5000) {
-      // Fallback to direct API if bridge is not ready
+    static async sendMessageToParent(type, payload = {}, timeout = 10000) {
+      // Fix: Better fallback handling
       if (this.fallbackToDirectAPI) {
         Logger.warn('EnhancedCartBridge', 'Using fallback to direct API for:', type);
         return this.fallbackToDirectAPI(type, payload);
@@ -1372,6 +1443,10 @@ class TransparentIframeManager {
       const event = new CustomEvent('cartUpdated', {
         detail: cartData
       });
+      document.dispatchEvent(event);
+    }
+  }
+
       window.dispatchEvent(event);
       
       Logger.info('EnhancedCartBridge', 'Cart update notification dispatched');

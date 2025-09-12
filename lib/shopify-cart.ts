@@ -143,7 +143,9 @@ export class ShopifyCartService {
     try {
       // Detect store URL dynamically
       storeURL = StoreURLHelper.detectStoreURL();
-      const endpoint = `${storeURL}/cart/add.js`;
+      
+      // Fix: Ensure correct endpoint path
+      const endpoint = `${storeURL}${storeURL.endsWith('/') ? '' : '/'}cart/add.js`;
       
       CartLogger.info('AddToCart', 'Adding to cart:', {
         variantId,
@@ -311,8 +313,12 @@ export class ShopifyCartService {
           'Content-Type': 'application/json',
           'X-Requested-With': 'XMLHttpRequest',
           'Accept': 'application/json',
+          // Fix: Add referer header for Shopify API compliance
+          'Referer': window.location.href
         },
         signal: controller.signal,
+        // Fix: Add credentials for proper cookie handling
+        credentials: 'same-origin'
       };
       
       if (body && method === 'POST') {
@@ -321,6 +327,17 @@ export class ShopifyCartService {
       
       const response = await fetch(url, options);
       clearTimeout(timeoutId);
+      
+      // Fix: Better error handling
+      if (response.status === 405) {
+        CartLogger.error('API', 'Method not allowed - check endpoint configuration:', url);
+        throw new CartAPIError(
+          `Method not allowed for endpoint: ${url}. Verify the store URL and endpoint path.`,
+          response.status,
+          url
+        );
+      }
+      
       return response;
     } catch (error) {
       clearTimeout(timeoutId);
