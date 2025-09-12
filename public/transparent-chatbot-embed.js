@@ -190,6 +190,59 @@
           to { transform: translateY(0); opacity: 1; }
         }
         
+        @keyframes zoomIn95 {
+          from { transform: scale(0.95); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+        
+        .fixed {
+          position: fixed;
+        }
+        
+        .inset-0 {
+          top: 0px;
+          right: 0px;
+          bottom: 0px;
+          left: 0px;
+        }
+        
+        .z-\\[10000\\] {
+          z-index: 10000;
+        }
+        
+        .flex {
+          display: flex;
+        }
+        
+        .items-center {
+          align-items: center;
+        }
+        
+        .justify-center {
+          justify-content: center;
+        }
+        
+        .w-full {
+          width: 100%;
+        }
+        
+        .max-w-md {
+          max-width: 28rem;
+        }
+        
+        .mx-4 {
+          margin-left: 1rem;
+          margin-right: 1rem;
+        }
+        
+        .bg-black\\/50 {
+          background-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        .backdrop-blur-sm {
+          backdrop-filter: blur(4px);
+        }
+        
         .animate-in {
           animation-duration: 200ms;
           animation-fill-mode: both;
@@ -199,93 +252,12 @@
           animation-name: zoomIn95;
         }
         
-        @keyframes zoomIn95 {
-          from { transform: scale(0.95); opacity: 0; }
-          to { transform: scale(1); opacity: 1; }
-        }
-        
         .duration-200 {
           animation-duration: 200ms;
         }
         
-        .backdrop-blur-sm {
-          backdrop-filter: blur(4px);
-        }
-        
-        .bg-black\\/50 {
-          background-color: rgba(0, 0, 0, 0.5);
-        }
-        
-        .rounded-lg {
-          border-radius: 0.5rem;
-        }
-        
-        .bg-gray-50 {
-          background-color: #f9fafb;
-        }
-        
-        .bg-green-100 {
-          background-color: #dcfce7;
-        }
-        
-        .text-green-600 {
-          color: #16a34a;
-        }
-        
-        .text-green-700 {
-          color: #15803d;
-        }
-        
-        .text-gray-600 {
-          color: #4b5563;
-        }
-        
-        .text-gray-800 {
-          color: #1f2937;
-        }
-        
-        .bg-gray-100 {
-          background-color: #f3f4f6;
-        }
-        
-        .border-t {
-          border-top-width: 1px;
-        }
-        
-        .pt-2 {
-          padding-top: 0.5rem;
-        }
-        
-        .mt-3 {
-          margin-top: 0.75rem;
-        }
-        
-        .border-input {
-          border-color: #e5e7eb;
-        }
-        
-        .bg-background {
+        .bg-white {
           background-color: #ffffff;
-        }
-        
-        .hover\\:bg-accent:hover {
-          background-color: #f3f4f6;
-        }
-        
-        .hover\\:text-accent-foreground:hover {
-          color: #111827;
-        }
-        
-        .bg-blue-600 {
-          background-color: #2563eb;
-        }
-        
-        .text-white {
-          color: #ffffff;
-        }
-        
-        .hover\\:bg-blue-700:hover {
-          background-color: #1d4ed8;
         }
         
         .rounded-xl {
@@ -317,10 +289,6 @@
           padding-right: 1.5rem;
         }
         
-        .mb-4 {
-          margin-bottom: 1rem;
-        }
-        
         .mx-auto {
           margin-left: auto;
           margin-right: auto;
@@ -334,16 +302,20 @@
           height: 4rem;
         }
         
-        .flex {
-          display: flex;
+        .bg-green-100 {
+          background-color: #dcfce7;
         }
         
-        .items-center {
-          align-items: center;
+        .rounded-full {
+          border-radius: 9999px;
         }
         
-        .justify-center {
-          justify-content: center;
+        .mb-4 {
+          margin-bottom: 1rem;
+        }
+        
+        .text-green-600 {
+          color: #16a34a;
         }
         
         .text-xl {
@@ -355,9 +327,21 @@
           font-weight: 600;
         }
         
+        .text-green-700 {
+          color: #15803d;
+        }
+        
         .text-sm {
           font-size: 0.875rem;
           line-height: 1.25rem;
+        }
+        
+        .text-gray-600 {
+          color: #4b5563;
+        }
+        
+        .pb-6 {
+          padding-bottom: 1.5rem;
         }
         
         .space-y-4 > :not([hidden]) ~ :not([hidden]) {
@@ -366,16 +350,66 @@
           margin-bottom: calc(1rem * var(--tw-space-y-reverse));
         }
         
-        .flex-1 {
-          flex: 1 1 0%;
+        .bg-gray-50 {
+          background-color: #f9fafb;
         }
         
-        .gap-3 {
-          gap: 0.75rem;
+        .rounded-lg {
+          border-radius: 0.5rem;
         }
         
-        .rounded-md {
-          border-radius: 0.375rem;
+        .p-4 {
+          padding: 1rem;
+        }
+        
+        .flex-col {
+          flex-direction: column;
+        }
+        
+        .items-start {
+          align-items: flex-start;
+        }
+        
+        .flex-wrap {
+          flex-wrap: wrap;
+        }
+        
+        .mb-3 {
+          margin-bottom: 0.75rem;
+        }
+        
+        .font-medium {
+          font-weight: 500;
+        }
+        
+        .gap-2 {
+          gap: 0.5rem;
+        }
+        
+        .inline-flex {
+          display: inline-flex;
+        }
+        
+        .items-center {
+          align-items: center;
+        }
+        
+        .rounded-full {
+          border-radius: 9999px;
+        }
+        
+        .bg-gray-100 {
+          background-color: #f3f4f6;
+        }
+        
+        .px-2\\.5 {
+          padding-left: 0.625rem;
+          padding-right: 0.625rem;
+        }
+        
+        .py-0\\.5 {
+          padding-top: 0.125rem;
+          padding-bottom: 0.125rem;
         }
         
         .text-xs {
@@ -383,10 +417,14 @@
           line-height: 1rem;
         }
         
-        .truncate {
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
+        .text-gray-800 {
+          color: #1f2937;
+        }
+        
+        .space-y-2 > :not([hidden]) ~ :not([hidden]) {
+          --tw-space-y-reverse: 0;
+          margin-top: calc(0.5rem * calc(1 - var(--tw-space-y-reverse)));
+          margin-bottom: calc(0.5rem * var(--tw-space-y-reverse));
         }
         
         .max-h-32 {
@@ -397,16 +435,77 @@
           overflow-y: auto;
         }
         
-        .font-medium {
-          font-weight: 500;
+        .truncate {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
         
-        .w-full {
-          width: 100%;
+        .flex-1 {
+          flex: 1 1 0%;
         }
         
-        .ml-2 {
-          margin-left: 0.5rem;
+        .mr-2 {
+          margin-right: 0.5rem;
+        }
+        
+        .border-t {
+          border-top-width: 1px;
+        }
+        
+        .pt-2 {
+          padding-top: 0.5rem;
+        }
+        
+        .mt-3 {
+          margin-top: 0.75rem;
+        }
+        
+        .justify-between {
+          justify-content: space-between;
+        }
+        
+        .flex {
+          display: flex;
+        }
+        
+        .gap-3 {
+          gap: 0.75rem;
+        }
+        
+        .rounded-md {
+          border-radius: 0.375rem;
+        }
+        
+        .text-sm {
+          font-size: 0.875rem;
+          line-height: 1.25rem;
+        }
+        
+        .transition-colors {
+          transition-property: background-color, border-color, color, fill, stroke;
+          transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+          transition-duration: 150ms;
+        }
+        
+        .border {
+          border-width: 1px;
+        }
+        
+        .border-input {
+          border-color: #e5e7eb;
+        }
+        
+        .bg-background {
+          background-color: #ffffff;
+        }
+        
+        .hover\\:bg-accent:hover {
+          background-color: #f3f4f6;
+        }
+        
+        .hover\\:text-accent-foreground:hover {
+          color: #111827;
         }
         
         .h-10 {
@@ -423,45 +522,20 @@
           padding-bottom: 0.5rem;
         }
         
-        .inline-flex {
-          display: inline-flex;
+        .bg-blue-600 {
+          background-color: #2563eb;
         }
         
-        .transition-colors {
-          transition-property: background-color, border-color, color, fill, stroke;
-          transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-          transition-duration: 150ms;
+        .text-white {
+          color: #ffffff;
         }
         
-        .border {
-          border-width: 1px;
+        .hover\\:bg-blue-700:hover {
+          background-color: #1d4ed8;
         }
         
-        .fixed {
-          position: fixed;
-        }
-        
-        .inset-0 {
-          top: 0px;
-          right: 0px;
-          bottom: 0px;
-          left: 0px;
-        }
-        
-        .z-\\[10000\\] {
-          z-index: 10000;
-        }
-        
-        .flex-col {
-          flex-direction: column;
-        }
-        
-        .items-center {
-          align-items: center;
-        }
-        
-        .justify-center {
-          justify-content: center;
+        .ml-2 {
+          margin-left: 0.5rem;
         }
       `;
       document.head.appendChild(style);
@@ -573,19 +647,44 @@
       const checkoutBtn = popupContainer.querySelector('#checkout-btn');
       const closeBtn = popupContainer.querySelector('#close-popup-btn');
       
+      // Flag to prevent multiple clicks
+      let isNavigating = false;
+      
       if (viewCartBtn) {
         viewCartBtn.addEventListener('click', () => {
-          // Send message to navigate to cart
-          window.postMessage({ type: 'NAVIGATE_TO_CART' }, window.location.origin);
+          if (isNavigating) return;
+          isNavigating = true;
+          
+          // Remove popup immediately
           popupContainer.remove();
+          
+          // Check if already on cart page
+          if (window.location.pathname === '/cart') {
+            // Just reload the page
+            window.location.reload();
+          } else {
+            // Navigate to cart page
+            window.location.href = '/cart';
+          }
         });
       }
       
       if (checkoutBtn) {
         checkoutBtn.addEventListener('click', () => {
-          // Send message to navigate to checkout
-          window.postMessage({ type: 'NAVIGATE_TO_CHECKOUT' }, window.location.origin);
+          if (isNavigating) return;
+          isNavigating = true;
+          
+          // Remove popup immediately
           popupContainer.remove();
+          
+          // Check if already on checkout page
+          if (window.location.pathname === '/checkout') {
+            // Just reload the page
+            window.location.reload();
+          } else {
+            // Navigate to checkout page
+            window.location.href = '/checkout';
+          }
         });
       }
       
@@ -630,10 +729,10 @@
     
     // Add message listener for navigation messages from the cart bridge
     setupMessageListener() {
-      console.log('[TransparentChatbotEmbed] Setting up message listener');
+      // console.log('[TransparentChatbotEmbed] Setting up message listener');
       
       // Add rate limiting for console logs
-      const LOG_RATE_LIMIT = 1000; // 1 second
+      const LOG_RATE_LIMIT = 5000; // 5 seconds to reduce logging
       const lastLogTimes = {};
       
       const logWithRateLimit = (context, message, ...args) => {
@@ -641,7 +740,7 @@
         const lastLog = lastLogTimes[context] || 0;
         
         if (now - lastLog >= LOG_RATE_LIMIT) {
-          console.log(`[TransparentChatbotEmbed][${context}] ${message}`, ...args);
+          // console.log(`[TransparentChatbotEmbed][${context}] ${message}`, ...args);
           lastLogTimes[context] = now;
         }
       };
@@ -676,6 +775,9 @@
         return false;
       };
       
+      // Debounce flag for navigation events
+      let navigationInProgress = false;
+      
       window.addEventListener('message', (event) => {
         // Skip processing if no origin or invalid origin
         if (!event.origin || event.origin === 'null') {
@@ -684,7 +786,7 @@
         
         // Validate origin before processing
         if (!isAllowedOrigin(event.origin)) {
-          logWithRateLimit('Security', 'Invalid origin:', event.origin);
+          // logWithRateLimit('Security', 'Invalid origin:', event.origin);
           return;
         }
         
@@ -693,31 +795,40 @@
         
         // Handle SHOW_CART_POPUP message
         if (type === 'SHOW_CART_POPUP') {
-          logWithRateLimit('Popup', 'Showing cart popup in parent window');
+          // logWithRateLimit('Popup', 'Showing cart popup in parent window');
           this.showCartPopupInParent(event.data.cart);
           return;
         }
         
-        // Handle navigation messages from the cart bridge
-        if (success && type === 'NAVIGATE_TO_CART') {
-          logWithRateLimit('Navigation', 'Navigating to cart in parent window');
+        // Handle navigation messages from the cart bridge with debounce
+        if (success && (type === 'NAVIGATE_TO_CART' || type === 'NAVIGATE_TO_CHECKOUT')) {
+          if (navigationInProgress) {
+            // logWithRateLimit('Navigation', 'Navigation already in progress, skipping');
+            return;
+          }
+          
+          navigationInProgress = true;
+          
+          // logWithRateLimit('Navigation', `Navigating to ${type === 'NAVIGATE_TO_CART' ? 'cart' : 'checkout'} in parent window`);
+          
           // Use dynamic store URL instead of hardcoded URLs
-          const storeUrl = window.location.origin;
-          window.top.location.href = storeUrl + '/cart';
+          const targetPath = type === 'NAVIGATE_TO_CART' ? '/cart' : '/checkout';
+          
+          // Check if already on target page
+          if (window.location.pathname === targetPath) {
+            // Just reload the page
+            window.location.reload();
+          } else {
+            // Navigate to target page
+            window.location.href = targetPath;
+          }
+          
+          // Reset navigation flag after a delay
+          setTimeout(() => {
+            navigationInProgress = false;
+          }, 1000);
+          
           return;
-        }
-        
-        if (success && type === 'NAVIGATE_TO_CHECKOUT') {
-          logWithRateLimit('Navigation', 'Navigating to checkout in parent window');
-          // Use dynamic store URL instead of hardcoded URLs
-          const storeUrl = window.location.origin;
-          window.top.location.href = storeUrl + '/checkout';
-          return;
-        }
-        
-        // Also handle messages from the iframe
-        if (event.source === this.iframe.contentWindow) {
-          // Existing iframe message handling can go here if needed
         }
       });
     }

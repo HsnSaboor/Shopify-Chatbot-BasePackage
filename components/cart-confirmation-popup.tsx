@@ -69,7 +69,7 @@ export function createCartPopupHTML(cart: any) {
 
   return `
     <div class="w-full max-w-md mx-4">
-      <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+      <div class="bg-white rounded-xl shadow-lg overflow-hidden animate-in zoom-in-95 duration-200">
         <div class="text-center pb-4 pt-6 px-6">
           <div class="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600">
@@ -111,15 +111,15 @@ export function createCartPopupHTML(cart: any) {
 
           <!-- Action Buttons -->
           <div class="flex gap-3">
-            <button id="view-cart-btn" class="flex-1 inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+            <button id="view-cart-btn" class="flex-1 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
               View Cart
             </button>
-            <button id="checkout-btn" class="flex-1 inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-600 text-white hover:bg-blue-700 h-10 px-4 py-2">
+            <button id="checkout-btn" class="flex-1 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-blue-600 text-white hover:bg-blue-700 h-10 px-4 py-2">
               Checkout
             </button>
           </div>
 
-          <button id="close-popup-btn" class="w-full inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+          <button id="close-popup-btn" class="w-full inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="m18 6-12 12" />
               <path d="m6 6 12 12" />
@@ -209,8 +209,8 @@ export function CartConfirmationPopup({ isOpen, onClose, cart }: CartConfirmatio
               )}
             </div>
 
-            <div class="border-t pt-2 mt-3">
-              <div class="flex justify-between font-semibold">
+            <div className="border-t pt-2 mt-3">
+              <div className="flex justify-between font-semibold">
                 <span>Total:</span>
                 <span>{ShopifyCartService.formatPrice(cart.total_price, cart.currency)}</span>
               </div>
