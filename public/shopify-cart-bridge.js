@@ -239,19 +239,33 @@
     return cart;
   }
   
-  // Normalize cart data structure
+  // Normalize cart data structure - ENHANCED VERSION
   function normalizeCartData(cart) {
+    // Add proper error handling for missing cart data
+    if (!cart) {
+      console.warn('[ShopifyCartBridge] Cart data is null or undefined, returning empty structure');
+      return {
+        items: [],
+        total_price: 0,
+        item_count: 0,
+        currency: 'USD',
+        token: '',
+        note: '',
+        attributes: {}
+      };
+    }
+    
     return {
       items: Array.isArray(cart.items) ? cart.items.map(item => ({
         id: item.key?.toString() || item.id?.toString() || '',
         variantId: item.variant_id?.toString() || item.id?.toString() || '',
         quantity: item.quantity || 0,
-        name: item.product_title || item.title || '',
-        price: formatPrice(item.price || 0, cart.currency),
-        image: item.image || (item.featured_image ? item.featured_image.url : '') || ''
+        name: item.product_title || item.title || item.name || '',
+        price: formatPrice(item.price || item.line_price || 0, cart.currency),
+        image: item.image || (item.featured_image ? item.featured_image.url : '') || (item.image ? item.image : '') || ''
       })) : [],
-      total_price: cart.total_price || 0,
-      item_count: cart.item_count || 0,
+      total_price: cart.total_price || cart.totalPrice || 0,
+      item_count: cart.item_count || cart.itemCount || 0,
       currency: cart.currency || 'USD',
       token: cart.token || '',
       note: cart.note || '',
@@ -262,12 +276,17 @@
   // Format price helper
   function formatPrice(price, currency = 'USD') {
     try {
+      // Ensure price is a number
+      const numericPrice = typeof price === 'string' ? parseFloat(price) : price;
+      // Shopify prices are in cents, so divide by 100
       return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: currency,
-      }).format(price / 100); // Shopify prices are in cents
+      }).format(numericPrice / 100);
     } catch (error) {
-      return `$${(price / 100).toFixed(2)}`;
+      // Fallback formatting
+      const numericPrice = typeof price === 'string' ? parseFloat(price) : price;
+      return `$${(numericPrice / 100).toFixed(2)}`;
     }
   }
   
