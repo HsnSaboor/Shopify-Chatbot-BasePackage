@@ -1,10 +1,41 @@
 # Shopify AI Chatbot - Unified Integration
 
-[![Version](https://img.shields.io/badge/version-2.1.0--transparent-blue.svg)](https://github.com/your-repo)
+[![Version](https://img.shields.io/badge/version-2.1.0--enhanced-blue.svg)](https://github.com/your-repo)
 [![Performance](https://img.shields.io/badge/performance-67%25%20faster-green.svg)](#performance)
 [![Bundle Size](https://img.shields.io/badge/bundle%20size-5KB-green.svg)](#bundle-size)
+[![Debug Ready](https://img.shields.io/badge/debug-ready-brightgreen.svg)](#debugging)
 
-> 🚀 **NEW:** Transparent chatbot embedding with 1:1 iframe integration and complete state persistence across Shopify navigation.
+> 🚀 **NEW v2.1.0-enhanced:** Enhanced debugging, dynamic store detection, and bulletproof cart integration with comprehensive error handling.
+
+## ✨ Enhanced Features
+
+### 🔍 **NEW: Enhanced Debug System**
+- **Complete Console Logging** - All operations now visible in browser console
+- **Multi-level Logging** - Debug, info, warn, error with contextual information
+- **Performance Tracking** - API call timing and success rates monitoring
+- **Debug Test Suite** - Interactive validation page at `/debug-validation-test.html`
+- **Error Diagnostics** - Detailed error context for troubleshooting
+
+### 🏪 **NEW: Dynamic Store Detection**
+- **Auto Store URL Detection** - No more hardcoded store URLs
+- **Multiple Detection Methods** - 6 different methods with fallback logic
+- **Cross-domain Support** - Works with custom domains and myshopify.com
+- **Validation Logic** - Ensures detected URLs are valid Shopify stores
+- **SSL Enforcement** - Automatic HTTPS validation for security
+
+### 🛒 **Enhanced Cart Integration**
+- **Dynamic Endpoints** - Cart API URLs constructed from detected store domain
+- **Retry Logic** - Automatic retry with exponential backoff on failures
+- **Error Recovery** - Comprehensive error handling for 405, 404, 422, 5xx errors
+- **Input Validation** - Pre-request validation of variant IDs and quantities
+- **Timeout Protection** - Request timeout to prevent hanging operations
+
+### 📊 **NEW: Performance Monitoring**
+- **Real-time Metrics** - API request success rates and response times
+- **Error Tracking** - Comprehensive error logging and categorization
+- **User Interaction Tracking** - Button clicks and form submissions
+- **Render Performance** - Component mounting and rendering times
+- **Periodic Reporting** - Automatic metrics summaries every 5 minutes
 
 ## ✨ Features
 
@@ -31,12 +62,12 @@
 
 ## 🚀 Quick Installation
 
-### Option 1: Transparent Embedding (Recommended)
+### Option 1: Enhanced Transparent Embedding (Recommended)
 
 Add to your `theme.liquid` before closing `</head>` tag:
 
 ```liquid
-<!-- Transparent Chatbot Embed -->
+<!-- Enhanced Transparent Chatbot Embed with Debug Capabilities -->
 <script>
 window.CHATBOT_API_URL = "https://your-chatbot-domain.com";
 window.SHOPIFY_MINIMAL_DATA = {
@@ -55,6 +86,56 @@ window.SHOPIFY_MINIMAL_DATA = {
 
 ```html
 <script src="https://your-domain.vercel.app/shopify-chatbot-unified.js" defer></script>
+```
+
+## 🔍 Debugging & Troubleshooting
+
+### Debug Console Access
+The enhanced system provides comprehensive console logging. Open browser developer tools to see:
+
+```
+[2024-01-15T10:30:00.000Z] [TRANSPARENT-CHATBOT] [INFO] [Initialization] Starting transparent chatbot embed...
+[2024-01-15T10:30:00.100Z] [TRANSPARENT-CHATBOT] [INFO] [StoreDetection] Store URL detected via WindowLocation: https://your-store.myshopify.com
+[2024-01-15T10:30:00.200Z] [TRANSPARENT-CHATBOT] [INFO] [CartAPI] Adding to cart: {"variantId":"12345","quantity":1}
+[2024-01-15T10:30:00.300Z] [TRANSPARENT-CHATBOT] [INFO] [CartAPI] Successfully added to cart
+```
+
+### Interactive Debug Test Suite
+Access the comprehensive validation test suite at:
+```
+https://your-domain.com/debug-validation-test.html
+```
+
+**Features:**
+- ✅ Store URL detection validation
+- ✅ Cart API integration testing
+- ✅ Error handling verification
+- ✅ Performance metrics monitoring
+- ✅ Real-time console log capture
+- ✅ Configuration display
+- ✅ Test report generation
+
+### Troubleshooting Common Issues
+
+#### No Console Logs Appearing
+```javascript
+// Check if debug mode is enabled
+console.log('Debug mode:', window.CHATBOT_CONFIG?.debug);
+// Should show: Debug mode: true
+```
+
+#### Cart API 405 Errors
+```javascript
+// Check store URL detection
+console.log('Detected store URL:', StoreURLDetector.detectWithRetry());
+// Should show your actual store domain, not hardcoded URL
+```
+
+#### Store Detection Issues
+```javascript
+// Test all detection methods
+StoreURLDetector.detectStoreURL();
+// Check console for detection method results
 ```
 
 ## 📋 Integration Options

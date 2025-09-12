@@ -130,7 +130,7 @@
       if (messageLevel < configLevel) return;
       
       const timestamp = new Date().toISOString();
-      const logMessage = `[${timestamp}] [TRANSPARENT-CHATBOT] [${level.toUpperCase()}] [${context}]`;
+      const logMessage = `[${timestamp}] [ENHANCED-TRANSPARENT-CHATBOT] [${level.toUpperCase()}] [${context}]`;
       
       // Use appropriate console method
       const consoleMethod = console[level] || console.log;
@@ -183,7 +183,7 @@
   }
 
   // Initial logging
-  Logger.info('Initialization', 'Starting transparent chatbot embed...');
+  Logger.info('Initialization', 'Starting enhanced transparent chatbot embed...');
   Logger.info('Configuration', 'Detected store URL:', CHATBOT_CONFIG.storeUrl);
   Logger.debug('Configuration', 'Full config:', CHATBOT_CONFIG);
 
@@ -677,7 +677,7 @@ class TransparentIframeManager {
       right: 20px;
       width: ${CHATBOT_CONFIG.iframe.dimensions.pc.containerWidth}; /* PC container width for 500px iframe */
       z-index: ${CHATBOT_CONFIG.iframe.style.zIndex};
-      pointer-events: none; /* container doesn’t block clicks */
+      pointer-events: none; /* container doesn't block clicks */
       background: transparent;
       margin: 0;
       padding: 0;
@@ -871,7 +871,6 @@ class TransparentIframeManager {
   }
 }
 
-
   // === 3. STATE PERSISTENCE MANAGER ===
   class StatePersistenceManager {
     static saveState(state) {
@@ -1051,16 +1050,17 @@ class TransparentIframeManager {
     }
   }
 
-  // === 5. POSTMESSAGE CART BRIDGE INTEGRATION ===
-  class PostMessageCartBridge {
+  // === 5. ENHANCED POSTMESSAGE CART BRIDGE INTEGRATION ===
+  class EnhancedPostMessageCartBridge {
     static messageIdCounter = 0;
     static pendingRequests = new Map();
     static bridgeReady = false;
     static storeInfo = null;
     static fallbackToDirectAPI = false;
+    static bridgeTimeout = 5000; // 5 seconds timeout for bridge communication
     
     static init() {
-      Logger.info('CartBridge', 'Initializing PostMessage Cart Bridge...');
+      Logger.info('EnhancedCartBridge', 'Initializing Enhanced PostMessage Cart Bridge...');
       
       // Listen for messages from parent Shopify page
       window.addEventListener('message', (event) => {
@@ -1073,12 +1073,12 @@ class TransparentIframeManager {
       // Set up fallback timeout
       setTimeout(() => {
         if (!this.bridgeReady) {
-          Logger.warn('CartBridge', 'Bridge not ready after timeout, enabling fallback mode');
+          Logger.warn('EnhancedCartBridge', 'Bridge not ready after timeout, enabling fallback mode');
           this.fallbackToDirectAPI = true;
         }
-      }, 3000);
+      }, this.bridgeTimeout);
       
-      Logger.debug('CartBridge', 'PostMessage Cart Bridge initialized');
+      Logger.debug('EnhancedCartBridge', 'Enhanced PostMessage Cart Bridge initialized');
     }
     
     static handleParentMessage(event) {
@@ -1089,19 +1089,19 @@ class TransparentIframeManager {
       
       const { type, messageId, success, data, error } = event.data;
       
-      Logger.debug('CartBridge', 'Received message from parent:', { type, messageId, success });
+      Logger.debug('EnhancedCartBridge', 'Received message from parent:', { type, messageId, success });
       
       // Handle bridge ready notification
       if (type === 'BRIDGE_READY') {
         this.bridgeReady = true;
         this.storeInfo = data.storeInfo;
-        Logger.info('CartBridge', 'Bridge ready received from parent', data);
+        Logger.info('EnhancedCartBridge', 'Bridge ready received from parent', data);
         return;
       }
       
       // Handle cart update broadcasts
       if (type === 'CART_UPDATED') {
-        Logger.info('CartBridge', 'Cart updated notification received');
+        Logger.info('EnhancedCartBridge', 'Cart updated notification received');
         this.notifyCartUpdate(data);
         return;
       }
@@ -1114,10 +1114,10 @@ class TransparentIframeManager {
         this.pendingRequests.delete(messageId);
         
         if (success) {
-          Logger.debug('CartBridge', 'Request succeeded:', { type, messageId });
+          Logger.debug('EnhancedCartBridge', 'Request succeeded:', { type, messageId });
           resolve(data);
         } else {
-          Logger.error('CartBridge', 'Request failed:', { type, messageId, error });
+          Logger.error('EnhancedCartBridge', 'Request failed:', { type, messageId, error });
           reject(new Error(error?.message || 'Unknown error'));
         }
       }
@@ -1126,25 +1126,25 @@ class TransparentIframeManager {
     static async sendMessageToParent(type, payload = {}, timeout = 5000) {
       // Fallback to direct API if bridge is not ready
       if (this.fallbackToDirectAPI) {
-        Logger.warn('CartBridge', 'Using fallback to direct API for:', type);
+        Logger.warn('EnhancedCartBridge', 'Using fallback to direct API for:', type);
         return this.fallbackToDirectAPI(type, payload);
       }
       
       // Check if parent is available
       if (!window.parent || window.parent === window) {
-        Logger.warn('CartBridge', 'No parent window available, using fallback');
+        Logger.warn('EnhancedCartBridge', 'No parent window available, using fallback');
         return this.fallbackToDirectAPI(type, payload);
       }
       
       return new Promise((resolve, reject) => {
         const messageId = `msg_${Date.now()}_${++this.messageIdCounter}`;
         
-        Logger.debug('CartBridge', 'Sending message to parent:', { type, messageId, payload });
+        Logger.debug('EnhancedCartBridge', 'Sending message to parent:', { type, messageId, payload });
         
         // Set up timeout
         const timeoutId = setTimeout(() => {
           this.pendingRequests.delete(messageId);
-          Logger.warn('CartBridge', 'Request timeout, enabling fallback mode for:', type);
+          Logger.warn('EnhancedCartBridge', 'Request timeout, enabling fallback mode for:', type);
           this.fallbackToDirectAPI = true;
           // Try fallback
           this.fallbackToDirectAPI(type, payload).then(resolve).catch(reject);
@@ -1158,7 +1158,8 @@ class TransparentIframeManager {
           type,
           payload,
           messageId,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          version: '2.0.0' // Enhanced version
         };
         
         window.parent.postMessage(message, '*');
@@ -1166,7 +1167,7 @@ class TransparentIframeManager {
     }
     
     static async fallbackToDirectAPI(type, payload) {
-      Logger.warn('CartBridge', 'Using direct API fallback for:', type);
+      Logger.warn('EnhancedCartBridge', 'Using direct API fallback for:', type);
       
       try {
         switch (type) {
@@ -1200,7 +1201,7 @@ class TransparentIframeManager {
             throw new Error(`No fallback available for operation: ${type}`);
         }
       } catch (error) {
-        Logger.error('CartBridge', 'Fallback API failed:', error.message);
+        Logger.error('EnhancedCartBridge', 'Fallback API failed:', error.message);
         throw error;
       }
     }
@@ -1209,7 +1210,7 @@ class TransparentIframeManager {
       const startTime = performance.now();
       
       try {
-        Logger.info('CartBridge', 'Adding to cart via bridge:', { variantId, quantity, productData: productData?.title });
+        Logger.info('EnhancedCartBridge', 'Adding to cart via bridge:', { variantId, quantity, productData: productData?.title });
         
         const result = await this.sendMessageToParent('CART_ADD_ITEM', {
           variantId,
@@ -1218,9 +1219,9 @@ class TransparentIframeManager {
         });
         
         const endTime = performance.now();
-        Logger.performance('CartBridge', 'addToCart', startTime, endTime, true);
+        Logger.performance('EnhancedCartBridge', 'addToCart', startTime, endTime, true);
         
-        Logger.info('CartBridge', 'Successfully added to cart via bridge');
+        Logger.info('EnhancedCartBridge', 'Successfully added to cart via bridge');
         
         // Show success popup with the result
         if (result.cart) {
@@ -1238,9 +1239,9 @@ class TransparentIframeManager {
         return result;
       } catch (error) {
         const endTime = performance.now();
-        Logger.performance('CartBridge', 'addToCart', startTime, endTime, false);
+        Logger.performance('EnhancedCartBridge', 'addToCart', startTime, endTime, false);
         
-        Logger.error('CartBridge', 'Failed to add to cart via bridge:', {
+        Logger.error('EnhancedCartBridge', 'Failed to add to cart via bridge:', {
           error: error.message,
           variantId,
           quantity
@@ -1261,57 +1262,57 @@ class TransparentIframeManager {
       const startTime = performance.now();
       
       try {
-        Logger.debug('CartBridge', 'Getting cart via bridge...');
+        Logger.debug('EnhancedCartBridge', 'Getting cart via bridge...');
         
         const result = await this.sendMessageToParent('CART_GET');
         
         const endTime = performance.now();
-        Logger.debug('CartBridge', `Cart retrieved via bridge in ${endTime - startTime}ms`);
+        Logger.debug('EnhancedCartBridge', `Cart retrieved via bridge in ${endTime - startTime}ms`);
         
         return result;
       } catch (error) {
-        Logger.error('CartBridge', 'Failed to get cart via bridge:', error.message);
+        Logger.error('EnhancedCartBridge', 'Failed to get cart via bridge:', error.message);
         throw error;
       }
     }
     
     static async updateCart(updates) {
       try {
-        Logger.info('CartBridge', 'Updating cart via bridge:', updates);
+        Logger.info('EnhancedCartBridge', 'Updating cart via bridge:', updates);
         
         const result = await this.sendMessageToParent('CART_UPDATE', { updates });
         
-        Logger.info('CartBridge', 'Cart updated successfully via bridge');
+        Logger.info('EnhancedCartBridge', 'Cart updated successfully via bridge');
         return result;
       } catch (error) {
-        Logger.error('CartBridge', 'Failed to update cart via bridge:', error.message);
+        Logger.error('EnhancedCartBridge', 'Failed to update cart via bridge:', error.message);
         throw error;
       }
     }
     
     static async clearCart() {
       try {
-        Logger.info('CartBridge', 'Clearing cart via bridge...');
+        Logger.info('EnhancedCartBridge', 'Clearing cart via bridge...');
         
         const result = await this.sendMessageToParent('CART_CLEAR');
         
-        Logger.info('CartBridge', 'Cart cleared successfully via bridge');
+        Logger.info('EnhancedCartBridge', 'Cart cleared successfully via bridge');
         return result;
       } catch (error) {
-        Logger.error('CartBridge', 'Failed to clear cart via bridge:', error.message);
+        Logger.error('EnhancedCartBridge', 'Failed to clear cart via bridge:', error.message);
         throw error;
       }
     }
     
     static async navigateToCart() {
       try {
-        Logger.info('CartBridge', 'Navigating to cart via bridge...');
+        Logger.info('EnhancedCartBridge', 'Navigating to cart via bridge...');
         
         await this.sendMessageToParent('NAVIGATE_TO_CART');
         
-        Logger.info('CartBridge', 'Navigation to cart initiated');
+        Logger.info('EnhancedCartBridge', 'Navigation to cart initiated');
       } catch (error) {
-        Logger.error('CartBridge', 'Failed to navigate to cart via bridge:', error.message);
+        Logger.error('EnhancedCartBridge', 'Failed to navigate to cart via bridge:', error.message);
         // Fallback to direct navigation
         window.location.href = '/cart';
         throw error;
@@ -1320,13 +1321,13 @@ class TransparentIframeManager {
     
     static async navigateToCheckout() {
       try {
-        Logger.info('CartBridge', 'Navigating to checkout via bridge...');
+        Logger.info('EnhancedCartBridge', 'Navigating to checkout via bridge...');
         
         await this.sendMessageToParent('NAVIGATE_TO_CHECKOUT');
         
-        Logger.info('CartBridge', 'Navigation to checkout initiated');
+        Logger.info('EnhancedCartBridge', 'Navigation to checkout initiated');
       } catch (error) {
-        Logger.error('CartBridge', 'Failed to navigate to checkout via bridge:', error.message);
+        Logger.error('EnhancedCartBridge', 'Failed to navigate to checkout via bridge:', error.message);
         // Fallback to direct navigation
         window.location.href = '/checkout';
         throw error;
@@ -1339,15 +1340,15 @@ class TransparentIframeManager {
       }
       
       try {
-        Logger.debug('CartBridge', 'Getting store info via bridge...');
+        Logger.debug('EnhancedCartBridge', 'Getting store info via bridge...');
         
         const result = await this.sendMessageToParent('GET_STORE_INFO');
         this.storeInfo = result;
         
-        Logger.debug('CartBridge', 'Store info retrieved via bridge:', result);
+        Logger.debug('EnhancedCartBridge', 'Store info retrieved via bridge:', result);
         return result;
       } catch (error) {
-        Logger.error('CartBridge', 'Failed to get store info via bridge:', error.message);
+        Logger.error('EnhancedCartBridge', 'Failed to get store info via bridge:', error.message);
         throw error;
       }
     }
@@ -1355,12 +1356,13 @@ class TransparentIframeManager {
     static checkBridgeStatus() {
       // Check if parent has bridge ready
       if (window.parent && window.parent !== window) {
-        Logger.debug('CartBridge', 'Requesting bridge status from parent...');
+        Logger.debug('EnhancedCartBridge', 'Requesting bridge status from parent...');
         
         // Request bridge status
         window.parent.postMessage({
           type: 'BRIDGE_STATUS_REQUEST',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          version: '2.0.0'
         }, '*');
       }
     }
@@ -1372,7 +1374,7 @@ class TransparentIframeManager {
       });
       window.dispatchEvent(event);
       
-      Logger.info('CartBridge', 'Cart update notification dispatched');
+      Logger.info('EnhancedCartBridge', 'Cart update notification dispatched');
     }
     
     static async addToCartWithRetry(variantId, quantity = 1, productData = null) {
@@ -1380,238 +1382,433 @@ class TransparentIframeManager {
       
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         try {
-          Logger.debug('CartBridge', `Attempt ${attempt}/${maxAttempts} to add to cart via bridge`);
+          Logger.debug('EnhancedCartBridge', `Attempt ${attempt}/${maxAttempts} to add to cart via bridge`);
           return await this.addToCart(variantId, quantity, {}, productData);
         } catch (error) {
-          Logger.warn('CartBridge', `Attempt ${attempt} failed:`, error.message);
+          Logger.warn('EnhancedCartBridge', `Attempt ${attempt} failed:`, error.message);
           
           if (attempt === maxAttempts) {
-            Logger.error('CartBridge', `All ${maxAttempts} attempts failed`);
+            Logger.error('EnhancedCartBridge', `All ${maxAttempts} attempts failed`);
             throw error;
           }
           
           // Wait before retry (exponential backoff)
           const delay = Math.pow(2, attempt - 1) * 1000;
-          Logger.debug('CartBridge', `Waiting ${delay}ms before retry...`);
+          Logger.debug('EnhancedCartBridge', `Waiting ${delay}ms before retry...`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
     }
   }
-      try {
-        // Trigger Shopify events
-        if (window.Shopify && window.Shopify.onCartUpdate) {
-          Logger.debug('CartAPI', 'Triggering Shopify.onCartUpdate');
-          window.Shopify.onCartUpdate(cartData);
+
+  // === CART SUCCESS POPUP ===
+  class CartSuccessPopup {
+    static show(cartData, productData = null) {
+      // Remove existing popup
+      this.hide();
+
+      const popup = this.createPopup(cartData, productData);
+      document.body.appendChild(popup);
+
+      // Auto-close after delay
+      setTimeout(() => {
+        this.hide();
+      }, CHATBOT_CONFIG.cart.popup.autoCloseDelay);
+
+      log('Cart success popup shown');
+    }
+
+    static hide() {
+      const existing = document.getElementById('cart-success-popup');
+      if (existing && existing.parentNode) {
+        existing.parentNode.removeChild(existing);
+      }
+    }
+
+    static createPopup(cartData, productData) {
+      const isMobile = window.innerWidth < 768;
+      
+      const popup = document.createElement('div');
+      popup.id = 'cart-success-popup';
+      popup.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: ${CHATBOT_CONFIG.cart.popup.zIndex};
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.3s ease;
+      `;
+
+      const content = document.createElement('div');
+      content.style.cssText = `
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        max-width: 400px;
+        width: 90%;
+        max-height: ${isMobile ? CHATBOT_CONFIG.cart.popup.mobileHeight : CHATBOT_CONFIG.cart.popup.desktopHeight};
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        position: relative;
+        animation: slideUp 0.3s ease;
+      `;
+
+      content.innerHTML = this.getPopupHTML(cartData, productData);
+      popup.appendChild(content);
+
+      // Add event listeners
+      this.addPopupEventListeners(popup, content);
+
+      // Add CSS animations
+      this.addPopupStyles();
+
+      return popup;
+    }
+
+    static getPopupHTML(cartData, productData) {
+      const item = cartData.items && cartData.items[0];
+      const productName = productData?.title || item?.product_title || 'Product';
+      const price = item ? `$${(item.price / 100).toFixed(2)}` : '';
+
+      return `
+        <div style="text-align: center;">
+          <div style="width: 48px; height: 48px; background: #10b981; border-radius: 50%; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
+            <svg width="24" height="24" fill="white" viewBox="0 0 24 24">
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+            </svg>
+          </div>
+          
+          <h3 style="margin: 0 0 8px; font-size: 18px; font-weight: 600; color: #111;">
+            Added to Cart!
+          </h3>
+          
+          <p style="margin: 0 0 16px; color: #666; font-size: 14px;">
+            ${productName} ${price}
+          </p>
+          
+          <div style="display: flex; gap: 12px; justify-content: center;">
+            <button id="cart-popup-continue" style="
+              padding: 8px 16px;
+              border: 1px solid #ddd;
+              background: white;
+              border-radius: 6px;
+              cursor: pointer;
+              font-size: 14px;
+            ">
+              Continue Shopping
+            </button>
+            
+            <button id="cart-popup-view" style="
+              padding: 8px 16px;
+              background: #2563eb;
+              color: white;
+              border: none;
+              border-radius: 6px;
+              cursor: pointer;
+              font-size: 14px;
+            ">
+              View Cart
+            </button>
+          </div>
+          
+          <button id="cart-popup-close" style="
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #999;
+          ">
+            ×
+          </button>
+        </div>
+      `;
+    }
+
+    static addPopupEventListeners(popup, content) {
+      // Close button
+      const closeBtn = content.querySelector('#cart-popup-close');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', () => this.hide());
+      }
+
+      // Continue shopping
+      const continueBtn = content.querySelector('#cart-popup-continue');
+      if (continueBtn) {
+        continueBtn.addEventListener('click', () => this.hide());
+      }
+
+      // View cart - now using Enhanced PostMessage bridge
+      const viewBtn = content.querySelector('#cart-popup-view');
+      if (viewBtn) {
+        viewBtn.addEventListener('click', async () => {
+          try {
+            // Use Enhanced PostMessage bridge to navigate to cart
+            await EnhancedPostMessageCartBridge.navigateToCart();
+            this.hide();
+          } catch (error) {
+            Logger.error('CartSuccessPopup', 'Failed to navigate to cart:', error.message);
+            // Fallback to direct navigation
+            window.location.href = '/cart';
+          }
+        });
+      }
+
+      // Click outside to close
+      popup.addEventListener('click', (e) => {
+        if (e.target === popup) {
+          this.hide();
         }
-        
-        // Trigger Analytics events
-        if (window.ShopifyAnalytics && window.ShopifyAnalytics.lib) {
-          Logger.debug('CartAPI', 'Triggering ShopifyAnalytics events');
-          window.ShopifyAnalytics.lib.track('Added Product', {
-            cart: cartData
+      });
+    }
+
+    static addPopupStyles() {
+      if (!document.getElementById('cart-popup-styles')) {
+        const style = document.createElement('style');
+        style.id = 'cart-popup-styles';
+        style.textContent = `
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          
+          @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    }
+  }
+
+  // === 6. NAVIGATION HANDLER ===
+  class NavigationHandler {
+    static init() {
+      this.setupNavigationListeners();
+      this.restoreState();
+    }
+
+    static setupNavigationListeners() {
+      // Before page unload
+      window.addEventListener('beforeunload', () => {
+        this.saveCurrentState();
+      });
+
+      // Page visibility change
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+          this.saveCurrentState();
+        }
+      });
+
+      // History navigation
+      window.addEventListener('popstate', () => {
+        setTimeout(() => {
+          this.restoreState();
+        }, 100);
+      });
+
+      log('Navigation handlers initialized');
+    }
+
+    static saveCurrentState() {
+      const state = {
+        isOpen: true, // Assume open since iframe is always visible
+        currentPage: getCurrentPageData(),
+        shopifyData: DataExtractor.extractShopifyData(),
+        lastActivity: Date.now()
+      };
+
+      StatePersistenceManager.saveState(state);
+    }
+
+    static restoreState() {
+      const savedState = StatePersistenceManager.loadState();
+      if (savedState) {
+        // Update iframe with restored state
+        const iframeManager = window.enhancedTransparentChatbotManager;
+        if (iframeManager) {
+          iframeManager.sendMessage({
+            type: 'RESTORE_STATE',
+            data: savedState
           });
         }
-
-        // Trigger custom events
-        const customEvent = new CustomEvent('cart:updated', { 
-          detail: { cartData, source: 'chatbot' }
-        });
-        window.dispatchEvent(customEvent);
-        
-        Logger.debug('CartAPI', 'All cart events triggered successfully');
-      } catch (error) {
-        Logger.warn('CartAPI', 'Failed to trigger some cart events:', error.message);
+        log('State restored from navigation');
       }
-    }
-  )
-
-  // === CART API ERROR CLASS ===
-  class CartAPIError extends Error {
-    constructor(message, status, endpoint) {
-      super(message);
-      this.name = 'CartAPIError';
-      this.status = status;
-      this.endpoint = endpoint;
     }
   }
 
-  // === COMPREHENSIVE ERROR HANDLER ===
-  class ErrorHandler {
-    static handleCartError(error, context) {
-      const errorCode = error.status || error.code || 'UNKNOWN';
-      
-      Logger.error('ErrorHandler', 'Cart error occurred:', {
-        code: errorCode,
-        message: error.message,
-        context: context,
-        stack: error.stack
+  // === 7. MESSAGE HANDLER ===
+  class MessageHandler {
+    static init(iframeManager) {
+      this.iframeManager = iframeManager;
+      this.setupMessageListeners();
+    }
+
+    static setupMessageListeners() {
+      window.addEventListener('message', (event) => {
+        // Validate origin
+        const allowedOrigins = [
+          CHATBOT_CONFIG.apiUrl.replace(/https?:\/\//, ''),
+          'localhost:3000',
+          '127.0.0.1:3000',
+          window.location.hostname
+        ];
+
+        const eventOrigin = event.origin.replace(/https?:\/\//, '');
+        if (!allowedOrigins.some(origin => eventOrigin.includes(origin))) {
+          return;
+        }
+
+        const { type, data } = event.data;
+        log('Received message:', type, data);
+
+        this.handleMessage(type, data);
       });
-      
-      switch (errorCode) {
-        case 405:
-          return this.handle405Error(error, context);
-        case 404:
-          return this.handle404Error(error, context);
-        case 422:
-          return this.handle422Error(error, context);
-        case 429:
-          return this.handle429Error(error, context);
-        case 500:
-        case 502:
-        case 503:
-          return this.handle5xxError(error, context);
+
+      log('Message listeners initialized');
+    }
+
+    static async handleMessage(type, data) {
+      switch (type) {
+        case 'ADD_TO_CART':
+          await this.handleAddToCart(data);
+          break;
+
+        case 'CHATBOT_STATE_CHANGED':
+          this.handleStateChanged(data);
+          break;
+
+        case 'GET_SHOPIFY_DATA':
+          this.handleShopifyDataRequest();
+          break;
+
+        case 'VALIDATE_SELECTION':
+          this.handleValidateSelection(data);
+          break;
+
+        case 'SAVE_STATE':
+          NavigationHandler.saveCurrentState();
+          break;
+
+        case 'NAVIGATE_TO_PRODUCT':
+          if (data.url) {
+            window.location.href = data.url;
+          }
+          break;
+
         default:
-          return this.handleGenericError(error, context);
+          log('Unknown message type:', type);
       }
     }
-    
-    static handle405Error(error, context) {
-      Logger.warn('ErrorHandler', '405 Method Not Allowed - checking endpoint URL');
-      Logger.debug('ErrorHandler', 'Attempted endpoint:', context.storeURL);
+
+    static async handleAddToCart(data) {
+      const { variantId, quantity = 1, product } = data;
       
-      return {
-        type: 'ENDPOINT_ERROR',
-        message: 'Cart API endpoint not available. Please check store configuration.',
-        suggestion: 'Verify cart API is enabled and store URL is correct.',
-        recoverable: true,
-        retryable: false
-      };
+      try {
+        // Validate variant selection if product data provided
+        if (product) {
+          const validation = VariantProcessor.validateProductSelection(
+            product, 
+            data.selectedOptions || {}
+          );
+          
+          if (!validation.valid) {
+            Logger.warn('MessageHandler', 'Variant validation failed:', validation.errors);
+            this.iframeManager.sendMessage({
+              type: 'ADD_TO_CART_ERROR',
+              error: validation.errors.join(', ')
+            });
+            return;
+          }
+        }
+
+        Logger.info('MessageHandler', 'Processing add to cart request via enhanced bridge:', {
+          variantId,
+          quantity,
+          product: product?.title || 'Unknown'
+        });
+
+        // Use Enhanced PostMessage bridge instead of direct API calls
+        const result = await EnhancedPostMessageCartBridge.addToCartWithRetry(variantId, quantity, {}, product);
+        
+        Logger.info('MessageHandler', 'Add to cart successful via enhanced bridge');
+        this.iframeManager.sendMessage({
+          type: 'ADD_TO_CART_SUCCESS',
+          data: result
+        });
+
+      } catch (error) {
+        Logger.error('MessageHandler', 'Add to cart failed via enhanced bridge:', {
+          error: error.message,
+          variantId,
+          quantity
+        });
+        
+        // Track error for performance monitoring
+        PerformanceMonitor.trackError(error, {
+          operation: 'addToCart',
+          method: 'postMessage',
+          variantId,
+          quantity
+        });
+        
+        this.iframeManager.sendMessage({
+          type: 'ADD_TO_CART_ERROR',
+          error: error.message
+        });
+      }
     }
-    
-    static handle404Error(error, context) {
-      Logger.warn('ErrorHandler', '404 Not Found - cart endpoint not available');
+
+    static handleStateChanged(data) {
+      const webhookData = DataExtractor.prepareWebhookData(data);
       
-      return {
-        type: 'NOT_FOUND_ERROR',
-        message: 'Cart endpoint not found. Store may not support cart API.',
-        suggestion: 'Check if the store has cart functionality enabled.',
-        recoverable: false,
-        retryable: false
-      };
-    }
-    
-    static handle422Error(error, context) {
-      Logger.warn('ErrorHandler', '422 Unprocessable Entity - invalid cart data');
-      
-      return {
-        type: 'VALIDATION_ERROR',
-        message: 'Invalid product or variant data provided.',
-        suggestion: 'Check variant ID and quantity are valid.',
-        recoverable: true,
-        retryable: false
-      };
-    }
-    
-    static handle429Error(error, context) {
-      Logger.warn('ErrorHandler', '429 Too Many Requests - rate limited');
-      
-      return {
-        type: 'RATE_LIMIT_ERROR',
-        message: 'Too many requests. Please wait a moment and try again.',
-        suggestion: 'Implement request throttling or retry after delay.',
-        recoverable: true,
-        retryable: true,
-        retryDelay: 5000
-      };
-    }
-    
-    static handle5xxError(error, context) {
-      Logger.warn('ErrorHandler', `${error.status} Server Error - store unavailable`);
-      
-      return {
-        type: 'SERVER_ERROR',
-        message: 'Store temporarily unavailable. Please try again later.',
-        suggestion: 'Check store status or try again in a few minutes.',
-        recoverable: true,
-        retryable: true,
-        retryDelay: 3000
-      };
-    }
-    
-    static handleGenericError(error, context) {
-      Logger.error('ErrorHandler', 'Generic error handling:', {
-        name: error.name,
-        message: error.message,
-        context
+      StatePersistenceManager.saveState({
+        ...data,
+        currentPage: getCurrentPageData(),
+        shopifyData: webhookData.shopifyData
       });
       
-      // Check for network errors
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        return {
-          type: 'NETWORK_ERROR',
-          message: 'Network connection failed. Please check your internet connection.',
-          suggestion: 'Verify internet connection and try again.',
-          recoverable: true,
-          retryable: true,
-          retryDelay: 2000
-        };
-      }
-      
-      // Check for timeout errors
-      if (error.message.includes('timeout') || error.name === 'AbortError') {
-        return {
-          type: 'TIMEOUT_ERROR',
-          message: 'Request timed out. The store may be slow to respond.',
-          suggestion: 'Try again or contact store support if problem persists.',
-          recoverable: true,
-          retryable: true,
-          retryDelay: 1000
-        };
-      }
-      
-      return {
-        type: 'UNKNOWN_ERROR',
-        message: error.message || 'An unexpected error occurred.',
-        suggestion: 'Please try again or contact support if the problem persists.',
-        recoverable: false,
-        retryable: false
-      };
+      Logger.info('MessageHandler', 'State changed with enhanced data', {
+        storeURL: webhookData.shopifyData.storeURL,
+        cookieCount: Object.keys(webhookData.shopifyData.cookies?.cookies || {}).length
+      });
     }
-    
-    static logErrorForDebugging(error, context, userAgent = null) {
-      const debugInfo = {
-        timestamp: new Date().toISOString(),
-        error: {
-          name: error.name,
-          message: error.message,
-          stack: error.stack
-        },
-        context,
-        browser: {
-          userAgent: userAgent || navigator.userAgent,
-          language: navigator.language,
-          platform: navigator.platform
-        },
-        page: {
-          url: window.location.href,
-          referrer: document.referrer,
-          title: document.title
-        },
-        chatbot: {
-          version: '2.0.0',
-          config: CHATBOT_CONFIG
-        }
-      };
+
+    static handleShopifyDataRequest() {
+      const webhookData = DataExtractor.prepareWebhookData();
       
-      Logger.error('ErrorHandler', 'Debug information for support:', debugInfo);
+      Logger.info('MessageHandler', 'Sending enhanced Shopify data response', {
+        storeURL: webhookData.shopifyData.storeURL,
+        cookieCount: Object.keys(webhookData.shopifyData.cookies?.cookies || {}).length,
+        hasErrors: webhookData.shopifyData.cookies?.errors?.length > 0
+      });
       
-      // Store in sessionStorage for potential support access
-      try {
-        const errorLog = JSON.parse(sessionStorage.getItem('chatbot_error_log') || '[]');
-        errorLog.push(debugInfo);
-        // Keep only last 10 errors
-        if (errorLog.length > 10) {
-          errorLog.splice(0, errorLog.length - 10);
-        }
-        sessionStorage.setItem('chatbot_error_log', JSON.stringify(errorLog));
-      } catch (e) {
-        Logger.warn('ErrorHandler', 'Failed to store error log:', e.message);
-      }
+      this.iframeManager.sendMessage({
+        type: 'SHOPIFY_DATA_RESPONSE',
+        data: webhookData
+      });
+    }
+
+    static handleValidateSelection(data) {
+      const { product, selectedOptions } = data;
+      const validation = VariantProcessor.validateProductSelection(product, selectedOptions);
+      
+      this.iframeManager.sendMessage({
+        type: 'VALIDATION_RESULT',
+        data: validation
+      });
     }
   }
 
-  // === PERFORMANCE MONITORING SYSTEM ===
+  // === 8. PERFORMANCE MONITORING SYSTEM ===
   class PerformanceMonitor {
     static metrics = {
       apiRequests: [],
@@ -1776,415 +1973,8 @@ class TransparentIframeManager {
     }
   }
 
-  // === 6. CART SUCCESS POPUP ===
-  class CartSuccessPopup {
-    static show(cartData, productData = null) {
-      // Remove existing popup
-      this.hide();
-
-      const popup = this.createPopup(cartData, productData);
-      document.body.appendChild(popup);
-
-      // Auto-close after delay
-      setTimeout(() => {
-        this.hide();
-      }, CHATBOT_CONFIG.cart.popup.autoCloseDelay);
-
-      log('Cart success popup shown');
-    }
-
-    static hide() {
-      const existing = document.getElementById('cart-success-popup');
-      if (existing && existing.parentNode) {
-        existing.parentNode.removeChild(existing);
-      }
-    }
-
-    static createPopup(cartData, productData) {
-      const isMobile = window.innerWidth < 768;
-      
-      const popup = document.createElement('div');
-      popup.id = 'cart-success-popup';
-      popup.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: ${CHATBOT_CONFIG.cart.popup.zIndex};
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        animation: fadeIn 0.3s ease;
-      `;
-
-      const content = document.createElement('div');
-      content.style.cssText = `
-        background: white;
-        border-radius: 12px;
-        padding: 24px;
-        max-width: 400px;
-        width: 90%;
-        max-height: ${isMobile ? CHATBOT_CONFIG.cart.popup.mobileHeight : CHATBOT_CONFIG.cart.popup.desktopHeight};
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-        position: relative;
-        animation: slideUp 0.3s ease;
-      `;
-
-      content.innerHTML = this.getPopupHTML(cartData, productData);
-      popup.appendChild(content);
-
-      // Add event listeners
-      this.addPopupEventListeners(popup, content);
-
-      // Add CSS animations
-      this.addPopupStyles();
-
-      return popup;
-    }
-
-    static getPopupHTML(cartData, productData) {
-      const item = cartData.items && cartData.items[0];
-      const productName = productData?.title || item?.product_title || 'Product';
-      const price = item ? `$${(item.price / 100).toFixed(2)}` : '';
-
-      return `
-        <div style="text-align: center;">
-          <div style="width: 48px; height: 48px; background: #10b981; border-radius: 50%; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
-            <svg width="24" height="24" fill="white" viewBox="0 0 24 24">
-              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-            </svg>
-          </div>
-          
-          <h3 style="margin: 0 0 8px; font-size: 18px; font-weight: 600; color: #111;">
-            Added to Cart!
-          </h3>
-          
-          <p style="margin: 0 0 16px; color: #666; font-size: 14px;">
-            ${productName} ${price}
-          </p>
-          
-          <div style="display: flex; gap: 12px; justify-content: center;">
-            <button id="cart-popup-continue" style="
-              padding: 8px 16px;
-              border: 1px solid #ddd;
-              background: white;
-              border-radius: 6px;
-              cursor: pointer;
-              font-size: 14px;
-            ">
-              Continue Shopping
-            </button>
-            
-            <button id="cart-popup-view" style="
-              padding: 8px 16px;
-              background: #2563eb;
-              color: white;
-              border: none;
-              border-radius: 6px;
-              cursor: pointer;
-              font-size: 14px;
-            ">
-              View Cart
-            </button>
-          </div>
-          
-          <button id="cart-popup-close" style="
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            background: none;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            color: #999;
-          ">
-            ×
-          </button>
-        </div>
-      `;
-    }
-
-    static addPopupEventListeners(popup, content) {
-      // Close button
-      const closeBtn = content.querySelector('#cart-popup-close');
-      if (closeBtn) {
-        closeBtn.addEventListener('click', () => this.hide());
-      }
-
-      // Continue shopping
-      const continueBtn = content.querySelector('#cart-popup-continue');
-      if (continueBtn) {
-        continueBtn.addEventListener('click', () => this.hide());
-      }
-
-      // View cart - now using PostMessage bridge
-      const viewBtn = content.querySelector('#cart-popup-view');
-      if (viewBtn) {
-        viewBtn.addEventListener('click', async () => {
-          try {
-            // Use PostMessage bridge to navigate to cart
-            await PostMessageCartBridge.navigateToCart();
-            this.hide();
-          } catch (error) {
-            Logger.error('CartSuccessPopup', 'Failed to navigate to cart:', error.message);
-            // Fallback to direct navigation
-            window.location.href = '/cart';
-          }
-        });
-      }
-
-      // Click outside to close
-      popup.addEventListener('click', (e) => {
-        if (e.target === popup) {
-          this.hide();
-        }
-      });
-    }
-
-    static addPopupStyles() {
-      if (!document.getElementById('cart-popup-styles')) {
-        const style = document.createElement('style');
-        style.id = 'cart-popup-styles';
-        style.textContent = `
-          @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-          }
-          
-          @keyframes slideUp {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-          }
-        `;
-        document.head.appendChild(style);
-      }
-    }
-  }
-
-  // === 7. NAVIGATION HANDLER ===
-  class NavigationHandler {
-    static init() {
-      this.setupNavigationListeners();
-      this.restoreState();
-    }
-
-    static setupNavigationListeners() {
-      // Before page unload
-      window.addEventListener('beforeunload', () => {
-        this.saveCurrentState();
-      });
-
-      // Page visibility change
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'hidden') {
-          this.saveCurrentState();
-        }
-      });
-
-      // History navigation
-      window.addEventListener('popstate', () => {
-        setTimeout(() => {
-          this.restoreState();
-        }, 100);
-      });
-
-      log('Navigation handlers initialized');
-    }
-
-    static saveCurrentState() {
-      const state = {
-        isOpen: true, // Assume open since iframe is always visible
-        currentPage: getCurrentPageData(),
-        shopifyData: DataExtractor.extractShopifyData(),
-        lastActivity: Date.now()
-      };
-
-      StatePersistenceManager.saveState(state);
-    }
-
-    static restoreState() {
-      const savedState = StatePersistenceManager.loadState();
-      if (savedState) {
-        // Update iframe with restored state
-        const iframeManager = window.transparentChatbotManager;
-        if (iframeManager) {
-          iframeManager.sendMessage({
-            type: 'RESTORE_STATE',
-            data: savedState
-          });
-        }
-        log('State restored from navigation');
-      }
-    }
-  }
-
-  // === 8. MESSAGE HANDLER ===
-  class MessageHandler {
-    static init(iframeManager) {
-      this.iframeManager = iframeManager;
-      this.setupMessageListeners();
-    }
-
-    static setupMessageListeners() {
-      window.addEventListener('message', (event) => {
-        // Validate origin
-        const allowedOrigins = [
-          CHATBOT_CONFIG.apiUrl.replace(/https?:\/\//, ''),
-          'localhost:3000',
-          '127.0.0.1:3000',
-          window.location.hostname
-        ];
-
-        const eventOrigin = event.origin.replace(/https?:\/\//, '');
-        if (!allowedOrigins.some(origin => eventOrigin.includes(origin))) {
-          return;
-        }
-
-        const { type, data } = event.data;
-        log('Received message:', type, data);
-
-        this.handleMessage(type, data);
-      });
-
-      log('Message listeners initialized');
-    }
-
-    static async handleMessage(type, data) {
-      switch (type) {
-        case 'ADD_TO_CART':
-          await this.handleAddToCart(data);
-          break;
-
-        case 'CHATBOT_STATE_CHANGED':
-          this.handleStateChanged(data);
-          break;
-
-        case 'GET_SHOPIFY_DATA':
-          this.handleShopifyDataRequest();
-          break;
-
-        case 'VALIDATE_SELECTION':
-          this.handleValidateSelection(data);
-          break;
-
-        case 'SAVE_STATE':
-          NavigationHandler.saveCurrentState();
-          break;
-
-        case 'NAVIGATE_TO_PRODUCT':
-          if (data.url) {
-            window.location.href = data.url;
-          }
-          break;
-
-        default:
-          log('Unknown message type:', type);
-      }
-    }
-
-    static async handleAddToCart(data) {
-      const { variantId, quantity = 1, product } = data;
-      
-      try {
-        // Validate variant selection if product data provided
-        if (product) {
-          const validation = VariantProcessor.validateProductSelection(
-            product, 
-            data.selectedOptions || {}
-          );
-          
-          if (!validation.valid) {
-            Logger.warn('MessageHandler', 'Variant validation failed:', validation.errors);
-            this.iframeManager.sendMessage({
-              type: 'ADD_TO_CART_ERROR',
-              error: validation.errors.join(', ')
-            });
-            return;
-          }
-        }
-
-        Logger.info('MessageHandler', 'Processing add to cart request via bridge:', {
-          variantId,
-          quantity,
-          product: product?.title || 'Unknown'
-        });
-
-        // Use PostMessage bridge instead of direct API calls
-        const result = await PostMessageCartBridge.addToCartWithRetry(variantId, quantity, product);
-        
-        Logger.info('MessageHandler', 'Add to cart successful via bridge');
-        this.iframeManager.sendMessage({
-          type: 'ADD_TO_CART_SUCCESS',
-          data: result
-        });
-
-      } catch (error) {
-        Logger.error('MessageHandler', 'Add to cart failed via bridge:', {
-          error: error.message,
-          variantId,
-          quantity
-        });
-        
-        // Track error for performance monitoring
-        PerformanceMonitor.trackError(error, {
-          operation: 'addToCart',
-          method: 'postMessage',
-          variantId,
-          quantity
-        });
-        
-        this.iframeManager.sendMessage({
-          type: 'ADD_TO_CART_ERROR',
-          error: error.message
-        });
-      }
-    }
-
-    static handleStateChanged(data) {
-      const webhookData = DataExtractor.prepareWebhookData(data);
-      
-      StatePersistenceManager.saveState({
-        ...data,
-        currentPage: getCurrentPageData(),
-        shopifyData: webhookData.shopifyData
-      });
-      
-      Logger.info('MessageHandler', 'State changed with enhanced data', {
-        storeURL: webhookData.shopifyData.storeURL,
-        cookieCount: Object.keys(webhookData.shopifyData.cookies?.cookies || {}).length
-      });
-    }
-
-    static handleShopifyDataRequest() {
-      const webhookData = DataExtractor.prepareWebhookData();
-      
-      Logger.info('MessageHandler', 'Sending enhanced Shopify data response', {
-        storeURL: webhookData.shopifyData.storeURL,
-        cookieCount: Object.keys(webhookData.shopifyData.cookies?.cookies || {}).length,
-        hasErrors: webhookData.shopifyData.cookies?.errors?.length > 0
-      });
-      
-      this.iframeManager.sendMessage({
-        type: 'SHOPIFY_DATA_RESPONSE',
-        data: webhookData
-      });
-    }
-
-    static handleValidateSelection(data) {
-      const { product, selectedOptions } = data;
-      const validation = VariantProcessor.validateProductSelection(product, selectedOptions);
-      
-      this.iframeManager.sendMessage({
-        type: 'VALIDATION_RESULT',
-        data: validation
-      });
-    }
-  }
-
   // === MAIN INITIALIZATION ===
-  class TransparentChatbotEmbedManager {
+  class EnhancedTransparentChatbotEmbedManager {
     constructor() {
       this.iframeManager = new TransparentIframeManager();
       this.isInitialized = false;
@@ -2199,16 +1989,16 @@ class TransparentIframeManager {
       const initStartTime = performance.now();
       
       try {
-        Logger.info('Initialization', 'Initializing transparent chatbot embed...');
+        Logger.info('Initialization', 'Initializing enhanced transparent chatbot embed...');
 
         // Update configuration with dynamic store URL
         const detectedStoreURL = StoreURLDetector.detectWithRetry();
         CHATBOT_CONFIG.storeUrl = detectedStoreURL;
         Logger.info('Configuration', 'Updated store URL:', detectedStoreURL);
 
-        // Initialize PostMessage cart bridge
-        PostMessageCartBridge.init();
-        Logger.info('Initialization', 'PostMessage cart bridge initialized');
+        // Initialize Enhanced PostMessage cart bridge
+        EnhancedPostMessageCartBridge.init();
+        Logger.info('Initialization', 'Enhanced PostMessage cart bridge initialized');
 
         // Check for required data
         const validation = DataExtractor.validateData(DataExtractor.extractShopifyData());
@@ -2235,10 +2025,10 @@ class TransparentIframeManager {
         this.isInitialized = true;
 
         // Expose API
-        window.transparentChatbotManager = this;
+        window.enhancedTransparentChatbotManager = this;
 
         const initEndTime = performance.now();
-        Logger.info('Initialization', 'Transparent chatbot embed initialized successfully');
+        Logger.info('Initialization', 'Enhanced transparent chatbot embed initialized successfully');
         PerformanceMonitor.trackRenderTime('FullInitialization', initStartTime, initEndTime);
         
         // Log final configuration
@@ -2284,7 +2074,7 @@ class TransparentIframeManager {
       this.iframeManager.destroy();
       CartSuccessPopup.hide();
       this.isInitialized = false;
-      delete window.transparentChatbotManager;
+      delete window.enhancedTransparentChatbotManager;
     }
 
     sendMessage(message) {
@@ -2294,7 +2084,7 @@ class TransparentIframeManager {
 
   // === AUTO-INITIALIZATION ===
   function initializeWhenReady() {
-    const manager = new TransparentChatbotEmbedManager();
+    const manager = new EnhancedTransparentChatbotEmbedManager();
 
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => manager.init());
@@ -2305,3 +2095,5 @@ class TransparentIframeManager {
 
   // Start initialization
   initializeWhenReady();
+
+})();

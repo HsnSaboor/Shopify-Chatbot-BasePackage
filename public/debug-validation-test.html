@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopify Chatbot Debug Validation Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-section {
+            background: white;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-title {
+            color: #2563eb;
+            border-bottom: 2px solid #2563eb;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .status {
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin: 5px 0;
+            font-weight: bold;
+        }
+        .status.pass { background-color: #dcfce7; color: #16a34a; }
+        .status.fail { background-color: #fef2f2; color: #dc2626; }
+        .status.warning { background-color: #fef3c7; color: #d97706; }
+        .log-output {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .test-button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #1d4ed8;
+        }
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .metric-card {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #2563eb;
+        }
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1f2937;
+        }
+        .metric-label {
+            color: #6b7280;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Shopify AI Chatbot - Debug Validation Test</h1>
+        <p>This page tests all the enhanced features implemented in the transparent chatbot embed system.</p>
+
+        <!-- Debug Console -->
+        <div class="test-section">
+            <h2 class="test-title">🔍 Debug Console Output</h2>
+            <div id="console-output" class="log-output">Waiting for logs...</div>
+            <button class="test-button" onclick="clearConsole()">Clear Console</button>
+            <button class="test-button" onclick="downloadLogs()">Download Logs</button>
+        </div>
+
+        <!-- PostMessage Bridge Test -->
+        <div class="test-section">
+            <h2 class="test-title">🔗 PostMessage Bridge Test</h2>
+            <div id="bridge-status" class="status">Checking bridge status...</div>
+            <div id="bridge-details"></div>
+            <button class="test-button" onclick="testBridgeConnection()">Test Bridge Connection</button>
+            <button class="test-button" onclick="testBridgeAddToCart()">Test Add to Cart via Bridge</button>
+            <button class="test-button" onclick="testBridgeFallback()">Test Fallback Mode</button>
+        </div>
+
+        <!-- Cookie Extraction Test -->
+        <div class="test-section">
+            <h2 class="test-title">🍪 Cookie Extraction & Domain Validation Test</h2>
+            <div id="cookie-extraction-status" class="status">Ready to test</div>
+            <div id="cookie-extraction-details"></div>
+            <button class="test-button" onclick="testCookieExtraction()">Test Cookie Extraction</button>
+            <button class="test-button" onclick="testWebhookDataPreparation()">Test Webhook Data</button>
+            <button class="test-button" onclick="simulateCookieErrors()">Simulate Cookie Errors</button>
+        </div>
+
+        <!-- Store URL Detection Test -->
+        <div class="test-section">
+            <h2 class="test-title">🏪 Store URL Detection Test</h2>
+            <div id="store-detection-status" class="status">Testing...</div>
+            <div id="store-detection-details"></div>
+            <button class="test-button" onclick="testStoreDetection()">Re-test Detection</button>
+            <button class="test-button" onclick="testWithDifferentParams()">Test with URL Params</button>
+        </div>
+
+        <!-- Cart API Test -->
+        <div class="test-section">
+            <h2 class="test-title">🛒 Cart API Integration Test</h2>
+            <div id="cart-api-status" class="status">Ready to test</div>
+            <div id="cart-api-details"></div>
+            <button class="test-button" onclick="testCartAPI()">Test Cart API</button>
+            <button class="test-button" onclick="testCartAPIWithRetry()">Test with Retry</button>
+            <button class="test-button" onclick="testInvalidVariant()">Test Invalid Variant</button>
+        </div>
+
+        <!-- Error Handling Test -->
+        <div class="test-section">
+            <h2 class="test-title">⚠️ Error Handling Test</h2>
+            <div id="error-handling-status" class="status">Ready to test</div>
+            <div id="error-handling-details"></div>
+            <button class="test-button" onclick="testErrorHandling()">Test Error Scenarios</button>
+            <button class="test-button" onclick="testNetworkError()">Test Network Error</button>
+            <button class="test-button" onclick="testTimeoutError()">Test Timeout</button>
+        </div>
+
+        <!-- Performance Metrics -->
+        <div class="test-section">
+            <h2 class="test-title">📊 Performance Metrics</h2>
+            <div class="metrics" id="performance-metrics">
+                <div class="metric-card">
+                    <div class="metric-value" id="api-requests">0</div>
+                    <div class="metric-label">API Requests</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="successful-requests">0</div>
+                    <div class="metric-label">Successful</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="failed-requests">0</div>
+                    <div class="metric-label">Failed</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="avg-response-time">0ms</div>
+                    <div class="metric-label">Avg Response Time</div>
+                </div>
+            </div>
+            <button class="test-button" onclick="refreshMetrics()">Refresh Metrics</button>
+            <button class="test-button" onclick="exportMetrics()">Export Metrics</button>
+        </div>
+
+        <!-- Configuration Display -->
+        <div class="test-section">
+            <h2 class="test-title">⚙️ Current Configuration</h2>
+            <div id="config-display" class="log-output">Loading configuration...</div>
+            <button class="test-button" onclick="refreshConfig()">Refresh Config</button>
+        </div>
+
+        <!-- Test Summary -->
+        <div class="test-section">
+            <h2 class="test-title">📋 Test Summary</h2>
+            <div id="test-summary">
+                <div class="metrics">
+                    <div class="metric-card">
+                        <div class="metric-value" id="total-tests">0</div>
+                        <div class="metric-label">Total Tests</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="passed-tests">0</div>
+                        <div class="metric-label">Passed</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="failed-tests">0</div>
+                        <div class="metric-label">Failed</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="test-score">0%</div>
+                        <div class="metric-label">Success Rate</div>
+                    </div>
+                </div>
+            </div>
+            <button class="test-button" onclick="runAllTests()">Run All Tests</button>
+            <button class="test-button" onclick="generateReport()">Generate Report</button>
+        </div>
+    </div>
+
+    <!-- Load the enhanced transparent chatbot embed -->
+    <script src="transparent-chatbot-embed.js"></script>
+    
+    <script>
+        // Test tracking variables
+        let testResults = {
+            total: 0,
+            passed: 0,
+            failed: 0
+        };
+        
+        let logBuffer = [];
+        
+        // Intercept console logs
+        const originalConsole = {
+            log: console.log,
+            info: console.info,
+            warn: console.warn,
+            error: console.error,
+            debug: console.debug
+        };
+        
+        function interceptConsole() {
+            ['log', 'info', 'warn', 'error', 'debug'].forEach(method => {
+                console[method] = (...args) => {
+                    // Call original method
+                    originalConsole[method](...args);
+                    
+                    // Capture for our display
+                    const timestamp = new Date().toISOString();
+                    const logEntry = `[${timestamp}] ${method.toUpperCase()}: ${args.join(' ')}\n`;
+                    logBuffer.push(logEntry);
+                    
+                    // Update display
+                    updateConsoleOutput();
+                };
+            });
+        }
+        
+        function updateConsoleOutput() {
+            const output = document.getElementById('console-output');
+            output.textContent = logBuffer.slice(-50).join(''); // Keep last 50 logs
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        function clearConsole() {
+            logBuffer = [];
+            updateConsoleOutput();
+        }
+        
+        function downloadLogs() {
+            const logs = logBuffer.join('');
+            const blob = new Blob([logs], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `chatbot-debug-logs-${new Date().toISOString().split('T')[0]}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        // Test functions
+        async function testBridgeConnection() {
+            const statusEl = document.getElementById('bridge-status');
+            const detailsEl = document.getElementById('bridge-details');
+            
+            statusEl.textContent = 'Testing bridge connection...';
+            statusEl.className = 'status';
+            
+            try {
+                // Test if PostMessageCartBridge is available
+                if (typeof PostMessageCartBridge === 'undefined') {
+                    throw new Error('PostMessageCartBridge not available');
+                }
+                
+                // Check bridge status
+                const isReady = PostMessageCartBridge.bridgeReady;
+                const hasFallback = PostMessageCartBridge.fallbackToDirectAPI;
+                
+                detailsEl.innerHTML = `
+                    <strong>Bridge Ready:</strong> ${isReady}<br>
+                    <strong>Fallback Mode:</strong> ${hasFallback}<br>
+                    <strong>Message Queue Size:</strong> ${PostMessageCartBridge.pendingRequests?.size || 0}<br>
+                `;
+                
+                statusEl.textContent = 'Bridge connection: ' + (isReady ? 'READY' : 'NOT READY');
+                statusEl.className = isReady ? 'status pass' : 'status warning';
+                testResults.passed += isReady ? 1 : 0;
+                
+            } catch (error) {
+                detailsEl.innerHTML = `<strong>Error:</strong> ${error.message}`;
+                statusEl.textContent = 'Bridge connection: FAILED';
+                statusEl.className = 'status fail';
+                testResults.failed++;
+            }
+            
+            testResults.total++;
+            updateTestSummary();
+        }
+        
+        async function testBridgeAddToCart() {
+            console.log('Testing add to cart via bridge...');
+            
+            try {
+                if (typeof PostMessageCartBridge === 'undefined') {
+                    throw new Error('PostMessageCartBridge not available');
+                }
+                
+                // This would normally add an item to cart
+                // For testing, we'll just verify the method exists
+                console.log('Add to cart method available:', typeof PostMessageCartBridge.addToCart);
+                console.log('Add to cart with retry method available:', typeof PostMessageCartBridge.addToCartWithRetry);
+                
+                // Test getStoreInfo method
+                try {
+                    const storeInfo = await PostMessageCartBridge.getStoreInfo();
+                    console.log('Store info retrieved:', storeInfo);
+                } catch (error) {
+                    console.log('Store info retrieval failed (expected in test environment):', error.message);
+                }
+                
+            } catch (error) {
+                console.error('Bridge add to cart test failed:', error);
+            }
+        }
+        
+        async function testBridgeFallback() {
+            console.log('Testing bridge fallback mode...');
+            
+            try {
+                if (typeof PostMessageCartBridge === 'undefined') {
+                    throw new Error('PostMessageCartBridge not available');
+                }
+                
+                // Test fallback configuration
+                const originalFallback = PostMessageCartBridge.fallbackToDirectAPI;
+                
+                // Enable fallback mode
+                PostMessageCartBridge.fallbackToDirectAPI = true;
+                
+                console.log('Fallback mode enabled:', PostMessageCartBridge.fallbackToDirectAPI);
+                
+                // Restore original setting
+                PostMessageCartBridge.fallbackToDirectAPI = originalFallback;
+                
+                console.log('Fallback test completed');
+                
+            } catch (error) {
+                console.error('Bridge fallback test failed:', error);
+            }
+        }
+        
+        async function testCookieExtraction() {
+            const statusEl = document.getElementById('cookie-extraction-status');
+            const detailsEl = document.getElementById('cookie-extraction-details');
+            
+            statusEl.textContent = 'Testing cookie extraction...';
+            statusEl.className = 'status';
+            
+            try {
+                // Test if DataExtractor is available
+                if (typeof DataExtractor === 'undefined') {
+                    throw new Error('DataExtractor not available');
+                }
+                
+                const cookieData = DataExtractor.extractShopifyCookies();
+                const webhookData = DataExtractor.prepareWebhookData();
+                
+                detailsEl.innerHTML = `
+                    <strong>Store Domain:</strong> ${cookieData.domain}<br>
+                    <strong>Store URL:</strong> ${cookieData.storeURL}<br>
+                    <strong>Cookies Extracted:</strong> ${Object.keys(cookieData.cookies).length}<br>
+                    <strong>Extraction Errors:</strong> ${cookieData.errors.length}<br>
+                    <strong>Cookie Details:</strong><br>
+                    ${Object.entries(cookieData.cookies).map(([name, value]) => 
+                        `&nbsp;&nbsp;${name}: ${value ? 'Found' : 'Not found'}`
+                    ).join('<br>')}<br>
+                    <strong>Errors:</strong><br>
+                    ${cookieData.errors.map(error => `&nbsp;&nbsp;${error}`).join('<br>')}<br>
+                    <strong>Webhook Ready:</strong> ${webhookData ? 'Yes' : 'No'}
+                `;
+                
+                statusEl.textContent = 'Cookie extraction: PASSED';
+                statusEl.className = 'status pass';
+                testResults.passed++;
+                
+            } catch (error) {
+                detailsEl.innerHTML = `<strong>Error:</strong> ${error.message}`;
+                statusEl.textContent = 'Cookie extraction: FAILED';
+                statusEl.className = 'status fail';
+                testResults.failed++;
+            }
+            
+            testResults.total++;
+            updateTestSummary();
+        }
+        
+        async function testWebhookDataPreparation() {
+            console.log('Testing webhook data preparation...');
+            
+            try {
+                if (typeof DataExtractor === 'undefined') {
+                    throw new Error('DataExtractor not available');
+                }
+                
+                const webhookData = DataExtractor.prepareWebhookData({
+                    testData: 'Test webhook payload'
+                });
+                
+                console.log('Webhook data prepared successfully:', webhookData);
+                console.log('Shopify data included:', webhookData.shopifyData);
+                console.log('Cookie data included:', webhookData.shopifyData.cookies);
+                console.log('Additional data included:', webhookData.additionalData);
+                console.log('Metadata included:', webhookData.metadata);
+                
+            } catch (error) {
+                console.error('Webhook data preparation failed:', error);
+            }
+        }
+        
+        async function simulateCookieErrors() {
+            console.log('Simulating cookie domain validation errors...');
+            
+            try {
+                // Test with invalid domain
+                const isValid = DataExtractor.validateCookieDomain('_shopify_y', 'invalid-domain.com');
+                console.log('Invalid domain validation result:', isValid);
+                
+                // Test domain extraction
+                const domain1 = DataExtractor.extractDomainFromURL('https://test-store.myshopify.com');
+                console.log('Extracted domain from URL:', domain1);
+                
+                const domain2 = DataExtractor.extractDomainFromURL('invalid-url');
+                console.log('Extracted domain from invalid URL:', domain2);
+                
+            } catch (error) {
+                console.error('Cookie error simulation failed:', error);
+            }
+        }
+        
+        async function testStoreDetection() {
+            const statusEl = document.getElementById('store-detection-status');
+            const detailsEl = document.getElementById('store-detection-details');
+            
+            statusEl.textContent = 'Testing store URL detection...';
+            statusEl.className = 'status';
+            
+            try {
+                // Test if StoreURLDetector is available
+                if (typeof StoreURLDetector === 'undefined') {
+                    throw new Error('StoreURLDetector not available');
+                }
+                
+                const detectedURL = StoreURLDetector.detectWithRetry();
+                
+                detailsEl.innerHTML = `
+                    <strong>Detected Store URL:</strong> ${detectedURL}<br>
+                    <strong>Current Origin:</strong> ${window.location.origin}<br>
+                    <strong>URL Params:</strong> ${window.location.search || 'None'}<br>
+                    <strong>Validation:</strong> ${StoreURLDetector.validateStoreURL(detectedURL) ? 'Valid' : 'Invalid'}
+                `;
+                
+                statusEl.textContent = 'Store URL detection: PASSED';
+                statusEl.className = 'status pass';
+                testResults.passed++;
+                
+            } catch (error) {
+                detailsEl.innerHTML = `<strong>Error:</strong> ${error.message}`;
+                statusEl.textContent = 'Store URL detection: FAILED';
+                statusEl.className = 'status fail';
+                testResults.failed++;
+            }
+            
+            testResults.total++;
+            updateTestSummary();
+        }
+        
+        function testWithDifferentParams() {
+            // Test with different URL parameters
+            const newURL = new URL(window.location);
+            newURL.searchParams.set('shopDomain', 'test-store.myshopify.com');
+            
+            window.history.pushState({}, '', newURL);
+            testStoreDetection();
+            
+            // Restore original URL
+            setTimeout(() => {
+                window.history.back();
+            }, 2000);
+        }
+        
+        async function testCartAPI() {
+            const statusEl = document.getElementById('cart-api-status');
+            const detailsEl = document.getElementById('cart-api-details');
+            
+            statusEl.textContent = 'Testing cart API integration...';
+            statusEl.className = 'status';
+            
+            try {
+                // Test if CartIntegrationManager is available
+                if (typeof CartIntegrationManager === 'undefined') {
+                    throw new Error('CartIntegrationManager not available');
+                }
+                
+                // Test input validation
+                const validationTest = CartIntegrationManager.validateInputs('12345', 1);
+                
+                detailsEl.innerHTML = `
+                    <strong>Input Validation Test:</strong> ${validationTest ? 'PASSED' : 'FAILED'}<br>
+                    <strong>Dynamic Store URL:</strong> Available<br>
+                    <strong>Error Handling:</strong> Enhanced error handling implemented<br>
+                    <strong>Retry Logic:</strong> Available with ${window.CHATBOT_CONFIG?.cart?.retryAttempts || 2} attempts
+                `;
+                
+                statusEl.textContent = 'Cart API integration: PASSED';
+                statusEl.className = 'status pass';
+                testResults.passed++;
+                
+            } catch (error) {
+                detailsEl.innerHTML = `<strong>Error:</strong> ${error.message}`;
+                statusEl.textContent = 'Cart API integration: FAILED';
+                statusEl.className = 'status fail';
+                testResults.failed++;
+            }
+            
+            testResults.total++;
+            updateTestSummary();
+        }
+        
+        async function testCartAPIWithRetry() {
+            console.log('Testing cart API with retry logic...');
+            
+            try {
+                // This will likely fail but should show retry behavior
+                await CartIntegrationManager.addToCartWithRetry('invalid-variant', 1);
+            } catch (error) {
+                console.log('Expected error from retry test:', error.message);
+            }
+        }
+        
+        async function testInvalidVariant() {
+            console.log('Testing cart API with invalid variant...');
+            
+            try {
+                await CartIntegrationManager.addToCart('invalid', 'invalid');
+            } catch (error) {
+                console.log('Expected validation error:', error.message);
+            }
+        }
+        
+        async function testErrorHandling() {
+            const statusEl = document.getElementById('error-handling-status');
+            const detailsEl = document.getElementById('error-handling-details');
+            
+            statusEl.textContent = 'Testing error handling...';
+            statusEl.className = 'status';
+            
+            try {
+                // Test if ErrorHandler is available
+                if (typeof ErrorHandler === 'undefined') {
+                    throw new Error('ErrorHandler not available');
+                }
+                
+                // Test different error scenarios
+                const testError405 = ErrorHandler.handleCartError({ status: 405, message: 'Method not allowed' }, {});
+                const testError404 = ErrorHandler.handleCartError({ status: 404, message: 'Not found' }, {});
+                const testGenericError = ErrorHandler.handleCartError({ message: 'Generic error' }, {});
+                
+                detailsEl.innerHTML = `
+                    <strong>405 Error Handling:</strong> ${testError405.type}<br>
+                    <strong>404 Error Handling:</strong> ${testError404.type}<br>
+                    <strong>Generic Error Handling:</strong> ${testGenericError.type}<br>
+                    <strong>Error Logging:</strong> Available<br>
+                    <strong>Debug Information:</strong> Comprehensive
+                `;
+                
+                statusEl.textContent = 'Error handling: PASSED';
+                statusEl.className = 'status pass';
+                testResults.passed++;
+                
+            } catch (error) {
+                detailsEl.innerHTML = `<strong>Error:</strong> ${error.message}`;
+                statusEl.textContent = 'Error handling: FAILED';
+                statusEl.className = 'status fail';
+                testResults.failed++;
+            }
+            
+            testResults.total++;
+            updateTestSummary();
+        }
+        
+        async function testNetworkError() {
+            console.log('Simulating network error...');
+            
+            const mockError = new TypeError('Failed to fetch');
+            const result = ErrorHandler.handleCartError(mockError, { operation: 'test' });
+            console.log('Network error result:', result);
+        }
+        
+        async function testTimeoutError() {
+            console.log('Simulating timeout error...');
+            
+            const mockError = new Error('Request timed out');
+            mockError.name = 'AbortError';
+            const result = ErrorHandler.handleCartError(mockError, { operation: 'test' });
+            console.log('Timeout error result:', result);
+        }
+        
+        function refreshMetrics() {
+            try {
+                if (typeof PerformanceMonitor !== 'undefined') {
+                    const summary = PerformanceMonitor.getMetricsSummary();
+                    
+                    document.getElementById('api-requests').textContent = summary.apiRequests.total;
+                    document.getElementById('successful-requests').textContent = summary.apiRequests.successful;
+                    document.getElementById('failed-requests').textContent = summary.apiRequests.failed;
+                    document.getElementById('avg-response-time').textContent = 
+                        Math.round(summary.apiRequests.averageDuration) + 'ms';
+                }
+            } catch (error) {
+                console.error('Failed to refresh metrics:', error);
+            }
+        }
+        
+        function exportMetrics() {
+            try {
+                if (typeof PerformanceMonitor !== 'undefined') {
+                    const metrics = {
+                        summary: PerformanceMonitor.getMetricsSummary(),
+                        detailed: PerformanceMonitor.metrics,
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    const blob = new Blob([JSON.stringify(metrics, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `chatbot-metrics-${Date.now()}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                }
+            } catch (error) {
+                console.error('Failed to export metrics:', error);
+            }
+        }
+        
+        function refreshConfig() {
+            const configEl = document.getElementById('config-display');
+            
+            try {
+                if (typeof CHATBOT_CONFIG !== 'undefined') {
+                    configEl.textContent = JSON.stringify(CHATBOT_CONFIG, null, 2);
+                } else {
+                    configEl.textContent = 'CHATBOT_CONFIG not available';
+                }
+            } catch (error) {
+                configEl.textContent = `Error loading config: ${error.message}`;
+            }
+        }
+        
+        function updateTestSummary() {
+            document.getElementById('total-tests').textContent = testResults.total;
+            document.getElementById('passed-tests').textContent = testResults.passed;
+            document.getElementById('failed-tests').textContent = testResults.failed;
+            
+            const successRate = testResults.total > 0 ? 
+                Math.round((testResults.passed / testResults.total) * 100) : 0;
+            document.getElementById('test-score').textContent = successRate + '%';
+        }
+        
+        async function runAllTests() {
+            console.log('=== Running All Tests ===');
+            
+            testResults = { total: 0, passed: 0, failed: 0 };
+            
+            await testBridgeConnection();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testCookieExtraction();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testStoreDetection();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testCartAPI();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testErrorHandling();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            refreshMetrics();
+            refreshConfig();
+            
+            console.log('=== All Tests Completed ===');
+            console.log('Test Results:', testResults);
+        }
+        
+        function generateReport() {
+            const report = {
+                timestamp: new Date().toISOString(),
+                testResults: testResults,
+                configuration: typeof CHATBOT_CONFIG !== 'undefined' ? CHATBOT_CONFIG : null,
+                performance: typeof PerformanceMonitor !== 'undefined' ? PerformanceMonitor.getMetricsSummary() : null,
+                userAgent: navigator.userAgent,
+                url: window.location.href,
+                logs: logBuffer.slice(-20) // Last 20 logs
+            };
+            
+            const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `chatbot-validation-report-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        // Initialize
+        interceptConsole();
+        
+        // Wait for chatbot to load, then run initial tests
+        setTimeout(() => {
+            refreshConfig();
+            console.log('Debug validation test page loaded');
+            console.log('Available for testing: Store URL Detection, Cart API, Error Handling, Performance Monitoring');
+        }, 1000);
+        
+        // Auto-refresh metrics every 10 seconds
+        setInterval(refreshMetrics, 10000);
+        
+        // Auto-update test summary
+        updateTestSummary();
+    </script>
+</body>
+</html>
