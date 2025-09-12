@@ -9,6 +9,11 @@
   
   // Enhanced origin validation
   function isAllowedOrigin(origin) {
+    // Skip processing if no origin or invalid origin
+    if (!origin || origin === 'null') {
+      return false;
+    }
+    
     // Allow same origin
     if (origin === window.location.origin) {
       return true;
@@ -34,16 +39,21 @@
   
   // Handle incoming messages
   window.addEventListener('message', (event) => {
-    console.log('[ShopifyCartBridge] Received message:', event.data);
+    // Skip processing if no origin or invalid origin
+    if (!event.origin || event.origin === 'null') {
+      return;
+    }
     
     // Validate origin
     if (!isAllowedOrigin(event.origin)) {
-      console.warn('[ShopifyCartBridge] Invalid origin:', event.origin);
+      // Only log invalid origins periodically to prevent spam
+      if (Date.now() % 1000 < 100) { // Rough rate limiting - log ~10% of invalid origin messages
+        console.warn('[ShopifyCartBridge] Invalid origin:', event.origin);
+      }
       return;
     }
     
     const { type, payload, id } = event.data;
-    console.log('[ShopifyCartBridge] Processing message:', { type, payload, id });
     
     switch (type) {
       case 'CART_ADD_ITEM':
@@ -66,19 +76,26 @@
       case 'CHATBOT_CLOSED_BY_USER':
       case 'CHATBOT_OPENED_BY_USER':
         // Acknowledge these messages but don't process them
-        sendResponse(event.source, event.origin, {
-          id,
-          success: true,
-          data: { message: 'Acknowledged' }
-        });
+        if (id !== undefined) {
+          sendResponse(event.source, event.origin, {
+            id,
+            success: true,
+            data: { message: 'Acknowledged' }
+          });
+        }
         break;
       default:
-        console.warn('[ShopifyCartBridge] Unknown message type:', type);
-        sendResponse(event.source, event.origin, {
-          id,
-          success: false,
-          error: 'Unknown message type'
-        });
+        // Only log unknown message types periodically to prevent spam
+        if (Date.now() % 1000 < 100) { // Rough rate limiting - log ~10% of unknown message types
+          console.warn('[ShopifyCartBridge] Unknown message type:', type);
+        }
+        if (id !== undefined) {
+          sendResponse(event.source, event.origin, {
+            id,
+            success: false,
+            error: 'Unknown message type'
+          });
+        }
     }
   });
   
@@ -170,19 +187,18 @@
   // Handle navigation to cart
   function handleNavigateToCart(event, id) {
     try {
-      // Navigate the parent window, not the iframe
-      window.parent.location.href = '/cart';
+      // Instead of navigating directly, send message to iframe to handle navigation
       sendResponse(event.source, event.origin, {
         id,
         success: true,
-        data: { message: 'Navigating to cart' }
+        type: 'NAVIGATE_TO_CART'
       });
     } catch (error) {
-      console.error('[ShopifyCartBridge] Failed to navigate to cart:', error);
+      console.error('[ShopifyCartBridge] Failed to handle navigate to cart:', error);
       sendResponse(event.source, event.origin, {
         id,
         success: false,
-        error: error.message || 'Failed to navigate to cart'
+        error: error.message || 'Failed to handle navigate to cart'
       });
     }
   }
@@ -190,19 +206,18 @@
   // Handle navigation to checkout
   function handleNavigateToCheckout(event, id) {
     try {
-      // Navigate the parent window, not the iframe
-      window.parent.location.href = '/checkout';
+      // Instead of navigating directly, send message to iframe to handle navigation
       sendResponse(event.source, event.origin, {
         id,
         success: true,
-        data: { message: 'Navigating to checkout' }
+        type: 'NAVIGATE_TO_CHECKOUT'
       });
     } catch (error) {
-      console.error('[ShopifyCartBridge] Failed to navigate to checkout:', error);
+      console.error('[ShopifyCartBridge] Failed to handle navigate to checkout:', error);
       sendResponse(event.source, event.origin, {
         id,
         success: false,
-        error: error.message || 'Failed to navigate to checkout'
+        error: error.message || 'Failed to handle navigate to checkout'
       });
     }
   }

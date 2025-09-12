@@ -55,6 +55,7 @@
       this.createIframe();
       this.addResponsiveStyles();
       this.applyCSSReset();
+      this.setupMessageListener();
       
       this.container.appendChild(this.iframe);
       document.body.appendChild(this.container);
@@ -167,6 +168,88 @@
         `;
         document.head.appendChild(style);
       }
+    }
+    
+    // Add message listener for navigation messages from the cart bridge
+    setupMessageListener() {
+      console.log('[TransparentChatbotEmbed] Setting up message listener');
+      
+      // Add rate limiting for console logs
+      const LOG_RATE_LIMIT = 1000; // 1 second
+      const lastLogTimes = {};
+      
+      const logWithRateLimit = (context, message, ...args) => {
+        const now = Date.now();
+        const lastLog = lastLogTimes[context] || 0;
+        
+        if (now - lastLog >= LOG_RATE_LIMIT) {
+          console.log(`[TransparentChatbotEmbed][${context}] ${message}`, ...args);
+          lastLogTimes[context] = now;
+        }
+      };
+      
+      // Enhanced origin validation
+      const isAllowedOrigin = (origin) => {
+        // Skip processing if no origin or invalid origin
+        if (!origin || origin === 'null') {
+          return false;
+        }
+        
+        // Allow same origin
+        if (origin === window.location.origin) {
+          return true;
+        }
+        
+        // Allow localhost for development
+        if (origin.includes('localhost')) {
+          return true;
+        }
+        
+        // Allow vercel app for production
+        if (origin.includes('shopify-ai-chatbot-v2.vercel.app')) {
+          return true;
+        }
+        
+        // Allow Shopify store domain
+        if (origin.includes('myshopify.com')) {
+          return true;
+        }
+        
+        return false;
+      };
+      
+      window.addEventListener('message', (event) => {
+        // Skip processing if no origin or invalid origin
+        if (!event.origin || event.origin === 'null') {
+          return;
+        }
+        
+        // Validate origin before processing
+        if (!isAllowedOrigin(event.origin)) {
+          logWithRateLimit('Security', 'Invalid origin:', event.origin);
+          return;
+        }
+        
+        // Only process messages from the iframe
+        if (event.source !== this.iframe.contentWindow) {
+          return;
+        }
+        
+        const { type, success } = event.data;
+        
+        // Handle navigation messages from the cart bridge
+        if (success && type === 'NAVIGATE_TO_CART') {
+          logWithRateLimit('Navigation', 'Navigating to cart in parent window');
+          window.top.location.href = '/cart';
+          return;
+        }
+        
+        if (success && type === 'NAVIGATE_TO_CHECKOUT') {
+          logWithRateLimit('Navigation', 'Navigating to checkout in parent window');
+          window.top.location.href = '/checkout';
+          return;
+        }
+      });
     }
   }
   
