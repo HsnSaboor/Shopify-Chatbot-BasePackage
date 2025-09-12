@@ -118,8 +118,38 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    box-sizing: border-box !important;
   }
   body {
     @apply bg-background text-foreground;
+  }
+  
+  /* Enhanced chatbot iframe spacing control */
+  body.chatbot-iframe {
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    box-sizing: border-box !important;
+  }
+  
+  html.chatbot-iframe {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* Root container spacing elimination */
+  #unified-chatbot-widget {
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+  }
+  
+  #unified-chatbot-widget * {
+    box-sizing: border-box !important;
   }
 }

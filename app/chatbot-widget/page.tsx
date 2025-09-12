@@ -8,12 +8,16 @@ export default function ChatbotWidgetPage() {
   const mode = searchParams.get("mode")
 
   if (mode === "direct") {
-    return <ChatbotWidget />
+    return (
+      <div className="w-full h-screen p-0 m-0 overflow-hidden bg-transparent">
+        <ChatbotWidget hideToggle={true} />
+      </div>
+    )
   }
 
   return (
-    <div className="w-full h-screen bg-transparent">
-      <ChatbotWidget />
+    <div className="w-full h-screen bg-transparent p-0 m-0 overflow-hidden">
+      <ChatbotWidget hideToggle={true} />
     </div>
   )
 }

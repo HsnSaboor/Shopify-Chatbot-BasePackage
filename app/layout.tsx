@@ -26,8 +26,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
+    <html lang="en" className="m-0 p-0 w-full h-full">
+      <body className={`font-sans m-0 p-0 w-full h-full overflow-hidden ${GeistSans.variable} ${GeistMono.variable}`}>
         <Suspense fallback={<LoadingFallback />}>{children}</Suspense>
         <Analytics />
       </body>

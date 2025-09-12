@@ -203,19 +203,27 @@ export function ChatbotWidget({
 
       switch (type) {
         case "REOPEN_CHATBOT":
-          setIsOpen(true)
-          break
-
         case "OPEN_CHATBOT":
+        case "OPEN_CHAT":
           setIsOpen(true)
           break
 
         case "CLOSE_CHATBOT":
+        case "CLOSE_CHAT":
           setIsOpen(false)
+          break
+          
+        case "TOGGLE_CHAT":
+          setIsOpen(prev => !prev)
           break
 
         case "CLEAR_HISTORY":
           clearChatHistory()
+          break
+          
+        case "EXTERNAL_CONTROL_ACTIVE":
+          // External script is managing the iframe - this is normal
+          console.log('External control active for chatbot iframe')
           break
       }
     }
@@ -329,9 +337,12 @@ export function ChatbotWidget({
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
     const mode = urlParams.get("mode")
+    const embedded = urlParams.get("embedded")
+    
     setIsDirectMode(mode === "direct")
 
-    if (hideToggle) {
+    // Hide toggle if embedded via external script or hideToggle prop
+    if (hideToggle || embedded === "true") {
       setIsOpen(true)
     }
   }, [hideToggle])
@@ -735,14 +746,26 @@ export function ChatbotWidget({
   return (
     <>
       {/* Chat Widget Button */}
-      {!hideToggle && (
+      {!hideToggle && !isDirectMode && (
         <Button
-          onClick={() => setIsOpen(true)}
+          onClick={() => {
+            setIsOpen(true)
+            // Notify parent window about state change
+            if (window.parent !== window) {
+              window.parent.postMessage(
+                {
+                  type: "CHATBOT_OPENED_BY_USER",
+                  data: { isOpen: true },
+                },
+                "*",
+              )
+            }
+          }}
           className={cn(
             "h-16 w-16 rounded-full shadow-xl transition-all duration-300 hover:scale-110 z-[9998]",
             "bg-blue-600 hover:bg-blue-700 text-white border-2 border-white",
             isOpen && "scale-0 opacity-0",
-            isDirectMode ? "absolute bottom-4 right-4" : "fixed bottom-6 right-6",
+            "fixed bottom-6 right-6",
           )}
           size="icon"
           style={{
@@ -760,25 +783,39 @@ export function ChatbotWidget({
           "backdrop-blur-sm border-gray-200 dark:border-gray-700",
           isOpen || hideToggle ? "scale-100 opacity-100" : "scale-0 opacity-0 pointer-events-none",
           isMobile
-            ? "inset-0 rounded-none" // Fullscreen on mobile
+            ? "inset-0 rounded-none h-screen w-screen" 
             : isDirectMode || hideToggle
-              ? "absolute bottom-0 right-0 max-w-[400px] w-[400px] h-[500px]" // Smaller size and absolute positioning for direct mode or embedded
-              : "fixed bottom-6 right-6 max-w-[500px] w-[500px] h-[600px]", // Fixed size on desktop
+              ? "absolute bottom-0 right-0 w-full h-full" 
+              : "fixed bottom-6 right-6 max-w-[500px] w-[500px] h-[600px]",
         )}
         style={
           isMobile
             ? {
                 transformOrigin: "center",
                 boxShadow: "none",
+                margin: 0,
+                padding: 0,
+                width: "100vw",
+                height: "100vh",
+                boxSizing: "border-box",
               }
             : hideToggle
               ? {
                   transformOrigin: "bottom right",
-                  boxShadow: "none", // Remove shadow when embedded
+                  boxShadow: "none",
+                  margin: 0,
+                  padding: 0,
+                  width: "100%",
+                  height: "100%",
+                  minHeight: "600px",
+                  boxSizing: "border-box",
                 }
               : {
                   transformOrigin: "bottom right",
-                  boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05)",
+                  boxShadow: "0 8px 32px rgba(37, 99, 235, 0.3)",
+                  width: "500px",
+                  height: "600px",
+                  boxSizing: "border-box",
                 }
         }
       >
@@ -844,7 +881,19 @@ export function ChatbotWidget({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setIsOpen(false)}
+                onClick={() => {
+                  setIsOpen(false)
+                  // Notify parent window about state change
+                  if (window.parent !== window) {
+                    window.parent.postMessage(
+                      {
+                        type: "CHATBOT_CLOSED_BY_USER",
+                        data: { isOpen: false },
+                      },
+                      "*",
+                    )
+                  }
+                }}
                 className="h-8 w-8 hover:bg-white/20 rounded-full transition-colors"
                 style={{ color: "white" }}
                 title={isMobile ? "Minimize" : "Close"}
