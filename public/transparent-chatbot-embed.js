@@ -500,7 +500,7 @@ class TransparentIframeManager {
       try {
         log('Adding to cart:', { variantId, quantity });
 
-        const response = await fetch('/cart/add.js', {
+        const response = await fetch('https://zenmato.myshopify.com/cart/add.js', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
