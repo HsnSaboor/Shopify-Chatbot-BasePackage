@@ -14,6 +14,15 @@
     return;
   }
   
+  // Detect Shopify store font or use system font stack
+  const getShopifyFont = () => {
+    // Check for Shopify's font variables
+    const fontFamily = getComputedStyle(document.documentElement)
+      .getPropertyValue('--font-body-family') || 
+      '"Inter var", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif';
+    return fontFamily;
+  };
+  
   const CONFIG = {
     apiUrl: window.CHATBOT_API_URL || "https://shopify-ai-chatbot-v2.vercel.app",
     iframe: {
@@ -176,6 +185,9 @@
       if (document.getElementById('chatbot-cart-popup-styles')) {
         return;
       }
+      
+      // Detect Shopify font or use system font stack
+      const fontFamily = getShopifyFont();
       
       const style = document.createElement('style');
       style.id = 'chatbot-cart-popup-styles';
@@ -344,10 +356,8 @@
           padding-bottom: 1.5rem;
         }
         
-        .space-y-4 > :not([hidden]) ~ :not([hidden]) {
-          --tw-space-y-reverse: 0;
-          margin-top: calc(1rem * calc(1 - var(--tw-space-y-reverse)));
-          margin-bottom: calc(1rem * var(--tw-space-y-reverse));
+        .gap-3 {
+          gap: 0.75rem;
         }
         
         .bg-gray-50 {
@@ -402,14 +412,14 @@
           background-color: #f3f4f6;
         }
         
-        .px-2\\.5 {
-          padding-left: 0.625rem;
-          padding-right: 0.625rem;
+        .px-3 {
+          padding-left: 0.75rem;
+          padding-right: 0.75rem;
         }
         
-        .py-0\\.5 {
-          padding-top: 0.125rem;
-          padding-bottom: 0.125rem;
+        .py-1 {
+          padding-top: 0.25rem;
+          padding-bottom: 0.25rem;
         }
         
         .text-xs {
@@ -421,56 +431,12 @@
           color: #1f2937;
         }
         
-        .space-y-2 > :not([hidden]) ~ :not([hidden]) {
-          --tw-space-y-reverse: 0;
-          margin-top: calc(0.5rem * calc(1 - var(--tw-space-y-reverse)));
-          margin-bottom: calc(0.5rem * var(--tw-space-y-reverse));
-        }
-        
-        .max-h-32 {
-          max-height: 8rem;
-        }
-        
-        .overflow-y-auto {
-          overflow-y: auto;
-        }
-        
-        .truncate {
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-        
-        .flex-1 {
-          flex: 1 1 0%;
-        }
-        
-        .mr-2 {
-          margin-right: 0.5rem;
-        }
-        
-        .border-t {
-          border-top-width: 1px;
-        }
-        
-        .pt-2 {
-          padding-top: 0.5rem;
-        }
-        
-        .mt-3 {
-          margin-top: 0.75rem;
-        }
-        
         .justify-between {
           justify-content: space-between;
         }
         
         .flex {
           display: flex;
-        }
-        
-        .gap-3 {
-          gap: 0.75rem;
         }
         
         .rounded-md {
@@ -537,6 +503,16 @@
         .ml-2 {
           margin-left: 0.5rem;
         }
+        
+        #chatbot-cart-popup {
+          font-family: ${fontFamily};
+        }
+        
+        #chatbot-cart-popup button:focus,
+        #chatbot-cart-popup button:focus-visible {
+          outline: 2px solid #2563eb;
+          outline-offset: 2px;
+        }
       `;
       document.head.appendChild(style);
     }
@@ -575,7 +551,7 @@
       const popupContent = document.createElement('div');
       popupContent.className = 'w-full max-w-md mx-4';
       
-      // Create the inner content with proper classes
+      // Create the inner content with proper classes - simplified to show only count and price
       const innerContent = `
         <div class="bg-white rounded-xl shadow-lg overflow-hidden animate-in zoom-in-95 duration-200">
           <div class="text-center pb-4 pt-6 px-6">
@@ -588,37 +564,22 @@
             <p class="text-sm text-gray-600">Auto-closing in 5 seconds</p>
           </div>
 
-          <div class="px-6 pb-6 space-y-4">
-            <!-- Cart Summary -->
+          <div class="px-6 pb-6">
+            <!-- Simplified Cart Summary - only showing count and price -->
             <div class="bg-gray-50 rounded-lg p-4">
-              <div class="flex items-center justify-between mb-3">
-                <h4 class="font-medium flex items-center gap-2">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="8" cy="21" r="1" />
-                    <circle cx="19" cy="21" r="1" />
-                    <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57L23 6H6" />
-                  </svg>
-                  Cart Summary
-                </h4>
-                <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-600">Cart Total</p>
+                  <p class="text-xl font-semibold text-gray-900">${this.formatPrice(cart.total_price, cart.currency)}</p>
+                </div>
+                <span class="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-800">
                   ${cart.item_count} ${cart.item_count === 1 ? "item" : "items"}
                 </span>
-              </div>
-
-              <div class="space-y-2 max-h-32 overflow-y-auto">
-                ${this.formatCartItems(cart)}
-              </div>
-
-              <div class="border-t pt-2 mt-3">
-                <div class="flex justify-between font-semibold">
-                  <span>Total:</span>
-                  <span>${this.formatPrice(cart.total_price, cart.currency)}</span>
-                </div>
               </div>
             </div>
 
             <!-- Action Buttons -->
-            <div class="flex gap-3">
+            <div class="flex gap-3 mt-4">
               <button id="view-cart-btn" class="flex-1 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
                 View Cart
               </button>
@@ -627,7 +588,7 @@
               </button>
             </div>
 
-            <button id="close-popup-btn" class="w-full inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+            <button id="close-popup-btn" class="w-full inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 mt-3">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="m18 6-12 12" />
                 <path d="m6 6 12 12" />
