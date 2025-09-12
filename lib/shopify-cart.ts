@@ -95,9 +95,10 @@ export class ShopifyCartService {
     }
     
     try {
-      window.location.href = "/cart";
+      // Instead of direct navigation, send message to parent window
+      window.parent.postMessage({ type: 'NAVIGATE_TO_CART' }, '*');
     } catch (error) {
-      console.error('Failed to navigate to cart:', error);
+      console.error('Failed to send navigate to cart message:', error);
     }
   }
 
@@ -108,9 +109,10 @@ export class ShopifyCartService {
     }
     
     try {
-      window.location.href = "/checkout";
+      // Instead of direct navigation, send message to parent window
+      window.parent.postMessage({ type: 'NAVIGATE_TO_CHECKOUT' }, '*');
     } catch (error) {
-      console.error('Failed to navigate to checkout:', error);
+      console.error('Failed to send navigate to checkout message:', error);
     }
   }
   

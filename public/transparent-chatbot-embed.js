@@ -230,11 +230,7 @@
           return;
         }
         
-        // Only process messages from the iframe
-        if (event.source !== this.iframe.contentWindow) {
-          return;
-        }
-        
+        // Process all messages, not just from iframe
         const { type, success } = event.data;
         
         // Handle navigation messages from the cart bridge
@@ -248,6 +244,11 @@
           logWithRateLimit('Navigation', 'Navigating to checkout in parent window');
           window.top.location.href = '/checkout';
           return;
+        }
+        
+        // Also handle messages from the iframe
+        if (event.source === this.iframe.contentWindow) {
+          // Existing iframe message handling can go here if needed
         }
       });
     }

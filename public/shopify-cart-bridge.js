@@ -243,12 +243,12 @@
   function normalizeCartData(cart) {
     return {
       items: Array.isArray(cart.items) ? cart.items.map(item => ({
-        id: item.id?.toString() || '',
+        id: item.key?.toString() || item.id?.toString() || '',
         variantId: item.variant_id?.toString() || item.id?.toString() || '',
         quantity: item.quantity || 0,
-        name: item.product_title || item.name || '',
+        name: item.product_title || item.title || '',
         price: formatPrice(item.price || 0, cart.currency),
-        image: item.image || ''
+        image: item.image || (item.featured_image ? item.featured_image.url : '') || ''
       })) : [],
       total_price: cart.total_price || 0,
       item_count: cart.item_count || 0,
