@@ -1,11 +1,30 @@
 ;(() => {
   "use strict";
 
+  const urlParams = new URLSearchParams(window.location.search);
+  const shopDomain = urlParams.get("shopDomain");
+
   // Configuration
   const CHATBOT_CONFIG = {
     apiUrl: window.CHATBOT_API_URL || "https://shopify-ai-chatbot-v2.vercel.app",
+    storeUrl: shopDomain ? `https://${shopDomain}` : window.location.origin,
     iframe: {
       src: "/chatbot?embedded=true",
+      dimensions: {
+        pc: {
+          width: "500px",
+          minWidth: "500px", // PC minimum width requirement
+          maxWidth: "500px",
+          height: "800px",
+          containerWidth: "520px"
+        },
+        mobile: {
+          width: "100vw", // 100% of screen width
+          height: "100vh", // 100% of screen height
+          maxWidth: "100vw",
+          maxHeight: "100vh"
+        }
+      },
       style: {
         position: "fixed",
         top: "0",
@@ -17,6 +36,10 @@
         zIndex: "9999",
         pointerEvents: "none"
       }
+    },
+    responsive: {
+      mobileBreakpoint: 768,
+      desktopBreakpoint: 769
     },
     cart: {
       popup: {
@@ -34,6 +57,8 @@
     stateKey: "shopify_chatbot_state",
     debug: false
   };
+
+  console.log("[Chatbot] Detected store URL:", CHATBOT_CONFIG.storeUrl);
 
   // Utility functions
   function log(...args) {
@@ -99,7 +124,7 @@ class TransparentIframeManager {
     this.container.style.cssText = `
       position: fixed;
       bottom: 20px;
-      right: 20px;
+      width: ${CHATBOT_CONFIG.iframe.dimensions.pc.containerWidth}; /* PC container width for 500px iframe */
       z-index: ${CHATBOT_CONFIG.iframe.style.zIndex};
       pointer-events: none; /* container doesn’t block clicks */
       background: transparent;
@@ -122,12 +147,13 @@ class TransparentIframeManager {
     const src = `${CHATBOT_CONFIG.apiUrl}${CHATBOT_CONFIG.iframe.src}&shopifyData=${encodeURIComponent(JSON.stringify(shopifyData))}`;
     this.iframe.src = src;
 
-    // Make iframe clickable but only inside its box
+    // Enhanced iframe styling with explicit width control
     this.iframe.style.cssText = `
       position: relative;
-      width: 100%;
-      max-width: 500px;
-      height: 800px;
+      width: ${CHATBOT_CONFIG.iframe.dimensions.pc.width}; /* PC width */
+      min-width: ${CHATBOT_CONFIG.iframe.dimensions.pc.minWidth}; /* PC minimum width requirement */
+      max-width: ${CHATBOT_CONFIG.iframe.dimensions.pc.maxWidth};
+      height: ${CHATBOT_CONFIG.iframe.dimensions.pc.height};
       max-height: 100vh;
       border: none;
       background: transparent;
@@ -143,28 +169,89 @@ class TransparentIframeManager {
     // Allow transparency in browsers
     this.iframe.setAttribute("allowTransparency", "true");
 
-    // Responsive mobile fullscreen
-    const styleTag = document.createElement('style');
-    styleTag.textContent = `
-      @media (max-width: 768px) {
-        #transparent-chatbot-container {
-          bottom: 0 !important;
-          right: 0 !important;
-          width: 100% !important;
-          height: 100% !important;
-        }
-        #transparent-chatbot-iframe {
-          width: 100% !important;
-          height: 100% !important;
-          max-width: 100% !important;
-          max-height: 100% !important;
-          border-radius: 0 !important;
-        }
-      }
-    `;
-    document.head.appendChild(styleTag);
+    // Enhanced responsive styling
+    this.addResponsiveStyles();
 
     return this.iframe;
+  }
+
+  addResponsiveStyles() {
+    const styleId = 'transparent-chatbot-responsive-styles';
+    
+    if (!document.getElementById(styleId)) {
+      const styleTag = document.createElement('style');
+      styleTag.id = styleId;
+      styleTag.textContent = `
+        /* PC styles - ensure minimum 500px width */
+        @media (min-width: ${CHATBOT_CONFIG.responsive.desktopBreakpoint}px) {
+          #transparent-chatbot-container {
+            width: ${CHATBOT_CONFIG.iframe.dimensions.pc.containerWidth} !important;
+          }
+          
+          #transparent-chatbot-iframe {
+            width: ${CHATBOT_CONFIG.iframe.dimensions.pc.width} !important;
+            min-width: ${CHATBOT_CONFIG.iframe.dimensions.pc.minWidth} !important; /* PC minimum width requirement */
+            max-width: ${CHATBOT_CONFIG.iframe.dimensions.pc.maxWidth} !important;
+          }
+        }
+        
+        /* Mobile styles - 100% screen coverage */
+        @media (max-width: ${CHATBOT_CONFIG.responsive.mobileBreakpoint}px) {
+          #transparent-chatbot-container {
+            bottom: 0 !important;
+            right: 0 !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: ${CHATBOT_CONFIG.iframe.dimensions.mobile.width} !important; /* 100% of screen width */
+            height: ${CHATBOT_CONFIG.iframe.dimensions.mobile.height} !important; /* 100% of screen height */
+          }
+          
+          #transparent-chatbot-iframe {
+            width: ${CHATBOT_CONFIG.iframe.dimensions.mobile.width} !important; /* 100% of screen width */
+            height: ${CHATBOT_CONFIG.iframe.dimensions.mobile.height} !important; /* 100% of screen height */
+            min-width: unset !important;
+            max-width: ${CHATBOT_CONFIG.iframe.dimensions.mobile.maxWidth} !important;
+            max-height: ${CHATBOT_CONFIG.iframe.dimensions.mobile.maxHeight} !important;
+            border-radius: 0 !important;
+          }
+        }
+      `;
+      document.head.appendChild(styleTag);
+    }
+  }
+
+  validateDimensions() {
+    const iframe = this.iframe;
+    if (!iframe) return false;
+    
+    const computedStyle = window.getComputedStyle(iframe);
+    const width = parseInt(computedStyle.width);
+    const isMobile = window.innerWidth <= CHATBOT_CONFIG.responsive.mobileBreakpoint;
+    
+    if (!isMobile && width < 500) {
+      log('PC iframe width below minimum 500px requirement:', width);
+      this.forceWidthCorrection();
+      return false;
+    }
+    
+    return true;
+  }
+
+  forceWidthCorrection() {
+    if (this.iframe) {
+      this.iframe.style.width = CHATBOT_CONFIG.iframe.dimensions.pc.width;
+      this.iframe.style.minWidth = CHATBOT_CONFIG.iframe.dimensions.pc.minWidth;
+      this.iframe.style.maxWidth = CHATBOT_CONFIG.iframe.dimensions.pc.maxWidth;
+      log('Width correction applied');
+    }
+  }
+
+  ensureMinimumWidth() {
+    setTimeout(() => {
+      if (!this.validateDimensions()) {
+        this.forceWidthCorrection();
+      }
+    }, 100);
   }
 
   applyCSSReset() {
@@ -199,9 +286,19 @@ class TransparentIframeManager {
 
     this.isCreated = true;
     log('Transparent iframe mounted successfully');
+    
+    // Ensure minimum width after mounting
+    this.ensureMinimumWidth();
   }
 
   destroy() {
+    // Remove responsive styles
+    const responsiveStyles = document.getElementById('transparent-chatbot-responsive-styles');
+    if (responsiveStyles && responsiveStyles.parentNode) {
+      responsiveStyles.parentNode.removeChild(responsiveStyles);
+    }
+    
+    // Standard cleanup
     if (this.container && this.container.parentNode) {
       this.container.parentNode.removeChild(this.container);
     }

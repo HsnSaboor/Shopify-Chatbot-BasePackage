@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iframe Width Validation Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .test-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .test-results {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            border-left: 4px solid #007cba;
+        }
+        
+        .test-passed {
+            color: #10b981;
+            font-weight: bold;
+        }
+        
+        .test-failed {
+            color: #ef4444;
+            font-weight: bold;
+        }
+        
+        .test-warning {
+            color: #f59e0b;
+            font-weight: bold;
+        }
+        
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .metric:last-child {
+            border-bottom: none;
+        }
+        
+        .validation-buttons {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            background: #007cba;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            background: #005a8b;
+            transform: translateY(-1px);
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-success { background: #10b981; }
+        .status-warning { background: #f59e0b; }
+        .status-error { background: #ef4444; }
+        
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .test-card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .screen-size {
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        
+        @media (max-width: 768px) {
+            .validation-buttons {
+                flex-direction: column;
+            }
+            
+            .test-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🔧 Iframe Width Validation Test</h1>
+        <p>This page validates the 500px minimum width requirement for desktop and 100vw coverage for mobile devices.</p>
+        
+        <div class="screen-size">
+            Screen Size: <span id="screen-info"></span><br>
+            Device Type: <span id="device-type"></span><br>
+            Expected Width: <span id="expected-width"></span>
+        </div>
+
+        <div class="validation-buttons">
+            <button onclick="runWidthValidation()">Test Width Requirements</button>
+            <button onclick="runResponsiveValidation()">Test Responsive Behavior</button>
+            <button onclick="runCrossBrowserTest()">Test Cross-Browser</button>
+            <button onclick="simulateMobile()">Simulate Mobile</button>
+            <button onclick="simulateDesktop()">Simulate Desktop</button>
+            <button onclick="runFullValidation()">Run All Tests</button>
+            <button onclick="clearResults()">Clear Results</button>
+        </div>
+
+        <div id="validation-results" class="test-results" style="display: none;">
+            <h3>Validation Results</h3>
+            <div id="results-content"></div>
+        </div>
+
+        <div class="test-grid">
+            <div class="test-card">
+                <h3><span id="width-status" class="status-indicator status-warning"></span>Width Requirements</h3>
+                <p>Desktop: Minimum 500px width enforced<br>
+                Mobile: 100vw (full screen width)</p>
+            </div>
+            
+            <div class="test-card">
+                <h3><span id="responsive-status" class="status-indicator status-warning"></span>Responsive Design</h3>
+                <p>Breakpoint: 768px<br>
+                Container adapts properly</p>
+            </div>
+            
+            <div class="test-card">
+                <h3><span id="container-status" class="status-indicator status-warning"></span>Container Layout</h3>
+                <p>Desktop: 520px container width<br>
+                Mobile: 100vw × 100vh coverage</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transparent Chatbot Configuration -->
+    <script>
+        window.CHATBOT_API_URL = "http://localhost:3001";
+        
+        // Mock Shopify data for testing
+        window.SHOPIFY_MINIMAL_DATA = {
+            customerId: "test_customer_width_validation",
+            localization: "en",
+            cartCurrency: "USD",
+            pageType: "product",
+            pageHandle: "width-test-product",
+            shopDomain: "width-test.myshopify.com"
+        };
+
+        // Update screen info
+        function updateScreenInfo() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            const isMobile = width <= 768;
+            
+            document.getElementById('screen-info').textContent = `${width}px × ${height}px`;
+            document.getElementById('device-type').textContent = isMobile ? 'Mobile' : 'Desktop';
+            document.getElementById('expected-width').textContent = isMobile ? '100vw (full screen)' : '500px minimum';
+        }
+
+        // Width validation test
+        function validateWidth() {
+            const container = document.getElementById('transparent-chatbot-container');
+            const iframe = document.getElementById('transparent-chatbot-iframe');
+            
+            if (!container || !iframe) {
+                return {
+                    success: false,
+                    message: 'Transparent chatbot elements not found',
+                    metrics: {
+                        'Container Found': 'No',
+                        'Iframe Found': 'No'
+                    }
+                };
+            }
+
+            const containerRect = container.getBoundingClientRect();
+            const iframeRect = iframe.getBoundingClientRect();
+            const containerStyles = getComputedStyle(container);
+            const iframeStyles = getComputedStyle(iframe);
+            
+            const isMobile = window.innerWidth <= 768;
+            const containerWidth = containerRect.width;
+            const iframeWidth = iframeRect.width;
+            
+            let success = false;
+            let message = '';
+            
+            if (isMobile) {
+                // Mobile validation: should be 100vw
+                const expectedWidth = window.innerWidth;
+                const widthMatch = Math.abs(iframeWidth - expectedWidth) <= 2; // Allow 2px tolerance
+                success = widthMatch;
+                message = widthMatch ? 
+                    'Mobile width validation PASSED (100vw)' : 
+                    'Mobile width validation FAILED';
+            } else {
+                // Desktop validation: should be exactly 500px
+                const widthRequirement = iframeWidth >= 500;
+                const containerRequirement = containerWidth >= 520;
+                success = widthRequirement && containerRequirement;
+                message = success ? 
+                    'Desktop width validation PASSED (500px minimum)' : 
+                    'Desktop width validation FAILED';
+            }
+            
+            return {
+                success,
+                message,
+                metrics: {
+                    'Device Mode': isMobile ? 'Mobile' : 'Desktop',
+                    'Screen Width': `${window.innerWidth}px`,
+                    'Container Width': `${containerWidth.toFixed(1)}px`,
+                    'Iframe Width': `${iframeWidth.toFixed(1)}px`,
+                    'Container CSS Width': containerStyles.width,
+                    'Iframe CSS Width': iframeStyles.width,
+                    'Iframe Min-Width': iframeStyles.minWidth,
+                    'Iframe Max-Width': iframeStyles.maxWidth,
+                    'Expected (Mobile)': isMobile ? `${window.innerWidth}px (100vw)` : 'N/A',
+                    'Expected (Desktop)': !isMobile ? '500px minimum' : 'N/A',
+                    'Width Test': success ? 'PASS' : 'FAIL'
+                }
+            };
+        }
+
+        // Responsive behavior test
+        function validateResponsive() {
+            const container = document.getElementById('transparent-chatbot-container');
+            const iframe = document.getElementById('transparent-chatbot-iframe');
+            
+            if (!container || !iframe) {
+                return {
+                    success: false,
+                    message: 'Elements not found for responsive test',
+                    metrics: {}
+                };
+            }
+
+            const containerStyles = getComputedStyle(container);
+            const iframeStyles = getComputedStyle(iframe);
+            const isMobile = window.innerWidth <= 768;
+            
+            const tests = [];
+            
+            if (isMobile) {
+                tests.push({
+                    name: 'Mobile Container Position',
+                    expected: 'fixed',
+                    actual: containerStyles.position,
+                    pass: containerStyles.position === 'fixed'
+                });
+                
+                tests.push({
+                    name: 'Mobile Full Width',
+                    expected: '100vw or equivalent',
+                    actual: iframeStyles.width,
+                    pass: iframeStyles.width.includes('100vw') || iframe.offsetWidth >= window.innerWidth - 10
+                });
+                
+                tests.push({
+                    name: 'Mobile Full Height',
+                    expected: '100vh or equivalent',
+                    actual: iframeStyles.height,
+                    pass: iframeStyles.height.includes('100vh') || iframe.offsetHeight >= window.innerHeight - 10
+                });
+            } else {
+                tests.push({
+                    name: 'Desktop Container Width',
+                    expected: '520px',
+                    actual: containerStyles.width,
+                    pass: containerStyles.width === '520px'
+                });
+                
+                tests.push({
+                    name: 'Desktop Iframe Width',
+                    expected: '500px',
+                    actual: iframeStyles.width,
+                    pass: iframeStyles.width === '500px'
+                });
+                
+                tests.push({
+                    name: 'Desktop Min-Width',
+                    expected: '500px',
+                    actual: iframeStyles.minWidth,
+                    pass: iframeStyles.minWidth === '500px'
+                });
+            }
+            
+            const passedTests = tests.filter(test => test.pass).length;
+            const allPassed = passedTests === tests.length;
+            
+            const metrics = {
+                'Device Mode': isMobile ? 'Mobile' : 'Desktop',
+                'Tests Passed': `${passedTests}/${tests.length}`
+            };
+            
+            tests.forEach(test => {
+                metrics[test.name] = `${test.actual} ${test.pass ? '✅' : '❌'}`;
+            });
+            
+            return {
+                success: allPassed,
+                message: allPassed ? 
+                    'Responsive behavior test PASSED' : 
+                    'Responsive behavior test FAILED',
+                metrics
+            };
+        }
+
+        // Cross-browser compatibility test
+        function validateCrossBrowser() {
+            const userAgent = navigator.userAgent;
+            const isChrome = userAgent.includes('Chrome');
+            const isFirefox = userAgent.includes('Firefox');
+            const isSafari = userAgent.includes('Safari') && !isChrome;
+            const isEdge = userAgent.includes('Edge');
+            
+            // Test CSS property support
+            const testDiv = document.createElement('div');
+            testDiv.style.width = '100vw';
+            const supportsVW = testDiv.style.width === '100vw';
+            
+            testDiv.style.minWidth = '500px';
+            const supportsMinWidth = testDiv.style.minWidth === '500px';
+            
+            const supportScore = [supportsVW, supportsMinWidth].filter(Boolean).length;
+            
+            return {
+                success: supportScore === 2,
+                message: supportScore === 2 ? 
+                    'Cross-browser compatibility PASSED' : 
+                    'Cross-browser compatibility WARNING',
+                metrics: {
+                    'Browser': isChrome ? 'Chrome' : isFirefox ? 'Firefox' : isSafari ? 'Safari' : isEdge ? 'Edge' : 'Unknown',
+                    'VW Unit Support': supportsVW ? 'Yes' : 'No',
+                    'Min-Width Support': supportsMinWidth ? 'Yes' : 'No',
+                    'Support Score': `${supportScore}/2`,
+                    'User Agent': userAgent.substring(0, 50) + '...'
+                }
+            };
+        }
+
+        // Display results helper
+        function displayResults(results) {
+            const resultsDiv = document.getElementById('validation-results');
+            const contentDiv = document.getElementById('results-content');
+            
+            resultsDiv.style.display = 'block';
+            
+            let html = '';
+            results.forEach(result => {
+                const statusClass = result.success ? 'test-passed' : 'test-failed';
+                html += `
+                    <div class="metric">
+                        <strong>${result.message}</strong>
+                        <span class="${statusClass}">${result.success ? 'PASS' : 'FAIL'}</span>
+                    </div>
+                `;
+                
+                Object.entries(result.metrics).forEach(([key, value]) => {
+                    html += `
+                        <div class="metric">
+                            <span>${key}</span>
+                            <span>${value}</span>
+                        </div>
+                    `;
+                });
+                
+                html += '<hr style="margin: 15px 0; border: none; border-top: 1px solid rgba(255,255,255,0.2);">';
+            });
+            
+            contentDiv.innerHTML = html;
+        }
+
+        // Update status indicators
+        function updateStatus(testId, status) {
+            const indicator = document.getElementById(`${testId}-status`);
+            if (indicator) {
+                indicator.className = `status-indicator status-${status}`;
+            }
+        }
+
+        // Test functions
+        function runWidthValidation() {
+            updateScreenInfo();
+            const result = validateWidth();
+            displayResults([result]);
+            updateStatus('width', result.success ? 'success' : 'error');
+        }
+
+        function runResponsiveValidation() {
+            updateScreenInfo();
+            const result = validateResponsive();
+            displayResults([result]);
+            updateStatus('responsive', result.success ? 'success' : 'error');
+        }
+
+        function runCrossBrowserTest() {
+            const result = validateCrossBrowser();
+            displayResults([result]);
+        }
+
+        function simulateMobile() {
+            // Add mobile simulation styles
+            const style = document.createElement('style');
+            style.id = 'mobile-simulation';
+            style.textContent = `
+                body { width: 375px !important; }
+                html { width: 375px !important; }
+            `;
+            document.head.appendChild(style);
+            
+            // Trigger resize event
+            window.dispatchEvent(new Event('resize'));
+            
+            setTimeout(() => {
+                runWidthValidation();
+                // Remove simulation after test
+                const simStyle = document.getElementById('mobile-simulation');
+                if (simStyle) simStyle.remove();
+            }, 500);
+        }
+
+        function simulateDesktop() {
+            // Ensure desktop styles by removing any mobile simulation
+            const simStyle = document.getElementById('mobile-simulation');
+            if (simStyle) simStyle.remove();
+            
+            window.dispatchEvent(new Event('resize'));
+            
+            setTimeout(() => {
+                runWidthValidation();
+            }, 500);
+        }
+
+        function runFullValidation() {
+            updateScreenInfo();
+            const widthResult = validateWidth();
+            const responsiveResult = validateResponsive();
+            const browserResult = validateCrossBrowser();
+            
+            displayResults([widthResult, responsiveResult, browserResult]);
+            
+            updateStatus('width', widthResult.success ? 'success' : 'error');
+            updateStatus('responsive', responsiveResult.success ? 'success' : 'error');
+            updateStatus('container', (widthResult.success && responsiveResult.success) ? 'success' : 'error');
+        }
+
+        function clearResults() {
+            document.getElementById('validation-results').style.display = 'none';
+            // Reset status indicators
+            ['width', 'responsive', 'container'].forEach(id => {
+                updateStatus(id, 'warning');
+            });
+        }
+
+        // Initialize
+        window.addEventListener('load', () => {
+            updateScreenInfo();
+            console.log('Width validation test page loaded');
+            
+            // Wait for chatbot to initialize
+            setTimeout(() => {
+                if (document.getElementById('transparent-chatbot-container')) {
+                    console.log('Transparent chatbot detected - running validation');
+                    runFullValidation();
+                } else {
+                    console.log('Transparent chatbot not found - ensure script is loaded');
+                }
+            }, 2000);
+        });
+
+        // Update on resize
+        window.addEventListener('resize', () => {
+            updateScreenInfo();
+            setTimeout(runWidthValidation, 300);
+        });
+
+        // Console logging for debug
+        window.addEventListener('message', (event) => {
+            console.log('Chatbot message received:', event.data);
+        });
+    </script>
+
+    <!-- Load the transparent chatbot embed script -->
+    <script src="./transparent-chatbot-embed.js" async></script>
+</body>
+</html>

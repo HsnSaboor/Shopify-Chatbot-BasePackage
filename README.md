@@ -10,9 +10,11 @@
 
 ### 🔥 Transparent Embedding (NEW)
 - **1:1 Iframe Integration** - Transparent overlay with no external modifications
+- **Width Validation** - 500px minimum width enforced for desktop, 100vw mobile coverage
 - **Internal Toggle Only** - Uses chatbot's internal controls, no external buttons
 - **State Persistence** - Maintains state across Shopify page navigation
-- **Full Viewport Coverage** - 100vh mobile, 600px desktop height optimization
+- **Full Viewport Coverage** - 100vh mobile, 500px × 800px desktop optimization
+- **Responsive Design** - Automatic width adaptation at 768px breakpoint
 
 ### 🛒 Enhanced Cart Integration
 - **Complete Variant Support** - Full size range including 2XL support
@@ -23,6 +25,7 @@
 ### ⚡ Performance & UX
 - **Minimal Bundle** - 5KB production, <2KB gzipped
 - **Mobile Optimized** - 100vw × 100vh full viewport coverage
+- **Desktop Width** - 500px minimum width enforced with 520px container
 - **Zero Spacing Issues** - Comprehensive CSS reset for transparency
 - **Cross-browser Compatible** - Chrome 60+, Firefox 55+, Safari 12+, Edge 79+
 
@@ -65,7 +68,8 @@ The transparent embedding provides a seamless 1:1 iframe integration:
 - Full state persistence across navigation
 - Internal chatbot toggle controls
 - Complete cart integration with 2XL support
-- Mobile-responsive full viewport coverage
+- Mobile-responsive full viewport coverage (100vw × 100vh)
+- Desktop width enforcement (500px minimum)
 
 **Quick Setup:**
 ```liquid

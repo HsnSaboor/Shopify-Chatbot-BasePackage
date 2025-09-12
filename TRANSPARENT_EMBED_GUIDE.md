@@ -97,6 +97,27 @@ window.CHATBOT_API_URL = "https://your-domain.com";
 window.TRANSPARENT_CHATBOT_CONFIG = {
   debug: false,
   stateKey: "shopify_chatbot_state",
+  iframe: {
+    dimensions: {
+      pc: {
+        width: "500px",
+        minWidth: "500px", // PC minimum width requirement
+        maxWidth: "500px",
+        height: "800px",
+        containerWidth: "520px"
+      },
+      mobile: {
+        width: "100vw", // 100% of screen width
+        height: "100vh", // 100% of screen height
+        maxWidth: "100vw",
+        maxHeight: "100vh"
+      }
+    }
+  },
+  responsive: {
+    mobileBreakpoint: 768,
+    desktopBreakpoint: 769
+  },
   cart: {
     popup: {
       autoCloseDelay: 3000,
@@ -221,32 +242,76 @@ const SUPPORTED_SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
 }
 ```
 
-## 📱 Mobile Optimization
+## 📱 Mobile Optimization & Width Configuration
+
+### Enhanced Width Requirements
+
+- **Desktop**: Minimum 500px width enforced (exactly 500px)
+- **Mobile**: 100vw (100% of screen width) coverage
+- **Container**: 520px width to accommodate 500px iframe
+- **Responsive**: Automatic adaptation at 768px breakpoint
+
+### Width Validation
+
+The implementation includes automatic width validation and correction:
+
+```javascript
+// Width validation occurs after iframe mounting
+validateDimensions() {
+  const iframe = this.iframe;
+  const width = parseInt(getComputedStyle(iframe).width);
+  const isMobile = window.innerWidth <= 768;
+  
+  if (!isMobile && width < 500) {
+    this.forceWidthCorrection(); // Ensures 500px minimum
+    return false;
+  }
+  return true;
+}
+```
 
 ### Responsive Design
 
-- **Mobile**: 100vw × 100vh full viewport coverage
-- **Desktop**: 500px × 600px fixed dimensions
-- **Tablet**: Adaptive sizing based on viewport
+- **Mobile (≤768px)**: 100vw × 100vh full viewport coverage
+- **Desktop (>768px)**: 500px × 800px with 520px container
+- **Tablet**: Follows mobile pattern for consistency
 - **Touch Optimization**: Optimized for mobile interactions
 
 ### CSS Specifications
 
 ```css
-/* Mobile (< 768px) */
-.chatbot-mobile {
-  width: 100vw !important;
-  height: 100vh !important;
-  margin: 0 !important;
-  padding: 0 !important;
+/* Desktop (> 768px) - Minimum 500px width enforcement */
+@media (min-width: 769px) {
+  #transparent-chatbot-container {
+    width: 520px !important;
+  }
+  
+  #transparent-chatbot-iframe {
+    width: 500px !important;
+    min-width: 500px !important; /* PC minimum width requirement */
+    max-width: 500px !important;
+  }
 }
 
-/* Desktop (≥ 768px) */
-.chatbot-desktop {
-  width: 500px;
-  height: 600px;
-  bottom: 20px;
-  right: 20px;
+/* Mobile (≤ 768px) - 100% screen coverage */
+@media (max-width: 768px) {
+  #transparent-chatbot-container {
+    bottom: 0 !important;
+    right: 0 !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100vw !important; /* 100% of screen width */
+    height: 100vh !important; /* 100% of screen height */
+  }
+  
+  #transparent-chatbot-iframe {
+    width: 100vw !important; /* 100% of screen width */
+    height: 100vh !important; /* 100% of screen height */
+    min-width: unset !important;
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+  }
 }
 ```
 
@@ -319,12 +384,29 @@ The embed script applies comprehensive CSS reset to ensure transparency:
 ### Testing Checklist
 
 - [ ] Transparent iframe creation
+- [ ] Desktop width validation (500px minimum enforced)
+- [ ] Mobile responsive coverage (100vw × 100vh)
+- [ ] Container width compliance (520px for desktop)
+- [ ] Responsive breakpoint behavior (768px)
 - [ ] State persistence across navigation
 - [ ] Cart integration functionality
 - [ ] Product variant selection (including 2XL)
-- [ ] Mobile responsiveness
-- [ ] Cross-browser compatibility
+- [ ] Cross-browser width consistency
 - [ ] Performance benchmarks
+
+### Width Validation Testing
+
+Use the provided validation test page:
+
+```bash
+http://localhost:3001/width-validation-test.html
+```
+
+**Test Matrix:**
+- Desktop Chrome, Firefox, Safari, Edge: 500px width
+- Mobile devices: 100vw coverage
+- Responsive breakpoint transition at 768px
+- Container positioning and sizing
 
 ## 🚨 Troubleshooting
 
@@ -347,6 +429,14 @@ The embed script applies comprehensive CSS reset to ensure transparency:
 2. Check CSRF token requirements
 3. Ensure proper variant ID format
 4. Validate product variant selection
+
+#### Width Issues (NEW)
+1. Check responsive breakpoint configuration (768px)
+2. Verify container width setting (520px for desktop)
+3. Ensure minimum width enforcement (500px)
+4. Test mobile viewport coverage (100vw × 100vh)
+5. Validate CSS media queries
+6. Check for theme CSS conflicts
 
 #### 2XL Size Not Showing
 1. Check product variant configuration
