@@ -124,6 +124,7 @@ class TransparentIframeManager {
     this.container.style.cssText = `
       position: fixed;
       bottom: 20px;
+      right: 20px;
       width: ${CHATBOT_CONFIG.iframe.dimensions.pc.containerWidth}; /* PC container width for 500px iframe */
       z-index: ${CHATBOT_CONFIG.iframe.style.zIndex};
       pointer-events: none; /* container doesn’t block clicks */
