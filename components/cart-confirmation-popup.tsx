@@ -119,13 +119,16 @@ export function CartConfirmationPopup({ isOpen, onClose, cart }: CartConfirmatio
             </div>
 
             <div className="space-y-2 max-h-32 overflow-y-auto">
-              {cart.items.slice(0, 3).map((item) => (
+              {cart.items && Array.isArray(cart.items) && cart.items.slice(0, 3).map((item) => (
                 <div key={item.id} className="flex justify-between text-sm">
                   <span className="truncate flex-1 mr-2">{item.name}</span>
                   <span className="font-medium">{item.price}</span>
                 </div>
               ))}
-              {cart.items.length > 3 && <p className="text-xs text-gray-500">+{cart.items.length - 3} more items</p>}
+              {cart.items && Array.isArray(cart.items) && cart.items.length > 3 && <p className="text-xs text-gray-500">+{cart.items.length - 3} more items</p>}
+              {(!cart.items || !Array.isArray(cart.items) || cart.items.length === 0) && (
+                <p className="text-xs text-gray-500">No items in cart</p>
+              )}
             </div>
 
             <div className="border-t pt-2 mt-3">

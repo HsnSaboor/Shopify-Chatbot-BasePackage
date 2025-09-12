@@ -23,12 +23,69 @@ export class ShopifyCartService {
   private static messageId = 0;
   private static pendingRequests = new Map();
   
-  static async addToCart(variantId: string, quantity = 1): Promise<any> {
-    return this.sendMessage('CART_ADD_ITEM', { variantId, quantity });
+  static async addToCart(variantId: string, quantity = 1): Promise<CartResponse> {
+    try {
+      console.log('[ShopifyCartService] Adding item to cart:', { variantId, quantity });
+      const result = await this.sendMessage('CART_ADD_ITEM', { variantId, quantity });
+      console.log('[ShopifyCartService] Received cart response:', result);
+      
+      // Ensure result has proper cart structure
+      if (!result || typeof result !== 'object') {
+        console.warn('[ShopifyCartService] Invalid cart response, using default structure');
+        return this.getDefaultCartResponse();
+      }
+      
+      // Normalize cart structure
+      const normalizedCart: CartResponse = {
+        items: Array.isArray(result.items) ? result.items : [],
+        total_price: result.total_price || 0,
+        item_count: result.item_count || 0,
+        currency: result.currency || 'USD'
+      };
+      
+      console.log('[ShopifyCartService] Normalized cart response:', normalizedCart);
+      return normalizedCart;
+    } catch (error) {
+      console.error('[ShopifyCartService] Failed to add to cart:', error);
+      // Return a safe default cart structure
+      return this.getDefaultCartResponse();
+    }
+  }
+  
+  // Helper method for default cart response
+  private static getDefaultCartResponse(): CartResponse {
+    return {
+      items: [],
+      total_price: 0,
+      item_count: 0,
+      currency: 'USD'
+    };
   }
   
   static async getCart(): Promise<CartResponse> {
-    return this.sendMessage('CART_GET');
+    try {
+      const result = await this.sendMessage('CART_GET');
+      
+      // Ensure result has proper cart structure
+      if (!result || typeof result !== 'object') {
+        console.warn('[ShopifyCartService] Invalid cart response, using default structure');
+        return this.getDefaultCartResponse();
+      }
+      
+      // Normalize cart structure
+      const normalizedCart: CartResponse = {
+        items: Array.isArray(result.items) ? result.items : [],
+        total_price: result.total_price || 0,
+        item_count: result.item_count || 0,
+        currency: result.currency || 'USD'
+      };
+      
+      return normalizedCart;
+    } catch (error) {
+      console.error('[ShopifyCartService] Failed to get cart:', error);
+      // Return a safe default cart structure
+      return this.getDefaultCartResponse();
+    }
   }
   
   static navigateToCart(): void {
@@ -97,15 +154,24 @@ export class ShopifyCartService {
   // Handle incoming messages
   static init() {
     window.addEventListener('message', (event) => {
+      console.log('[ShopifyCartService] Received message:', event.data);
       // Handle responses
       if (event.data.id && this.pendingRequests.has(event.data.id)) {
         const { resolve, reject } = this.pendingRequests.get(event.data.id);
         this.pendingRequests.delete(event.data.id);
         
         if (event.data.success) {
-          resolve(event.data.data);
+          console.log('[ShopifyCartService] Successful response:', event.data.data);
+          // Ensure cart data has proper structure
+          const data = event.data.data || {};
+          if (!data.items) {
+            console.warn('[ShopifyCartService] Cart data missing items array, creating empty array');
+            data.items = [];
+          }
+          resolve(data);
         } else {
-          reject(new Error(event.data.error));
+          console.error('[ShopifyCartService] Error response:', event.data.error);
+          reject(new Error(event.data.error || 'Unknown error'));
         }
       }
     });

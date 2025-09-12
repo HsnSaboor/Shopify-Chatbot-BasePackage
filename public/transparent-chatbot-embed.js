@@ -6,8 +6,11 @@
 (() => {
   "use strict";
   
+  console.log('[TransparentChatbotEmbed] Initializing embed script');
+  
   // Only run in browser environment
   if (typeof window === 'undefined') {
+    console.log('[TransparentChatbotEmbed] Not in browser environment, exiting');
     return;
   }
   
@@ -37,13 +40,17 @@
     }
   };
   
+  console.log('[TransparentChatbotEmbed] Configuration:', CONFIG);
+  
   class TransparentIframeManager {
     constructor() {
+      console.log('[TransparentChatbotEmbed] Creating TransparentIframeManager');
       this.iframe = null;
       this.container = null;
     }
     
     mount() {
+      console.log('[TransparentChatbotEmbed] Mounting iframe manager');
       this.createContainer();
       this.createIframe();
       this.addResponsiveStyles();
@@ -51,9 +58,11 @@
       
       this.container.appendChild(this.iframe);
       document.body.appendChild(this.container);
+      console.log('[TransparentChatbotEmbed] iframe mounted successfully');
     }
     
     createContainer() {
+      console.log('[TransparentChatbotEmbed] Creating container');
       this.container = document.createElement('div');
       this.container.id = 'transparent-chatbot-container';
       this.container.style.cssText = `
@@ -71,6 +80,7 @@
     }
     
     createIframe() {
+      console.log('[TransparentChatbotEmbed] Creating iframe');
       this.iframe = document.createElement('iframe');
       this.iframe.id = 'transparent-chatbot-iframe';
       this.iframe.src = `${CONFIG.apiUrl}${CONFIG.iframe.src}`;
@@ -97,6 +107,7 @@
     }
     
     addResponsiveStyles() {
+      console.log('[TransparentChatbotEmbed] Adding responsive styles');
       const styleId = 'transparent-chatbot-responsive-styles';
       if (!document.getElementById(styleId)) {
         const styleTag = document.createElement('style');
@@ -139,6 +150,7 @@
     }
     
     applyCSSReset() {
+      console.log('[TransparentChatbotEmbed] Applying CSS reset');
       if (!document.getElementById('transparent-chatbot-css-reset')) {
         const style = document.createElement('style');
         style.id = 'transparent-chatbot-css-reset';
@@ -160,6 +172,7 @@
   
   // Initialize when ready
   function initialize() {
+    console.log('[TransparentChatbotEmbed] Initializing chatbot');
     const manager = new TransparentIframeManager();
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => manager.mount());
