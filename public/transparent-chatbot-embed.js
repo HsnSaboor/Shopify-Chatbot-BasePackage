@@ -170,44 +170,401 @@
       }
     }
     
+    // Function to inject required CSS styles for cart popup
+    injectCartPopupStyles() {
+      // Check if styles are already injected
+      if (document.getElementById('chatbot-cart-popup-styles')) {
+        return;
+      }
+      
+      const style = document.createElement('style');
+      style.id = 'chatbot-cart-popup-styles';
+      style.textContent = `
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        @keyframes slideIn {
+          from { transform: translateY(10px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .animate-in {
+          animation-duration: 200ms;
+          animation-fill-mode: both;
+        }
+        
+        .zoom-in-95 {
+          animation-name: zoomIn95;
+        }
+        
+        @keyframes zoomIn95 {
+          from { transform: scale(0.95); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+        
+        .duration-200 {
+          animation-duration: 200ms;
+        }
+        
+        .backdrop-blur-sm {
+          backdrop-filter: blur(4px);
+        }
+        
+        .bg-black\\/50 {
+          background-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        .rounded-lg {
+          border-radius: 0.5rem;
+        }
+        
+        .bg-gray-50 {
+          background-color: #f9fafb;
+        }
+        
+        .bg-green-100 {
+          background-color: #dcfce7;
+        }
+        
+        .text-green-600 {
+          color: #16a34a;
+        }
+        
+        .text-green-700 {
+          color: #15803d;
+        }
+        
+        .text-gray-600 {
+          color: #4b5563;
+        }
+        
+        .text-gray-800 {
+          color: #1f2937;
+        }
+        
+        .bg-gray-100 {
+          background-color: #f3f4f6;
+        }
+        
+        .border-t {
+          border-top-width: 1px;
+        }
+        
+        .pt-2 {
+          padding-top: 0.5rem;
+        }
+        
+        .mt-3 {
+          margin-top: 0.75rem;
+        }
+        
+        .border-input {
+          border-color: #e5e7eb;
+        }
+        
+        .bg-background {
+          background-color: #ffffff;
+        }
+        
+        .hover\\:bg-accent:hover {
+          background-color: #f3f4f6;
+        }
+        
+        .hover\\:text-accent-foreground:hover {
+          color: #111827;
+        }
+        
+        .bg-blue-600 {
+          background-color: #2563eb;
+        }
+        
+        .text-white {
+          color: #ffffff;
+        }
+        
+        .hover\\:bg-blue-700:hover {
+          background-color: #1d4ed8;
+        }
+        
+        .rounded-xl {
+          border-radius: 0.75rem;
+        }
+        
+        .shadow-lg {
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        
+        .overflow-hidden {
+          overflow: hidden;
+        }
+        
+        .text-center {
+          text-align: center;
+        }
+        
+        .pb-4 {
+          padding-bottom: 1rem;
+        }
+        
+        .pt-6 {
+          padding-top: 1.5rem;
+        }
+        
+        .px-6 {
+          padding-left: 1.5rem;
+          padding-right: 1.5rem;
+        }
+        
+        .mb-4 {
+          margin-bottom: 1rem;
+        }
+        
+        .mx-auto {
+          margin-left: auto;
+          margin-right: auto;
+        }
+        
+        .w-16 {
+          width: 4rem;
+        }
+        
+        .h-16 {
+          height: 4rem;
+        }
+        
+        .flex {
+          display: flex;
+        }
+        
+        .items-center {
+          align-items: center;
+        }
+        
+        .justify-center {
+          justify-content: center;
+        }
+        
+        .text-xl {
+          font-size: 1.25rem;
+          line-height: 1.75rem;
+        }
+        
+        .font-semibold {
+          font-weight: 600;
+        }
+        
+        .text-sm {
+          font-size: 0.875rem;
+          line-height: 1.25rem;
+        }
+        
+        .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+          --tw-space-y-reverse: 0;
+          margin-top: calc(1rem * calc(1 - var(--tw-space-y-reverse)));
+          margin-bottom: calc(1rem * var(--tw-space-y-reverse));
+        }
+        
+        .flex-1 {
+          flex: 1 1 0%;
+        }
+        
+        .gap-3 {
+          gap: 0.75rem;
+        }
+        
+        .rounded-md {
+          border-radius: 0.375rem;
+        }
+        
+        .text-xs {
+          font-size: 0.75rem;
+          line-height: 1rem;
+        }
+        
+        .truncate {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        
+        .max-h-32 {
+          max-height: 8rem;
+        }
+        
+        .overflow-y-auto {
+          overflow-y: auto;
+        }
+        
+        .font-medium {
+          font-weight: 500;
+        }
+        
+        .w-full {
+          width: 100%;
+        }
+        
+        .ml-2 {
+          margin-left: 0.5rem;
+        }
+        
+        .h-10 {
+          height: 2.5rem;
+        }
+        
+        .px-4 {
+          padding-left: 1rem;
+          padding-right: 1rem;
+        }
+        
+        .py-2 {
+          padding-top: 0.5rem;
+          padding-bottom: 0.5rem;
+        }
+        
+        .inline-flex {
+          display: inline-flex;
+        }
+        
+        .transition-colors {
+          transition-property: background-color, border-color, color, fill, stroke;
+          transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+          transition-duration: 150ms;
+        }
+        
+        .border {
+          border-width: 1px;
+        }
+        
+        .fixed {
+          position: fixed;
+        }
+        
+        .inset-0 {
+          top: 0px;
+          right: 0px;
+          bottom: 0px;
+          left: 0px;
+        }
+        
+        .z-\\[10000\\] {
+          z-index: 10000;
+        }
+        
+        .flex-col {
+          flex-direction: column;
+        }
+        
+        .items-center {
+          align-items: center;
+        }
+        
+        .justify-center {
+          justify-content: center;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+    
+    // Helper method to format prices
+    formatPrice(price, currency) {
+      try {
+        return new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: currency || 'USD'
+        }).format(price / 100);
+      } catch (error) {
+        // Fallback formatting
+        return `$${(price / 100).toFixed(2)}`;
+      }
+    }
+    
     // Function to create and display cart popup in parent window
     showCartPopupInParent(cart) {
+      // Inject required CSS styles
+      this.injectCartPopupStyles();
+      
       // Remove any existing popup
       const existingPopup = document.getElementById('chatbot-cart-popup');
       if (existingPopup) {
         existingPopup.remove();
       }
       
-      // Create popup container
+      // Create popup container with CSS classes
       const popupContainer = document.createElement('div');
       popupContainer.id = 'chatbot-cart-popup';
-      popupContainer.style.cssText = `
-        position: fixed;
-        inset: 0;
-        background-color: rgba(0, 0, 0, 0.5);
-        backdrop-filter: blur(4px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 99999;
-        animation: fadeIn 0.2s ease-out;
-      `;
+      popupContainer.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[10000]';
+      popupContainer.style.animation = 'fadeIn 0.2s ease-out';
       
-      // Create popup content
+      // Create popup content with CSS classes
       const popupContent = document.createElement('div');
-      popupContent.style.cssText = `
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        max-width: 24rem;
-        width: 90%;
-        margin: 1rem;
-        animation: slideIn 0.2s ease-out;
+      popupContent.className = 'w-full max-w-md mx-4';
+      
+      // Create the inner content with proper classes
+      const innerContent = `
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden animate-in zoom-in-95 duration-200">
+          <div class="text-center pb-4 pt-6 px-6">
+            <div class="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600">
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-green-700">Added to Cart!</h3>
+            <p class="text-sm text-gray-600">Auto-closing in 5 seconds</p>
+          </div>
+
+          <div class="px-6 pb-6 space-y-4">
+            <!-- Cart Summary -->
+            <div class="bg-gray-50 rounded-lg p-4">
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="font-medium flex items-center gap-2">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="8" cy="21" r="1" />
+                    <circle cx="19" cy="21" r="1" />
+                    <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57L23 6H6" />
+                  </svg>
+                  Cart Summary
+                </h4>
+                <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
+                  ${cart.item_count} ${cart.item_count === 1 ? "item" : "items"}
+                </span>
+              </div>
+
+              <div class="space-y-2 max-h-32 overflow-y-auto">
+                ${this.formatCartItems(cart)}
+              </div>
+
+              <div class="border-t pt-2 mt-3">
+                <div class="flex justify-between font-semibold">
+                  <span>Total:</span>
+                  <span>${this.formatPrice(cart.total_price, cart.currency)}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-3">
+              <button id="view-cart-btn" class="flex-1 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                View Cart
+              </button>
+              <button id="checkout-btn" class="flex-1 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-blue-600 text-white hover:bg-blue-700 h-10 px-4 py-2">
+                Checkout
+              </button>
+            </div>
+
+            <button id="close-popup-btn" class="w-full inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m18 6-12 12" />
+                <path d="m6 6 12 12" />
+              </svg>
+              <span class="ml-2">Close</span>
+            </button>
+          </div>
+        </div>
       `;
       
-      // Add popup HTML content (simplified for example)
-      popupContent.innerHTML = this.createCartPopupHTML(cart);
-      
+      popupContent.innerHTML = innerContent;
       popupContainer.appendChild(popupContent);
       document.body.appendChild(popupContainer);
       
@@ -253,81 +610,22 @@
       });
     }
     
-    // Function to create cart popup HTML
-    createCartPopupHTML(cart) {
-      // Format cart items
-      const cartItemsHTML = cart.items && Array.isArray(cart.items) && cart.items.length > 0 
-        ? cart.items.slice(0, 3).map((item) => `
+    // Helper method to format cart items
+    formatCartItems(cart) {
+      if (cart.items && Array.isArray(cart.items) && cart.items.length > 0) {
+        const itemsHTML = cart.items.slice(0, 3).map((item) => `
           <div class="flex justify-between text-sm">
             <span class="truncate flex-1 mr-2">${item.name}</span>
             <span class="font-medium">${item.price}</span>
           </div>
-        `).join('') + (cart.items.length > 3 ? `<p class="text-xs text-gray-500">+${cart.items.length - 3} more items</p>` : '')
-        : '<p class="text-xs text-gray-500">No items in cart</p>';
-
-      return `
-        <div class="w-full max-w-md mx-4">
-          <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-            <div class="text-center pb-4 pt-6 px-6">
-              <div class="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600">
-                  <path d="M20 6 9 17l-5-5" />
-                </svg>
-              </div>
-              <h3 class="text-xl font-semibold text-green-700">Added to Cart!</h3>
-              <p class="text-sm text-gray-600">Auto-closing in 5 seconds</p>
-            </div>
-
-            <div class="px-6 pb-6 space-y-4">
-              <!-- Cart Summary -->
-              <div class="bg-gray-50 rounded-lg p-4">
-                <div class="flex items-center justify-between mb-3">
-                  <h4 class="font-medium flex items-center gap-2">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <circle cx="8" cy="21" r="1" />
-                      <circle cx="19" cy="21" r="1" />
-                      <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57L23 6H6" />
-                    </svg>
-                    Cart Summary
-                  </h4>
-                  <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
-                    ${cart.item_count} ${cart.item_count === 1 ? "item" : "items"}
-                  </span>
-                </div>
-
-                <div class="space-y-2 max-h-32 overflow-y-auto">
-                  ${cartItemsHTML}
-                </div>
-
-                <div class="border-t pt-2 mt-3">
-                  <div class="flex justify-between font-semibold">
-                    <span>Total:</span>
-                    <span>$${(cart.total_price / 100).toFixed(2)}</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Action Buttons -->
-              <div class="flex gap-3">
-                <button id="view-cart-btn" class="flex-1 inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
-                  View Cart
-                </button>
-                <button id="checkout-btn" class="flex-1 inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-600 text-white hover:bg-blue-700 h-10 px-4 py-2">
-                  Checkout
-                </button>
-              </div>
-
-              <button id="close-popup-btn" class="w-full inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="m18 6-12 12" />
-                  <path d="m6 6 12 12" />
-                </svg>
-                <span class="ml-2">Close</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      `;
+        `).join('');
+        
+        if (cart.items.length > 3) {
+          return itemsHTML + `<p class="text-xs text-gray-500">+${cart.items.length - 3} more items</p>`;
+        }
+        return itemsHTML;
+      }
+      return '<p class="text-xs text-gray-500">No items in cart</p>';
     }
     
     // Add message listener for navigation messages from the cart bridge
