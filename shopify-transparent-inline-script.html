@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transparent Chatbot Embed - Shopify Inline Script</title>
+</head>
+<body>
+
+<!-- QUICK INTEGRATION SCRIPT FOR SHOPIFY THEMES -->
+<!-- Copy and paste this into your theme.liquid before closing </head> tag -->
+
+<script>
+// Configuration
+window.CHATBOT_API_URL = "https://shopify-ai-chatbot-v2.vercel.app";
+
+// Minimal Shopify data (replace with actual Liquid template code)
+window.SHOPIFY_MINIMAL_DATA = {
+  customerId: "{{ customer.id | default: '' }}",
+  localization: "{{ request.locale.iso_code | default: 'en' }}",
+  cartCurrency: "{{ cart.currency.iso_code | default: 'USD' }}",
+  pageType: "{{ request.page_type }}",
+  pageHandle: "{{ page.handle | default: product.handle | default: collection.handle | default: '' }}",
+  shopDomain: "{{ shop.domain }}",
+  currentPage: {
+    url: "{{ canonical_url | default: request.url }}",
+    title: "{{ page_title | escape }}",
+    handle: "{{ page.handle | default: product.handle | default: collection.handle | default: '' }}"
+  },
+  {% if customer %}
+  customer: {
+    id: "{{ customer.id }}",
+    email: "{{ customer.email | escape }}",
+    firstName: "{{ customer.first_name | escape }}",
+    lastName: "{{ customer.last_name | escape }}"
+  },
+  {% else %}
+  customer: null,
+  {% endif %}
+  {% if product %}
+  product: {
+    id: "{{ product.id }}",
+    handle: "{{ product.handle }}",
+    title: "{{ product.title | escape }}",
+    price: {{ product.price | json }},
+    compareAtPrice: {{ product.compare_at_price | json }},
+    available: {{ product.available | json }},
+    variants: [
+      {% for variant in product.variants %}
+      {
+        id: "{{ variant.id }}",
+        title: "{{ variant.title | escape }}",
+        option1: "{{ variant.option1 | escape }}",
+        option2: "{{ variant.option2 | escape }}",
+        option3: "{{ variant.option3 | escape }}",
+        price: {{ variant.price | json }},
+        compareAtPrice: {{ variant.compare_at_price | json }},
+        available: {{ variant.available | json }},
+        inventoryQuantity: {{ variant.inventory_quantity | json }}
+      }{% unless forloop.last %},{% endunless %}
+      {% endfor %}
+    ]
+  },
+  {% else %}
+  product: null,
+  {% endif %}
+  cart: {
+    itemCount: {{ cart.item_count | json }},
+    totalPrice: {{ cart.total_price | json }},
+    currency: "{{ cart.currency.iso_code }}"
+  }
+};
+</script>
+
+<!-- Load the transparent chatbot embed script -->
+<script src="https://shopify-ai-chatbot-v2.vercel.app/transparent-chatbot-embed.js" async></script>
+
+<!-- Alternative: Load from your own domain -->
+<!-- <script src="{{ 'transparent-chatbot-embed.js' | asset_url }}" async></script> -->
+
+<style>
+/* Global CSS reset to prevent spacing issues */
+#transparent-chatbot-container,
+#transparent-chatbot-container * {
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+#transparent-chatbot-iframe {
+  background: transparent !important;
+}
+
+/* Mobile optimization */
+@media (max-width: 767px) {
+  #transparent-chatbot-container {
+    width: 100vw !important;
+    height: 100vh !important;
+  }
+}
+</style>
+
+</body>
+</html>

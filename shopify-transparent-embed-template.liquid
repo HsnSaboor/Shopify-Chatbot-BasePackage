@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Transparent Chatbot Embed - Shopify Integration</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+
+<!-- TRANSPARENT CHATBOT EMBED - SHOPIFY INTEGRATION TEMPLATE -->
+
+<!-- Step 1: Add this script tag to your theme.liquid before closing </head> tag -->
+<!-- OR add it to any specific template where you want the chatbot to appear -->
+
+{% comment %}
+  TRANSPARENT CHATBOT EMBED INTEGRATION
+  
+  This template provides the minimal integration code for embedding
+  the transparent chatbot into any Shopify theme.
+  
+  INSTALLATION INSTRUCTIONS:
+  
+  1. Copy the configuration script below and paste it in your theme.liquid
+     file before the closing </head> tag.
+     
+  2. Update the CHATBOT_API_URL to point to your deployed chatbot URL.
+  
+  3. Optionally customize the configuration options.
+  
+  FEATURES:
+  - 1:1 transparent iframe embedding
+  - Automatic state persistence across page navigation
+  - Full cart integration with success popups
+  - Product variant handling (including 2XL sizes)
+  - Mobile-responsive design
+  - No external toggle buttons (internal chatbot controls only)
+  
+{% endcomment %}
+
+<script>
+{% comment %} === TRANSPARENT CHATBOT CONFIGURATION === {% endcomment %}
+window.CHATBOT_API_URL = "https://your-chatbot-domain.com";
+
+{% comment %} === MINIMAL SHOPIFY DATA EXTRACTION === {% endcomment %}
+window.SHOPIFY_MINIMAL_DATA = {
+  customerId: "{{ customer.id | default: '' }}",
+  localization: "{{ request.locale.iso_code | default: 'en' }}",
+  cartCurrency: "{{ cart.currency.iso_code | default: 'USD' }}",
+  pageType: "{{ request.page_type }}",
+  pageHandle: "{{ page.handle | default: product.handle | default: collection.handle | default: '' }}",
+  shopDomain: "{{ shop.domain }}",
+  
+  {% comment %} Current page context {% endcomment %}
+  currentPage: {
+    url: "{{ canonical_url | default: request.url }}",
+    title: "{{ page_title | escape }}",
+    handle: "{{ page.handle | default: product.handle | default: collection.handle | default: '' }}"
+  },
+  
+  {% comment %} Customer context (if logged in) {% endcomment %}
+  {% if customer %}
+  customer: {
+    id: "{{ customer.id }}",
+    email: "{{ customer.email | escape }}",
+    firstName: "{{ customer.first_name | escape }}",
+    lastName: "{{ customer.last_name | escape }}"
+  },
+  {% else %}
+  customer: null,
+  {% endif %}
+  
+  {% comment %} Product context (if on product page) {% endcomment %}
+  {% if product %}
+  product: {
+    id: "{{ product.id }}",
+    handle: "{{ product.handle }}",
+    title: "{{ product.title | escape }}",
+    price: {{ product.price | json }},
+    compareAtPrice: {{ product.compare_at_price | json }},
+    available: {{ product.available | json }},
+    variants: [
+      {% for variant in product.variants %}
+      {
+        id: "{{ variant.id }}",
+        title: "{{ variant.title | escape }}",
+        option1: "{{ variant.option1 | escape }}",
+        option2: "{{ variant.option2 | escape }}",
+        option3: "{{ variant.option3 | escape }}",
+        price: {{ variant.price | json }},
+        compareAtPrice: {{ variant.compare_at_price | json }},
+        available: {{ variant.available | json }},
+        inventoryQuantity: {{ variant.inventory_quantity | json }}
+      }{% unless forloop.last %},{% endunless %}
+      {% endfor %}
+    ]
+  },
+  {% else %}
+  product: null,
+  {% endif %}
+  
+  {% comment %} Collection context (if on collection page) {% endcomment %}
+  {% if collection %}
+  collection: {
+    id: "{{ collection.id }}",
+    handle: "{{ collection.handle }}",
+    title: "{{ collection.title | escape }}"
+  },
+  {% else %}
+  collection: null,
+  {% endif %}
+  
+  {% comment %} Cart context {% endcomment %}
+  cart: {
+    itemCount: {{ cart.item_count | json }},
+    totalPrice: {{ cart.total_price | json }},
+    currency: "{{ cart.currency.iso_code }}"
+  }
+};
+
+{% comment %} === OPTIONAL: ADVANCED CONFIGURATION === {% endcomment %}
+{% comment %} 
+You can customize the chatbot behavior by setting these configuration options:
+
+window.TRANSPARENT_CHATBOT_CONFIG = {
+  debug: false,
+  autoOpen: false,
+  stateKey: "shopify_chatbot_state",
+  cart: {
+    popup: {
+      autoCloseDelay: 3000,
+      showOnSuccess: true
+    },
+    variants: {
+      supportedSizes: ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'],
+      autoSelectSingleColor: true,
+      autoSelectSingleSize: true
+    }
+  }
+};
+{% endcomment %}
+</script>
+
+{% comment %} === LOAD TRANSPARENT CHATBOT EMBED SCRIPT === {% endcomment %}
+<script src="{{ 'transparent-chatbot-embed.js' | asset_url }}" async></script>
+
+{% comment %} 
+  ALTERNATIVE: Load from your chatbot domain (recommended for production)
+  <script src="https://your-chatbot-domain.com/transparent-chatbot-embed.js" async></script>
+{% endcomment %}
+
+{% comment %} === OPTIONAL: CUSTOM STYLING === {% endcomment %}
+<style>
+/* 
+  Optional: Global CSS reset to ensure transparent embedding
+  This is already handled by the embed script, but you can add
+  additional custom styles here if needed.
+*/
+
+#transparent-chatbot-container {
+  /* Ensure the chatbot container doesn't interfere with your theme */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* 
+  Mobile optimization: Ensure the chatbot works well on mobile devices
+*/
+@media (max-width: 767px) {
+  #transparent-chatbot-iframe {
+    /* Mobile-specific optimizations if needed */
+  }
+}
+
+/* 
+  Custom cart success popup styling (optional)
+  You can override the default popup styles here
+*/
+#cart-success-popup {
+  /* Custom popup styles */
+}
+</style>
+
+{% comment %}
+  === INTEGRATION EXAMPLES ===
+  
+  EXAMPLE 1: Basic Integration (theme.liquid)
+  Add this before </head>:
+  
+  <script>
+  window.CHATBOT_API_URL = "https://your-chatbot-domain.com";
+  window.SHOPIFY_MINIMAL_DATA = { /* data from above */ };
+  </script>
+  <script src="https://your-chatbot-domain.com/transparent-chatbot-embed.js" async></script>
+  
+  
+  EXAMPLE 2: Product Page Only Integration
+  Add this to product.liquid or product-form.liquid:
+  
+  {% if template contains 'product' %}
+  <script>
+  window.CHATBOT_API_URL = "https://your-chatbot-domain.com";
+  window.SHOPIFY_MINIMAL_DATA = { /* product-specific data */ };
+  </script>
+  <script src="https://your-chatbot-domain.com/transparent-chatbot-embed.js" async></script>
+  {% endif %}
+  
+  
+  EXAMPLE 3: Conditional Integration Based on Customer
+  
+  {% if customer or request.page_type == 'product' %}
+  <script>
+  window.CHATBOT_API_URL = "https://your-chatbot-domain.com";
+  window.SHOPIFY_MINIMAL_DATA = { /* conditional data */ };
+  </script>
+  <script src="https://your-chatbot-domain.com/transparent-chatbot-embed.js" async></script>
+  {% endif %}
+  
+{% endcomment %}
+
+</body>
+</html>

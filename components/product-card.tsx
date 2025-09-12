@@ -165,16 +165,24 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
   const processVariants = () => {
     if (!product.variants) return { colors: [], sizes: [] }
 
+    console.log('[ProductCard] Processing variants:', product.variants)
+
     const colors: Array<{ name: string; value: string; id: string }> = []
     const sizes: Array<{ name: string; value: string; id: string }> = []
+
+    // Size order mapping for proper sorting
+    const sizeOrder: { [key: string]: number } = {
+      'XXS': 1, 'XS': 2, 'S': 3, 'M': 4, 'L': 5, 'XL': 6, '2XL': 7, 'XXL': 7, '3XL': 8, 'XXXL': 9
+    }
 
     product.variants.forEach((variant) => {
       if (variant.options && variant.options.length > 0) {
         const option = variant.options[0] // Assuming first option is size for now
         const variantId = variant.variant_id || variant.variantId || ""
 
-        // Check if it's a size (S, M, L, XL, etc.)
-        if (/^(XXS|XS|S|M|L|XL|XXL|XXXL|\d+)$/i.test(option)) {
+        // Check if it's a size (S, M, L, XL, 2XL, etc.)
+        if (/^(XXS|XS|S|M|L|XL|2XL|3XL|XXL|XXXL|\d+XL?|\d+)$/i.test(option)) {
+          console.log('[ProductCard] Found size:', option, 'for variant:', variantId)
           const existing = sizes.find((s) => s.name === option)
           if (!existing) {
             sizes.push({
@@ -186,6 +194,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
         }
         // Otherwise treat as color
         else {
+          console.log('[ProductCard] Found color:', option, 'for variant:', variantId)
           const existing = colors.find((c) => c.name === option)
           if (!existing) {
             colors.push({
@@ -280,6 +289,16 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
         }
       }
     })
+
+    // Sort sizes according to standard order
+    sizes.sort((a, b) => {
+      const orderA = sizeOrder[a.name.toUpperCase()] || 999
+      const orderB = sizeOrder[b.name.toUpperCase()] || 999
+      return orderA - orderB
+    })
+
+    console.log('[ProductCard] Final processed colors:', colors)
+    console.log('[ProductCard] Final processed sizes:', sizes)
 
     return { colors, sizes }
   }

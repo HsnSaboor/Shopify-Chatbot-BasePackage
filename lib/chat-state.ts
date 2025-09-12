@@ -33,6 +33,20 @@ export class ChatStateService {
         return null
       }
 
+      // Ensure messages is always an array
+      if (!state.messages || !Array.isArray(state.messages)) {
+        state.messages = []
+      }
+
+      // Ensure required properties exist
+      if (typeof state.isOpen !== 'boolean') {
+        state.isOpen = false
+      }
+
+      if (typeof state.lastActivity !== 'number') {
+        state.lastActivity = Date.now()
+      }
+
       return state
     } catch (error) {
       console.error("Failed to load chat state:", error)

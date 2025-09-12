@@ -2,7 +2,6 @@ import type React from "react"
 import type { Metadata } from "next"
 import { GeistSans } from "geist/font/sans"
 import { GeistMono } from "geist/font/mono"
-import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
 import "./globals.css"
 
@@ -29,7 +28,6 @@ export default function RootLayout({
     <html lang="en" className="m-0 p-0 w-full h-full">
       <body className={`font-sans m-0 p-0 w-full h-full overflow-hidden ${GeistSans.variable} ${GeistMono.variable}`}>
         <Suspense fallback={<LoadingFallback />}>{children}</Suspense>
-        <Analytics />
       </body>
     </html>
   )

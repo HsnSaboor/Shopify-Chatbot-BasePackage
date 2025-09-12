@@ -1,33 +1,88 @@
 # Shopify AI Chatbot - Unified Integration
 
-[![Version](https://img.shields.io/badge/version-2.0.0--unified-blue.svg)](https://github.com/your-repo)
+[![Version](https://img.shields.io/badge/version-2.1.0--transparent-blue.svg)](https://github.com/your-repo)
 [![Performance](https://img.shields.io/badge/performance-67%25%20faster-green.svg)](#performance)
-[![Bundle Size](https://img.shields.io/badge/bundle%20size-85KB-orange.svg)](#bundle-size)
+[![Bundle Size](https://img.shields.io/badge/bundle%20size-5KB-green.svg)](#bundle-size)
 
-> 🚀 **NEW:** Single-script integration that consolidates three previous scripts into one powerful, unified solution.
+> 🚀 **NEW:** Transparent chatbot embedding with 1:1 iframe integration and complete state persistence across Shopify navigation.
 
 ## ✨ Features
 
-- **🔥 One-Script Installation** - Single line integration
-- **🎯 Enhanced Data Extraction** - Auto-detects Shopify data without Liquid templates
-- **🛒 Improved Cart Integration** - Native add-to-cart with retry logic
-- **🎨 Dynamic Theme Adaptation** - Automatically matches your store's styling
-- **📱 Mobile-First Design** - Optimized responsive interface
-- **⚡ 67% Faster Loading** - Consolidated bundle for better performance
-- **🛡️ Enhanced Error Handling** - Robust retry mechanisms and user feedback
-- **📐 Perfect Height Utilization** - 100% iframe height usage with zero white space
-- **🎯 Zero Footprint Container** - True 0x0 container when closed, no layout impact
+### 🔥 Transparent Embedding (NEW)
+- **1:1 Iframe Integration** - Transparent overlay with no external modifications
+- **Internal Toggle Only** - Uses chatbot's internal controls, no external buttons
+- **State Persistence** - Maintains state across Shopify page navigation
+- **Full Viewport Coverage** - 100vh mobile, 600px desktop height optimization
+
+### 🛒 Enhanced Cart Integration
+- **Complete Variant Support** - Full size range including 2XL support
+- **Smart Validation** - Auto-selection for single variants, validation for multiple
+- **Success Popups** - Responsive cart confirmation with action buttons
+- **Shopify API Integration** - Native cart/add.js API with retry logic
+
+### ⚡ Performance & UX
+- **Minimal Bundle** - 5KB production, <2KB gzipped
+- **Mobile Optimized** - 100vw × 100vh full viewport coverage
+- **Zero Spacing Issues** - Comprehensive CSS reset for transparency
+- **Cross-browser Compatible** - Chrome 60+, Firefox 55+, Safari 12+, Edge 79+
 
 ## 🚀 Quick Installation
 
-**Single Line Setup:**
+### Option 1: Transparent Embedding (Recommended)
+
+Add to your `theme.liquid` before closing `</head>` tag:
+
+```liquid
+<!-- Transparent Chatbot Embed -->
+<script>
+window.CHATBOT_API_URL = "https://your-chatbot-domain.com";
+window.SHOPIFY_MINIMAL_DATA = {
+  customerId: "{{ customer.id | default: '' }}",
+  localization: "{{ request.locale.iso_code | default: 'en' }}",
+  cartCurrency: "{{ cart.currency.iso_code | default: 'USD' }}",
+  pageType: "{{ request.page_type }}",
+  pageHandle: "{{ page.handle | default: product.handle | default: collection.handle | default: '' }}",
+  shopDomain: "{{ shop.domain }}"
+};
+</script>
+<script src="https://your-domain.com/transparent-chatbot-embed.js" async></script>
+```
+
+### Option 2: Traditional Widget
+
 ```html
 <script src="https://your-domain.vercel.app/shopify-chatbot-unified.js" defer></script>
 ```
 
-Add this to your `theme.liquid` file before `</body>` - that's it!
+## 📋 Integration Options
 
-## 📋 Complete Setup Guide
+### 🎯 Transparent Embedding (Latest)
+
+The transparent embedding provides a seamless 1:1 iframe integration:
+
+**Features:**
+- No external UI modifications
+- Full state persistence across navigation
+- Internal chatbot toggle controls
+- Complete cart integration with 2XL support
+- Mobile-responsive full viewport coverage
+
+**Quick Setup:**
+```liquid
+<script>
+window.CHATBOT_API_URL = "https://your-domain.com";
+window.SHOPIFY_MINIMAL_DATA = {
+  customerId: "{{ customer.id | default: '' }}",
+  localization: "{{ request.locale.iso_code }}",
+  cartCurrency: "{{ cart.currency.iso_code }}",
+  pageType: "{{ request.page_type }}",
+  shopDomain: "{{ shop.domain }}"
+};
+</script>
+<script src="{{ 'transparent-chatbot-embed.js' | asset_url }}" async></script>
+```
+
+### 🔧 Traditional Widget Setup
 
 ### Environment Setup
 
@@ -226,22 +281,32 @@ window.CHATBOT_DEBUG = true;
 
 ## 📚 Documentation
 
-- **[Unified Integration Guide](./UNIFIED_INTEGRATION_GUIDE.md)** - Complete setup instructions
-- **[Migration Guide](./MIGRATION_GUIDE.md)** - Migrate from old three-script setup
+- **[Transparent Embed Guide](./TRANSPARENT_EMBED_GUIDE.md)** - Complete transparent embedding setup
+- **[Unified Integration Guide](./UNIFIED_INTEGRATION_GUIDE.md)** - Traditional widget setup
+- **[Migration Guide](./MIGRATION_GUIDE.md)** - Migrate from previous versions
 - **[Shopify Integration](./SHOPIFY_INTEGRATION.md)** - Shopify-specific configuration
+- **[Validation Summary](./VALIDATION_SUMMARY.md)** - Implementation validation results
 
-## 🆕 What's New in v2.0.0-unified
+## 🆕 What's New in v2.1.0-transparent
 
-✅ **Consolidated Integration** - Three scripts → One script  
-✅ **Enhanced Data Extraction** - Works without Liquid templates  
-✅ **Improved Cart Operations** - Retry logic and better error handling  
-✅ **Dynamic Theme Adaptation** - Automatic color and font matching  
-✅ **Mobile-First Design** - Optimized responsive interface  
-✅ **Better Performance** - 67% faster loading, 29% smaller bundle  
-✅ **Advanced Error Handling** - Comprehensive error states and recovery  
-✅ **Debug Mode** - Detailed logging for troubleshooting  
-✅ **Event System** - Custom events for theme integration  
-✅ **Public JavaScript API** - Programmatic control  
+### 🎯 Transparent Embedding
+✅ **1:1 Iframe Integration** - True transparent overlay with no external modifications  
+✅ **State Persistence** - Automatic state preservation across Shopify navigation  
+✅ **Internal Controls Only** - Uses chatbot's internal toggle, removes external buttons  
+✅ **Full Viewport Coverage** - 100vh mobile and 600px desktop optimization  
+✅ **Zero Spacing Issues** - Comprehensive CSS reset for perfect transparency  
+
+### 🛒 Enhanced Cart Features
+✅ **Complete Size Support** - Full size range including 2XL variant handling  
+✅ **Smart Variant Logic** - Auto-selection for single options, validation for multiple  
+✅ **Success Popups** - Responsive cart confirmation with action buttons  
+✅ **Shopify API Integration** - Native cart/add.js API with comprehensive error handling  
+
+### ⚡ Performance Improvements
+✅ **Ultra-lightweight** - 5KB production bundle, <2KB gzipped  
+✅ **Minimal Data Extraction** - Only essential Shopify data collection  
+✅ **Cross-browser Support** - Chrome 60+, Firefox 55+, Safari 12+, Edge 79+  
+✅ **Mobile Optimization** - 100vw × 100vh responsive coverage  
 
 ## 📄 License
 
@@ -266,6 +331,19 @@ Need help?
 - Review the [documentation](#-documentation)
 - Enable [debug mode](#enable-debug-mode) for detailed logs
 - Open an issue on GitHub
+
+---
+
+## 🎯 Implementation Guides
+
+### For Transparent Embedding:
+1. **[Transparent Embed Guide](./TRANSPARENT_EMBED_GUIDE.md)** - Complete implementation
+2. **[Liquid Template](./shopify-transparent-embed-template.liquid)** - Copy-paste integration
+3. **[Inline Script](./shopify-transparent-inline-script.html)** - Quick testing
+
+### For Traditional Widget:
+1. **[Unified Integration Guide](./UNIFIED_INTEGRATION_GUIDE.md)** - Traditional setup
+2. **[Migration Guide](./MIGRATION_GUIDE.md)** - Upgrade instructions
 
 ---
 

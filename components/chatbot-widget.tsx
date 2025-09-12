@@ -264,7 +264,7 @@ export function ChatbotWidget({
     if (isPreview) return
 
     const savedState = ChatStateService.loadState()
-    if (savedState) {
+    if (savedState && savedState.messages && Array.isArray(savedState.messages)) {
       // Convert timestamp strings back to Date objects
       const messagesWithDates = savedState.messages.map((msg: any) => ({
         ...msg,
@@ -357,7 +357,7 @@ export function ChatbotWidget({
           data: {
             isOpen: isOpen || hideToggle,
             width: isOpen || hideToggle ? 400 : 70,
-            height: isOpen || hideToggle ? 600 : 70,
+            height: isOpen || hideToggle ? 800 : 70,
           },
         },
         "*",
@@ -786,7 +786,7 @@ export function ChatbotWidget({
             ? "inset-0 rounded-none h-screen w-screen" 
             : isDirectMode || hideToggle
               ? "absolute bottom-0 right-0 w-full h-full" 
-              : "fixed bottom-6 right-6 max-w-[500px] w-[500px] h-[600px]",
+              : "fixed bottom-6 right-6 max-w-[500px] w-[500px] h-[800px]",
         )}
         style={
           isMobile
@@ -807,14 +807,14 @@ export function ChatbotWidget({
                   padding: 0,
                   width: "100%",
                   height: "100%",
-                  minHeight: "600px",
+                  minHeight: "800px",
                   boxSizing: "border-box",
                 }
               : {
                   transformOrigin: "bottom right",
                   boxShadow: "0 8px 32px rgba(37, 99, 235, 0.3)",
                   width: "500px",
-                  height: "600px",
+                  height: "800px",
                   boxSizing: "border-box",
                 }
         }
