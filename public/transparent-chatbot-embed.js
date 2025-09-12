@@ -1051,353 +1051,173 @@ class TransparentIframeManager {
     }
   }
 
-  // === 5. POSTMESSAGE CART BRIDGE INTEGRATION ===
-  class PostMessageCartBridge {
-    static messageIdCounter = 0;
-    static pendingRequests = new Map();
-    static bridgeReady = false;
-    static storeInfo = null;
-    static fallbackToDirectAPI = false;
-    
-    static init() {
-      Logger.info('CartBridge', 'Initializing PostMessage Cart Bridge...');
-      
-      // Listen for messages from parent Shopify page
-      window.addEventListener('message', (event) => {
-        this.handleParentMessage(event);
-      });
-      
-      // Check if bridge is already ready
-      this.checkBridgeStatus();
-      
-      // Set up fallback timeout
-      setTimeout(() => {
-        if (!this.bridgeReady) {
-          Logger.warn('CartBridge', 'Bridge not ready after timeout, enabling fallback mode');
-          this.fallbackToDirectAPI = true;
-        }
-      }, 3000);
-      
-      Logger.debug('CartBridge', 'PostMessage Cart Bridge initialized');
-    }
-    
-    static handleParentMessage(event) {
-      // Validate message structure
-      if (!event.data || typeof event.data !== 'object') {
-        return;
-      }
-      
-      const { type, messageId, success, data, error } = event.data;
-      
-      Logger.debug('CartBridge', 'Received message from parent:', { type, messageId, success });
-      
-      // Handle bridge ready notification
-      if (type === 'BRIDGE_READY') {
-        this.bridgeReady = true;
-        this.storeInfo = data.storeInfo;
-        Logger.info('CartBridge', 'Bridge ready received from parent', data);
-        return;
-      }
-      
-      // Handle cart update broadcasts
-      if (type === 'CART_UPDATED') {
-        Logger.info('CartBridge', 'Cart updated notification received');
-        this.notifyCartUpdate(data);
-        return;
-      }
-      
-      // Handle response to our request
-      if (messageId && this.pendingRequests.has(messageId)) {
-        const { resolve, reject, timeout } = this.pendingRequests.get(messageId);
-        
-        clearTimeout(timeout);
-        this.pendingRequests.delete(messageId);
-        
-        if (success) {
-          Logger.debug('CartBridge', 'Request succeeded:', { type, messageId });
-          resolve(data);
-        } else {
-          Logger.error('CartBridge', 'Request failed:', { type, messageId, error });
-          reject(new Error(error?.message || 'Unknown error'));
-        }
-      }
-    }
-    
-    static async sendMessageToParent(type, payload = {}, timeout = 5000) {
-      // Fallback to direct API if bridge is not ready
-      if (this.fallbackToDirectAPI) {
-        Logger.warn('CartBridge', 'Using fallback to direct API for:', type);
-        return this.fallbackToDirectAPI(type, payload);
-      }
-      
-      // Check if parent is available
-      if (!window.parent || window.parent === window) {
-        Logger.warn('CartBridge', 'No parent window available, using fallback');
-        return this.fallbackToDirectAPI(type, payload);
-      }
-      
-      return new Promise((resolve, reject) => {
-        const messageId = `msg_${Date.now()}_${++this.messageIdCounter}`;
-        
-        Logger.debug('CartBridge', 'Sending message to parent:', { type, messageId, payload });
-        
-        // Set up timeout
-        const timeoutId = setTimeout(() => {
-          this.pendingRequests.delete(messageId);
-          Logger.warn('CartBridge', 'Request timeout, enabling fallback mode for:', type);
-          this.fallbackToDirectAPI = true;
-          // Try fallback
-          this.fallbackToDirectAPI(type, payload).then(resolve).catch(reject);
-        }, timeout);
-        
-        // Store pending request
-        this.pendingRequests.set(messageId, { resolve, reject, timeout: timeoutId });
-        
-        // Send message to parent
-        const message = {
-          type,
-          payload,
-          messageId,
-          timestamp: new Date().toISOString()
-        };
-        
-        window.parent.postMessage(message, '*');
-      });
-    }
-    
-    static async fallbackToDirectAPI(type, payload) {
-      Logger.warn('CartBridge', 'Using direct API fallback for:', type);
-      
-      try {
-        switch (type) {
-          case 'CART_ADD_ITEM':
-            // Use the legacy CartIntegrationManager as fallback
-            if (typeof CartIntegrationManager !== 'undefined') {
-              const result = await CartIntegrationManager.addToCartWithRetry(
-                payload.variantId, 
-                payload.quantity || 1
-              );
-              return { cart: result };
-            }
-            throw new Error('CartIntegrationManager not available for fallback');
-            
-          case 'CART_GET':
-            if (typeof CartIntegrationManager !== 'undefined') {
-              const result = await CartIntegrationManager.getCart();
-              return result;
-            }
-            throw new Error('CartIntegrationManager not available for fallback');
-            
-          case 'NAVIGATE_TO_CART':
-            window.location.href = '/cart';
-            return { success: true };
-            
-          case 'NAVIGATE_TO_CHECKOUT':
-            window.location.href = '/checkout';
-            return { success: true };
-            
-          default:
-            throw new Error(`No fallback available for operation: ${type}`);
-        }
-      } catch (error) {
-        Logger.error('CartBridge', 'Fallback API failed:', error.message);
-        throw error;
-      }
-    }
-    
-    static async addToCart(variantId, quantity = 1, properties = {}, productData = null) {
+  // === 5. ENHANCED CART INTEGRATION MANAGER ===
+  class CartIntegrationManager {
+    static async addToCart(variantId, quantity = 1, productData = null) {
       const startTime = performance.now();
+      let storeURL = null;
       
       try {
-        Logger.info('CartBridge', 'Adding to cart via bridge:', { variantId, quantity, productData: productData?.title });
+        // Detect store URL dynamically
+        storeURL = StoreURLDetector.detectWithRetry();
+        const cartEndpoint = `${storeURL}/cart/add.js`;
         
-        const result = await this.sendMessageToParent('CART_ADD_ITEM', {
-          variantId,
-          quantity,
-          properties
+        Logger.info('CartAPI', 'Adding to cart:', { 
+          variantId, 
+          quantity, 
+          endpoint: cartEndpoint,
+          productData: productData?.title || 'Unknown Product'
         });
-        
-        const endTime = performance.now();
-        Logger.performance('CartBridge', 'addToCart', startTime, endTime, true);
-        
-        Logger.info('CartBridge', 'Successfully added to cart via bridge');
-        
-        // Show success popup with the result
-        if (result.cart) {
-          CartSuccessPopup.show(result, productData);
+
+        // Validate inputs
+        if (!this.validateInputs(variantId, quantity)) {
+          throw new Error('Invalid cart parameters');
         }
+
+        const requestBody = {
+          items: [{ id: parseInt(variantId), quantity }],
+        };
+
+        Logger.debug('CartAPI', 'Request body:', requestBody);
+
+        const response = await this.makeCartRequest(cartEndpoint, requestBody);
+        const endTime = performance.now();
         
-        // Track performance
-        PerformanceMonitor.trackAPIRequest({
-          operation: 'addToCart',
-          duration: endTime - startTime,
-          success: true,
-          method: 'postMessage'
-        });
-        
+        Logger.network('CartAPI', 'POST', cartEndpoint, response.status, endTime - startTime);
+
+        if (!response.ok) {
+          throw new CartAPIError(`HTTP error! status: ${response.status}`, response.status, cartEndpoint);
+        }
+
+        const result = await response.json();
+        Logger.info('CartAPI', 'Successfully added to cart:', result);
+        Logger.performance('CartAPI', 'addToCart', startTime, endTime, true);
+
+        // Update cart count in UI
+        this.updateCartCount(quantity);
+
+        // Show success popup
+        CartSuccessPopup.show(result, productData);
+
+        // Trigger Shopify events
+        this.triggerShopifyEvents(result);
+
         return result;
       } catch (error) {
         const endTime = performance.now();
-        Logger.performance('CartBridge', 'addToCart', startTime, endTime, false);
-        
-        Logger.error('CartBridge', 'Failed to add to cart via bridge:', {
+        Logger.performance('CartAPI', 'addToCart', startTime, endTime, false);
+        Logger.error('CartAPI', 'Failed to add to cart:', {
           error: error.message,
           variantId,
-          quantity
+          quantity,
+          storeURL,
+          stack: error.stack
         });
         
-        // Track error
-        PerformanceMonitor.trackError(error, {
-          operation: 'addToCart',
+        // Handle specific error types
+        const handledError = ErrorHandler.handleCartError(error, {
           variantId,
-          quantity
+          quantity,
+          storeURL,
+          productData
         });
         
-        throw error;
+        // Rethrow with enhanced error information
+        throw new Error(handledError.message || error.message);
       }
     }
-    
-    static async getCart() {
-      const startTime = performance.now();
-      
-      try {
-        Logger.debug('CartBridge', 'Getting cart via bridge...');
-        
-        const result = await this.sendMessageToParent('CART_GET');
-        
-        const endTime = performance.now();
-        Logger.debug('CartBridge', `Cart retrieved via bridge in ${endTime - startTime}ms`);
-        
-        return result;
-      } catch (error) {
-        Logger.error('CartBridge', 'Failed to get cart via bridge:', error.message);
-        throw error;
-      }
-    }
-    
-    static async updateCart(updates) {
-      try {
-        Logger.info('CartBridge', 'Updating cart via bridge:', updates);
-        
-        const result = await this.sendMessageToParent('CART_UPDATE', { updates });
-        
-        Logger.info('CartBridge', 'Cart updated successfully via bridge');
-        return result;
-      } catch (error) {
-        Logger.error('CartBridge', 'Failed to update cart via bridge:', error.message);
-        throw error;
-      }
-    }
-    
-    static async clearCart() {
-      try {
-        Logger.info('CartBridge', 'Clearing cart via bridge...');
-        
-        const result = await this.sendMessageToParent('CART_CLEAR');
-        
-        Logger.info('CartBridge', 'Cart cleared successfully via bridge');
-        return result;
-      } catch (error) {
-        Logger.error('CartBridge', 'Failed to clear cart via bridge:', error.message);
-        throw error;
-      }
-    }
-    
-    static async navigateToCart() {
-      try {
-        Logger.info('CartBridge', 'Navigating to cart via bridge...');
-        
-        await this.sendMessageToParent('NAVIGATE_TO_CART');
-        
-        Logger.info('CartBridge', 'Navigation to cart initiated');
-      } catch (error) {
-        Logger.error('CartBridge', 'Failed to navigate to cart via bridge:', error.message);
-        // Fallback to direct navigation
-        window.location.href = '/cart';
-        throw error;
-      }
-    }
-    
-    static async navigateToCheckout() {
-      try {
-        Logger.info('CartBridge', 'Navigating to checkout via bridge...');
-        
-        await this.sendMessageToParent('NAVIGATE_TO_CHECKOUT');
-        
-        Logger.info('CartBridge', 'Navigation to checkout initiated');
-      } catch (error) {
-        Logger.error('CartBridge', 'Failed to navigate to checkout via bridge:', error.message);
-        // Fallback to direct navigation
-        window.location.href = '/checkout';
-        throw error;
-      }
-    }
-    
-    static async getStoreInfo() {
-      if (this.storeInfo) {
-        return this.storeInfo;
+
+    static validateInputs(variantId, quantity) {
+      if (!variantId || isNaN(parseInt(variantId))) {
+        Logger.error('CartAPI', 'Invalid variant ID:', variantId);
+        return false;
       }
       
+      if (!quantity || quantity < 1 || !Number.isInteger(quantity)) {
+        Logger.error('CartAPI', 'Invalid quantity:', quantity);
+        return false;
+      }
+      
+      Logger.debug('CartAPI', 'Input validation passed');
+      return true;
+    }
+
+    static async makeCartRequest(endpoint, requestBody) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), CHATBOT_CONFIG.cart.timeout);
+      
       try {
-        Logger.debug('CartBridge', 'Getting store info via bridge...');
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal
+        });
         
-        const result = await this.sendMessageToParent('GET_STORE_INFO');
-        this.storeInfo = result;
-        
-        Logger.debug('CartBridge', 'Store info retrieved via bridge:', result);
-        return result;
+        clearTimeout(timeoutId);
+        return response;
       } catch (error) {
-        Logger.error('CartBridge', 'Failed to get store info via bridge:', error.message);
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          throw new Error('Cart request timed out');
+        }
         throw error;
       }
     }
-    
-    static checkBridgeStatus() {
-      // Check if parent has bridge ready
-      if (window.parent && window.parent !== window) {
-        Logger.debug('CartBridge', 'Requesting bridge status from parent...');
-        
-        // Request bridge status
-        window.parent.postMessage({
-          type: 'BRIDGE_STATUS_REQUEST',
-          timestamp: new Date().toISOString()
-        }, '*');
-      }
-    }
-    
-    static notifyCartUpdate(cartData) {
-      // Notify other parts of the application about cart updates
-      const event = new CustomEvent('cartUpdated', {
-        detail: cartData
-      });
-      window.dispatchEvent(event);
-      
-      Logger.info('CartBridge', 'Cart update notification dispatched');
-    }
-    
+
     static async addToCartWithRetry(variantId, quantity = 1, productData = null) {
       const maxAttempts = CHATBOT_CONFIG.cart.retryAttempts;
       
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         try {
-          Logger.debug('CartBridge', `Attempt ${attempt}/${maxAttempts} to add to cart via bridge`);
-          return await this.addToCart(variantId, quantity, {}, productData);
+          Logger.debug('CartAPI', `Attempt ${attempt}/${maxAttempts} to add to cart`);
+          return await this.addToCart(variantId, quantity, productData);
         } catch (error) {
-          Logger.warn('CartBridge', `Attempt ${attempt} failed:`, error.message);
+          Logger.warn('CartAPI', `Attempt ${attempt} failed:`, error.message);
           
           if (attempt === maxAttempts) {
-            Logger.error('CartBridge', `All ${maxAttempts} attempts failed`);
+            Logger.error('CartAPI', `All ${maxAttempts} attempts failed`);
             throw error;
           }
           
           // Wait before retry (exponential backoff)
           const delay = Math.pow(2, attempt - 1) * 1000;
-          Logger.debug('CartBridge', `Waiting ${delay}ms before retry...`);
+          Logger.debug('CartAPI', `Waiting ${delay}ms before retry...`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
     }
-  }
+
+    static updateCartCount(quantity) {
+      try {
+        const cartCountElements = document.querySelectorAll(
+          '[data-cart-count], .cart-count, #cart-count, .CartCount, [data-cart-item-count]'
+        );
+        
+        Logger.debug('CartAPI', `Updating ${cartCountElements.length} cart count elements`);
+        
+        cartCountElements.forEach((el) => {
+          const currentCount = parseInt(el.textContent) || 0;
+          const newCount = currentCount + quantity;
+          el.textContent = newCount;
+          
+          // Also update data attributes if they exist
+          if (el.hasAttribute('data-cart-count')) {
+            el.setAttribute('data-cart-count', newCount);
+          }
+        });
+        
+        Logger.info('CartAPI', `Cart count updated by ${quantity}`);
+      } catch (error) {
+        Logger.warn('CartAPI', 'Failed to update cart count:', error.message);
+      }
+    }
+
+    static triggerShopifyEvents(cartData) {
       try {
         // Trigger Shopify events
         if (window.Shopify && window.Shopify.onCartUpdate) {
@@ -1424,7 +1244,7 @@ class TransparentIframeManager {
         Logger.warn('CartAPI', 'Failed to trigger some cart events:', error.message);
       }
     }
-  )
+  }
 
   // === CART API ERROR CLASS ===
   class CartAPIError extends Error {
@@ -1919,19 +1739,11 @@ class TransparentIframeManager {
         continueBtn.addEventListener('click', () => this.hide());
       }
 
-      // View cart - now using PostMessage bridge
+      // View cart
       const viewBtn = content.querySelector('#cart-popup-view');
       if (viewBtn) {
-        viewBtn.addEventListener('click', async () => {
-          try {
-            // Use PostMessage bridge to navigate to cart
-            await PostMessageCartBridge.navigateToCart();
-            this.hide();
-          } catch (error) {
-            Logger.error('CartSuccessPopup', 'Failed to navigate to cart:', error.message);
-            // Fallback to direct navigation
-            window.location.href = '/cart';
-          }
+        viewBtn.addEventListener('click', () => {
+          window.location.href = '/cart';
         });
       }
 
@@ -2105,23 +1917,23 @@ class TransparentIframeManager {
           }
         }
 
-        Logger.info('MessageHandler', 'Processing add to cart request via bridge:', {
+        Logger.info('MessageHandler', 'Processing add to cart request:', {
           variantId,
           quantity,
           product: product?.title || 'Unknown'
         });
 
-        // Use PostMessage bridge instead of direct API calls
-        const result = await PostMessageCartBridge.addToCartWithRetry(variantId, quantity, product);
+        // Use enhanced cart integration with retry
+        const result = await CartIntegrationManager.addToCartWithRetry(variantId, quantity, product);
         
-        Logger.info('MessageHandler', 'Add to cart successful via bridge');
+        Logger.info('MessageHandler', 'Add to cart successful');
         this.iframeManager.sendMessage({
           type: 'ADD_TO_CART_SUCCESS',
           data: result
         });
 
       } catch (error) {
-        Logger.error('MessageHandler', 'Add to cart failed via bridge:', {
+        Logger.error('MessageHandler', 'Add to cart failed:', {
           error: error.message,
           variantId,
           quantity
@@ -2130,7 +1942,6 @@ class TransparentIframeManager {
         // Track error for performance monitoring
         PerformanceMonitor.trackError(error, {
           operation: 'addToCart',
-          method: 'postMessage',
           variantId,
           quantity
         });
@@ -2205,10 +2016,6 @@ class TransparentIframeManager {
         const detectedStoreURL = StoreURLDetector.detectWithRetry();
         CHATBOT_CONFIG.storeUrl = detectedStoreURL;
         Logger.info('Configuration', 'Updated store URL:', detectedStoreURL);
-
-        // Initialize PostMessage cart bridge
-        PostMessageCartBridge.init();
-        Logger.info('Initialization', 'PostMessage cart bridge initialized');
 
         // Check for required data
         const validation = DataExtractor.validateData(DataExtractor.extractShopifyData());
@@ -2305,3 +2112,5 @@ class TransparentIframeManager {
 
   // Start initialization
   initializeWhenReady();
+
+})();
