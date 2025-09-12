@@ -237,6 +237,11 @@ export class BridgeFallbackHandler {
    * Handle navigate to cart fallback
    */
   private handleNavigateToCartFallback(): { success: boolean } {
+    // Only run on client-side
+    if (typeof window === 'undefined') {
+      return { success: false };
+    }
+    
     try {
       window.location.href = '/cart';
       return { success: true };
@@ -249,6 +254,11 @@ export class BridgeFallbackHandler {
    * Handle navigate to checkout fallback
    */
   private handleNavigateToCheckoutFallback(): { success: boolean } {
+    // Only run on client-side
+    if (typeof window === 'undefined') {
+      return { success: false };
+    }
+    
     try {
       window.location.href = '/checkout';
       return { success: true };
@@ -344,14 +354,17 @@ export class BridgeFallbackHandler {
    */
   private cacheCartData(cart: CartResponse): void {
     try {
-      if (typeof localStorage !== 'undefined') {
-        const cacheData = {
-          cart,
-          timestamp: Date.now(),
-          expires: Date.now() + (5 * 60 * 1000) // 5 minutes expiration
-        };
-        localStorage.setItem(this.localStorageKey, JSON.stringify(cacheData));
+      // Only run on client-side
+      if (typeof window === 'undefined' || !window.localStorage) {
+        return;
       }
+      
+      const cacheData = {
+        cart,
+        timestamp: Date.now(),
+        expires: Date.now() + (5 * 60 * 1000) // 5 minutes expiration
+      };
+      localStorage.setItem(this.localStorageKey, JSON.stringify(cacheData));
     } catch (error) {
       console.warn('Failed to cache cart data:', error);
     }
@@ -361,19 +374,22 @@ export class BridgeFallbackHandler {
    * Get cached cart data from localStorage
    */
   private getCachedCartData(): CartResponse | null {
+    // Only run on client-side
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return null;
+    }
+    
     try {
-      if (typeof localStorage !== 'undefined') {
-        const cachedData = localStorage.getItem(this.localStorageKey);
-        if (cachedData) {
-          const parsed = JSON.parse(cachedData);
-          
-          // Check if cache is still valid
-          if (parsed.expires > Date.now()) {
-            return parsed.cart;
-          } else {
-            // Remove expired cache
-            localStorage.removeItem(this.localStorageKey);
-          }
+      const cachedData = localStorage.getItem(this.localStorageKey);
+      if (cachedData) {
+        const parsed = JSON.parse(cachedData);
+        
+        // Check if cache is still valid
+        if (parsed.expires > Date.now()) {
+          return parsed.cart;
+        } else {
+          // Remove expired cache
+          localStorage.removeItem(this.localStorageKey);
         }
       }
     } catch (error) {
@@ -387,10 +403,13 @@ export class BridgeFallbackHandler {
    * Clear cached cart data
    */
   clearCache(): void {
+    // Only run on client-side
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return;
+    }
+    
     try {
-      if (typeof localStorage !== 'undefined') {
-        localStorage.removeItem(this.localStorageKey);
-      }
+      localStorage.removeItem(this.localStorageKey);
     } catch (error) {
       console.warn('Failed to clear cart cache:', error);
     }

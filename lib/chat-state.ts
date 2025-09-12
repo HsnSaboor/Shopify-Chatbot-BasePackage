@@ -10,6 +10,11 @@ export class ChatStateService {
 
   static saveState(state: ChatState): void {
     try {
+      // Only run on client-side
+      if (typeof window === 'undefined' || !window.localStorage) {
+        return;
+      }
+      
       const stateWithTimestamp = {
         ...state,
         lastActivity: Date.now(),
@@ -21,6 +26,11 @@ export class ChatStateService {
   }
 
   static loadState(): ChatState | null {
+    // Only run on client-side
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return null;
+    }
+    
     try {
       const stored = localStorage.getItem(this.STORAGE_KEY)
       if (!stored) return null
@@ -56,6 +66,11 @@ export class ChatStateService {
   }
 
   static clearState(): void {
+    // Only run on client-side
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return;
+    }
+    
     try {
       localStorage.removeItem(this.STORAGE_KEY)
     } catch (error) {

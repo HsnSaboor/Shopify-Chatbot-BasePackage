@@ -6,6 +6,11 @@
 (() => {
   "use strict";
   
+  // Only run in browser environment
+  if (typeof window === 'undefined') {
+    return;
+  }
+  
   const CONFIG = {
     apiUrl: window.CHATBOT_API_URL || "https://shopify-ai-chatbot-v2.vercel.app",
     iframe: {

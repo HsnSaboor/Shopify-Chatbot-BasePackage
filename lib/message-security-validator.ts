@@ -110,6 +110,11 @@ export class MessageSecurityValidator {
    * Check if origin is allowed
    */
   isAllowedOrigin(origin: string): boolean {
+    // Only run on client-side
+    if (typeof window === 'undefined') {
+      return false;
+    }
+    
     // Allow same origin
     if (origin === window.location.origin) {
       return true;

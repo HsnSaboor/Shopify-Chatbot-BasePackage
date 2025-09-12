@@ -32,6 +32,11 @@ export class ShopifyCartService {
   }
   
   static navigateToCart(): void {
+    // Only run on client-side
+    if (typeof window === 'undefined') {
+      return;
+    }
+    
     try {
       window.location.href = "/cart";
     } catch (error) {
@@ -40,6 +45,11 @@ export class ShopifyCartService {
   }
 
   static navigateToCheckout(): void {
+    // Only run on client-side
+    if (typeof window === 'undefined') {
+      return;
+    }
+    
     try {
       window.location.href = "/checkout";
     } catch (error) {
@@ -60,6 +70,11 @@ export class ShopifyCartService {
   }
   
   private static sendMessage(type: string, payload?: any): Promise<any> {
+    // Only run on client-side
+    if (typeof window === 'undefined') {
+      return Promise.reject(new Error('Window not available'));
+    }
+    
     return new Promise((resolve, reject) => {
       const id = ++this.messageId;
       
@@ -98,4 +113,7 @@ export class ShopifyCartService {
 }
 
 // Initialize message handler
-ShopifyCartService.init();
+// Only run on client-side
+if (typeof window !== 'undefined') {
+  ShopifyCartService.init();
+}

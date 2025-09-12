@@ -196,6 +196,11 @@ export function ChatbotWidget({
   const { toast } = useToast()
 
   useEffect(() => {
+    // Only run on client-side
+    if (typeof window === 'undefined') {
+      return;
+    }
+    
     if (isPreview) return
 
     const handleMessage = (event: MessageEvent) => {
@@ -247,6 +252,11 @@ export function ChatbotWidget({
   }, [isPreview])
 
   useEffect(() => {
+    // Only run on client-side
+    if (typeof window === 'undefined') {
+      return;
+    }
+    
     if (isPreview) return
 
     if (window.parent !== window) {
@@ -261,6 +271,11 @@ export function ChatbotWidget({
   }, [isOpen, messages.length, isPreview])
 
   useEffect(() => {
+    // Only run on client-side
+    if (typeof window === 'undefined') {
+      return;
+    }
+    
     if (isPreview) return
 
     const savedState = ChatStateService.loadState()
@@ -281,6 +296,11 @@ export function ChatbotWidget({
   }, [isPreview])
 
   useEffect(() => {
+    // Only run on client-side
+    if (typeof window === 'undefined') {
+      return;
+    }
+    
     if (isPreview) return
 
     const state = {
@@ -292,6 +312,11 @@ export function ChatbotWidget({
   }, [messages, isOpen, isPreview])
 
   useEffect(() => {
+    // Only run on client-side
+    if (typeof window === 'undefined') {
+      return;
+    }
+    
     if (isPreview) return
 
     const handleBeforeUnload = () => {
@@ -324,6 +349,11 @@ export function ChatbotWidget({
   }, [messages, isOpen, isPreview])
 
   useEffect(() => {
+    // Only run on client-side
+    if (typeof window === 'undefined') {
+      return;
+    }
+    
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768)
     }
@@ -335,6 +365,11 @@ export function ChatbotWidget({
   }, [])
 
   useEffect(() => {
+    // Only run on client-side
+    if (typeof window === 'undefined') {
+      return;
+    }
+    
     const urlParams = new URLSearchParams(window.location.search)
     const mode = urlParams.get("mode")
     const embedded = urlParams.get("embedded")
@@ -348,6 +383,11 @@ export function ChatbotWidget({
   }, [hideToggle])
 
   useEffect(() => {
+    // Only run on client-side
+    if (typeof window === 'undefined') {
+      return;
+    }
+    
     if (isPreview) return
 
     if (window.parent !== window) {
@@ -624,6 +664,16 @@ export function ChatbotWidget({
   }
 
   const startRecording = async () => {
+    // Only run on client-side
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+      toast({
+        title: "Recording error",
+        description: "Recording is not available in this environment.",
+        variant: "destructive",
+      })
+      return;
+    }
+    
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" })
@@ -699,6 +749,11 @@ export function ChatbotWidget({
     if (isPreview) {
       onMockInteraction?.("add_to_cart", cart)
       return
+    }
+
+    // Only run on client-side
+    if (typeof window === 'undefined') {
+      return;
     }
 
     if (window.parent !== window) {
