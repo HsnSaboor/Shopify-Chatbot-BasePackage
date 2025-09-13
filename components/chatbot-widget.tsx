@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { ProductCard } from "@/components/product-card"
+import { OrderCard } from "@/components/order-card"
 
 import { useToast } from "@/hooks/use-toast"
 import type { CartResponse } from "@/lib/shopify-cart"
@@ -124,7 +125,35 @@ interface Message {
   timestamp: Date
   cards?: ProductCardData[]
   products?: any[]
+  order?: Order
   event_type?: string
+}
+
+interface Order {
+  id: string;
+  order_number: number;
+  items: Array<{
+    product_id: string;
+    title: string;
+    price: string;
+    variant_id: string;
+    quantity: number;
+  }>;
+  customer: {
+    name: string;
+    email: string | null;
+    phone: string | null;
+  };
+  shipping_address: {
+    name: string;
+    address1: string;
+    address2: string;
+    city: string;
+    province: string;
+    zip: string;
+    country: string;
+  };
+  payment_method: string;
 }
 
 interface ProductCardData {
@@ -148,6 +177,7 @@ interface ChatResponse {
   product_name?: string
   order_id?: string
   cards?: ProductCardData[]
+  order?: Order
 }
 
 interface ChatbotWidgetProps {
@@ -613,6 +643,7 @@ export function ChatbotWidget({
         content: data.message,
         timestamp: new Date(),
         cards: data.cards,
+        order: data.order,
         event_type: data.event_type,
       }
 
@@ -1021,6 +1052,13 @@ export function ChatbotWidget({
                     {(message.cards || message.products || []).map((product: any) => (
                       <ProductCard key={product.id} product={product} onAddToCart={handleAddToCartSuccess} />
                     ))}
+                  </div>
+                )}
+
+                {/* Order Card */}
+                {message.order && (
+                  <div className={cn(message.type === "bot" ? "ml-11" : "", "space-y-3")}>
+                    <OrderCard order={message.order} />
                   </div>
                 )}
               </div>

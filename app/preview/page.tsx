@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { MessageCircle, ShoppingCart, Sparkles, Zap, Eye } from "lucide-react"
 import { ChatbotWidget } from "@/components/chatbot-widget"
+import { OrderCard } from "@/components/order-card"
 
 const mockMessages = [
   {
@@ -84,6 +85,35 @@ const mockMessages = [
     timestamp: new Date(Date.now() - 60000),
   },
 ]
+
+const mockOrder = {
+  id: "5987238871087",
+  order_number: 1004,
+  items: [
+    {
+      product_id: "7929446826031",
+      title: "Zenmato T-Shirt Bundle",
+      price: "105.00",
+      variant_id: "43609653575727",
+      quantity: 1,
+    },
+  ],
+  customer: {
+    name: "Hassan",
+    email: "hassan@example.com",
+    phone: "+923202233656",
+  },
+  shipping_address: {
+    name: "Saboor",
+    address1: "Stree6",
+    address2: "",
+    city: "Gujranwala",
+    province: "",
+    zip: "",
+    country: "Pakistan",
+  },
+  payment_method: "bogus",
+}
 
 const features = [
   {
@@ -290,6 +320,16 @@ export default function PreviewPage() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Order Card Preview */}
+      <section className="py-16 px-4 bg-white">
+        <div className="container mx-auto max-w-6xl">
+          <h3 className="text-3xl font-bold text-center text-slate-900 mb-12">Order Card Preview</h3>
+          <div className="flex justify-center">
+            <OrderCard order={mockOrder} />
           </div>
         </div>
       </section>
