@@ -218,7 +218,7 @@
           left: 0px;
         }
         
-        .z-\\[10000\\] {
+        .z-\[10000\] {
           z-index: 10000;
         }
         
@@ -247,7 +247,7 @@
           margin-right: 1rem;
         }
         
-        .bg-black\\/50 {
+        .bg-black\/50 {
           background-color: rgba(0, 0, 0, 0.5);
         }
         
@@ -466,11 +466,11 @@
           background-color: #ffffff;
         }
         
-        .hover\\:bg-accent:hover {
+        .hover\:bg-accent:hover {
           background-color: #f3f4f6;
         }
         
-        .hover\\:text-accent-foreground:hover {
+        .hover\:text-accent-foreground:hover {
           color: #111827;
         }
         
@@ -496,7 +496,7 @@
           color: #ffffff;
         }
         
-        .hover\\:bg-blue-700:hover {
+        .hover\:bg-blue-700:hover {
           background-color: #1d4ed8;
         }
         
@@ -643,6 +643,7 @@
             // Just reload the page
             window.location.reload();
           } else {
+.
             // Navigate to checkout page
             window.location.href = '/checkout';
           }
@@ -670,41 +671,8 @@
       });
     }
     
-    // Helper method to format cart items
-    formatCartItems(cart) {
-      if (cart.items && Array.isArray(cart.items) && cart.items.length > 0) {
-        const itemsHTML = cart.items.slice(0, 3).map((item) => `
-          <div class="flex justify-between text-sm">
-            <span class="truncate flex-1 mr-2">${item.name}</span>
-            <span class="font-medium">${item.price}</span>
-          </div>
-        `).join('');
-        
-        if (cart.items.length > 3) {
-          return itemsHTML + `<p class="text-xs text-gray-500">+${cart.items.length - 3} more items</p>`;
-        }
-        return itemsHTML;
-      }
-      return '<p class="text-xs text-gray-500">No items in cart</p>';
-    }
-    
     // Add message listener for navigation messages from the cart bridge
     setupMessageListener() {
-      // console.log('[TransparentChatbotEmbed] Setting up message listener');
-      
-      // Add rate limiting for console logs
-      const LOG_RATE_LIMIT = 5000; // 5 seconds to reduce logging
-      const lastLogTimes = {};
-      
-      const logWithRateLimit = (context, message, ...args) => {
-        const now = Date.now();
-        const lastLog = lastLogTimes[context] || 0;
-        
-        if (now - lastLog >= LOG_RATE_LIMIT) {
-          // console.log(`[TransparentChatbotEmbed][${context}] ${message}`, ...args);
-          lastLogTimes[context] = now;
-        }
-      };
       
       // Enhanced origin validation
       const isAllowedOrigin = (origin) => {
@@ -747,7 +715,6 @@
         
         // Validate origin before processing
         if (!isAllowedOrigin(event.origin)) {
-          // logWithRateLimit('Security', 'Invalid origin:', event.origin);
           return;
         }
         
@@ -756,7 +723,6 @@
         
         // Handle SHOW_CART_POPUP message
         if (type === 'SHOW_CART_POPUP') {
-          // logWithRateLimit('Popup', 'Showing cart popup in parent window');
           this.showCartPopupInParent(event.data.cart);
           return;
         }
@@ -764,15 +730,11 @@
         // Handle navigation messages from the cart bridge with debounce
         if (success && (type === 'NAVIGATE_TO_CART' || type === 'NAVIGATE_TO_CHECKOUT')) {
           if (navigationInProgress) {
-            // logWithRateLimit('Navigation', 'Navigation already in progress, skipping');
             return;
           }
           
           navigationInProgress = true;
           
-          // logWithRateLimit('Navigation', `Navigating to ${type === 'NAVIGATE_TO_CART' ? 'cart' : 'checkout'} in parent window`);
-          
-          // Use dynamic store URL instead of hardcoded URLs
           const targetPath = type === 'NAVIGATE_TO_CART' ? '/cart' : '/checkout';
           
           // Check if already on target page

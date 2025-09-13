@@ -45,29 +45,11 @@ export class ShopifyCartService {
       
       console.log('[ShopifyCartService] Normalized cart response:', normalizedCart);
       
-      // Show cart popup in parent window
-      this.showCartPopup(normalizedCart);
-      
       return normalizedCart;
     } catch (error) {
       console.error('[ShopifyCartService] Failed to add to cart:', error);
       // Return a safe default cart structure
       return this.getDefaultCartResponse();
-    }
-  }
-  
-  // New method to show cart popup in parent window
-  static showCartPopup(cart: CartResponse): void {
-    // Only run on client-side
-    if (typeof window === 'undefined') {
-      return;
-    }
-    
-    try {
-      // Send message to parent window to show popup
-      window.parent.postMessage({ type: 'SHOW_CART_POPUP', cart }, '*');
-    } catch (error) {
-      console.error('Failed to send show cart popup message:', error);
     }
   }
   
