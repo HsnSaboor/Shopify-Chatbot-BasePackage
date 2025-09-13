@@ -34,14 +34,14 @@ interface OrderCardProps {
 export function OrderCard({ order }: OrderCardProps) {
   console.log("[OrderCard] Rendering with order:", order);
   return (
-    <Card className="w-full max-w-md mx-auto md:max-w-sm hover:shadow-lg transition-all duration-200 border-gray-400 border-width-2px">
+    <Card className="w-full max-w-md mx-auto md:max-w-sm hover:shadow-lg transition-all duration-200 border-gray-600">
       <CardHeader className="p-3">
         <CardTitle className="flex justify-between items-center text-base md:text-lg">
           <span>Order #{order.order_number}</span>
           <Badge variant="default">{order.payment_method}</Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-3 space-y-3">
+      <CardContent className="p-3 space-y-2">
         <div className="border-t border-gray-200 pt-3">
           <h4 className="font-semibold text-sm text-gray-900 mb-2">Items</h4>
           <ul className="space-y-1">
