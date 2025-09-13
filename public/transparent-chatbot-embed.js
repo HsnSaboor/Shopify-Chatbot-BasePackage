@@ -527,7 +527,7 @@
         }).format(price / 100);
       } catch (error) {
         // Fallback formatting
-        return `$${(price / 100).toFixed(2)}`;
+        return `${(price / 100).toFixed(2)}`;
       }
     }
     
@@ -668,11 +668,34 @@
             // Just reload the page
             window.location.reload();
           } else {
-.
             // Navigate to checkout page
             window.location.href = '/checkout';
           }
-      
+        });
+      }
+
+      if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+          popupContainer.remove();
+        });
+      }
+
+      // Add auto-close functionality
+      setTimeout(() => {
+        if (popupContainer.parentNode) {
+          popupContainer.parentNode.removeChild(popupContainer);
+        }
+      }, 5000); // Auto-close after 5 seconds
+
+      // Close when clicking outside
+      popupContainer.addEventListener('click', (e) => {
+        if (e.target === popupContainer) {
+          popupContainer.remove();
+        }
+      });
+    }
+
+    setupMessageListener() {
       // Enhanced origin validation
       const isAllowedOrigin = (origin) => {
         // Skip processing if no origin or invalid origin
