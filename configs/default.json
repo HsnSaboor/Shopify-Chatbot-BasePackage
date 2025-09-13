@@ -1,14 +1,15 @@
 {
   "headerBackgroundColor": "#2563eb",
-  "headerBackgroundGradient": "linear-gradient(135deg, RGBA(16,55,104,1) 0%, rgba(29,78,216,1) 100%)",
-  "agentName": "Zeno",
+  "headerBackgroundGradient": "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+  "agentName": "AI Shopping Assistant",
   "chatbotTagline": "Online & Ready to Help",
-  "avatarImageUrl": "data:image/webp;base64,UklGRpwDAABXRUJQVlA4WAoAAAAQAAAAJwAAJwAAQUxQSEgBAAABkGzbtrFHJ7Zt27attp10bZZttGw9gm3bto0Ple/e4tXIA0TEBMCkbTq8al6ADoCuoamtrbmhLgA4T101x4nK/CzCWL2+6+Sjz5KiSl+endt1QcIYv/CkacPMF9N0sdtI0y3MEnYnKaw+sVMCyUYwx+1Ezh95aKkk2zDXM/r/0omumeCDhhMM/mqXf2LOmroKAIzeYgFlW4CNSAR8yNhQxkKiLF8saHOmKD1looyWiDKcKEq7ExKkSu+TGCgcqpEIaFgHdM6J8EYPAFJuvOLXDH/re7/ngzD2+wdAH+Kyh0T3OI/HocqE3X8g8As7Jc/oy3cgrJBYaf1AAXUyG22mDhh9+UYEBS9YKEOuXlH1ygMycNig0qG/sdZFARC+8rX2PyRL925eu3T2wM7pOTpUAAbp67V/aJWW5jo6OsDT0cvHx8fbBSZ9VlA4IC4CAADwCgCdASooACgAPpk+mEgmraQjLjv8yLATCWwAnTQYSZELvuQYbeTnjsgA6W5G6rRkrxprxy/W265hP226HA2ASoLSkG/aOHG8Hyy6g5ee62wi0sh7NOTW+vnuYW6+9AAA/vDL5U0ZMlQQwzMpvqC34AJ70vcpQNFVWYL5SuCRL8wNo4V2oxufq37OtGbwyl0I7GqorgjTP64UnuMewRNbokJJNhR5LNnpJ2aLuNK45bFYeDmdLjg6qqa+BQgkxl4BOc2kMLpXHC+6O2G52ITXKHI2rWsIwQeiqnea/R1Zzw7A+wJo984pBj8a1Jow6/fkbemMR/uL4RuwC01lDcbzTY79solK6yp437i3/e+mX506H/VzQk/2btOA+3gDcc35+1xJeKuf1zHy9iUZFrfYFkJdkSPMbYcCwhgYGjSzIkbCGB/bbki1oFlOhgzf0buX9cKryPQRoiYO/UphJsfD76N+heTXy1R6Gz9xggD1VJTw1smMIy9RZcTBkclUKdrJxVTvfMUD8M/CfNZLWg7UGNusCJv3gc3iICwM4ru1iD1xHnBDR+arm9WaPhNYMiAgwTDtsw4JLFogVCPEoZaaxW85kJL9Hml9r///vWvgJy6qARtQfnLR4pKoOsHkS31x2Wdy10DdvkdOfJhdevf0t3xrxCKjPEg7FKmu0qfpxxNK9y19kYwM/NbzjBw3z+Kfcf3Gkv/PzuyJkC86AD6SSOCXD5yyDa6i7o9YAAA=",
+  "avatarImageUrl": "",
+  "avatarBorderRadius": 50,
+  "avatarBorderWidth": 2,
+  "avatarBorderColor": "#000000",
   "messageBackgroundColor": "#2563eb",
-  "messageBackgroundGradient": "linear-gradient(135deg, RGB(168, 188, 233) 0%, rgba(29,78,216,1) 100%)",
+  "messageBackgroundGradient": "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
   "chatbotApiUrl": "https://shopify-ai-chatbot-v2.vercel.app",
-  "floatingButtonColor": "#165ffe",
-  "n8nWebhookUrl": "https://n8n.botomation.tech/webhook-test/chat",
-  "avatarBorderWidth": "0",
-  "avatarBorderRadius": "0"
+  "floatingButtonColor": "#2563eb",
+  "n8nWebhookUrl": ""
 }
