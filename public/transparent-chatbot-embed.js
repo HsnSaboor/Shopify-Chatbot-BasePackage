@@ -172,7 +172,6 @@
       }
     }
     
-    // Inject styles to match the mocked HTML/CSS exactly (card classes used by the markup)
     injectCartPopupStyles() {
       if (document.getElementById('chatbot-cart-popup-styles')) {
         return;
@@ -182,11 +181,9 @@
       const style = document.createElement('style');
       style.id = 'chatbot-cart-popup-styles';
       style.textContent = `
-        /* Basic keyframes */
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes zoomIn95 { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-        /* Backdrop + positioning */
         .fixed { position: fixed; }
         .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
         .z-\\[10000\\] { z-index: 10000 !important; }
@@ -202,13 +199,11 @@
         .zoom-in-95 { animation-name: zoomIn95; }
         .duration-200 { animation-duration: 200ms; }
 
-        /* Card */
         .bg-white { background-color: #ffffff; }
         .rounded-2xl { border-radius: 1rem; }
         .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); }
         .overflow-hidden { overflow: hidden; }
 
-        /* Header */
         .text-center { text-align: center; }
         .pb-4 { padding-bottom: 1rem; }
         .pt-6 { padding-top: 1.5rem; }
@@ -230,7 +225,6 @@
         .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
         .text-gray-600 { color: #4b5563; }
 
-        /* Body */
         .pb-6 { padding-bottom: 1.5rem; }
         .space-y-4 > * + * { margin-top: 1rem; }
         .bg-gray-50 { background-color: #f9fafb; }
@@ -278,10 +272,8 @@
         .mt-3 { margin-top: 0.75rem; }
         .font-medium { font-weight: 500; }
 
-        /* Root popup font */
         #chatbot-cart-popup { font-family: ${fontFamily}; }
 
-        /* Focus outlines */
         #chatbot-cart-popup button:focus,
         #chatbot-cart-popup button:focus-visible {
           outline: 2px solid #2563eb;
@@ -291,7 +283,6 @@
       document.head.appendChild(style);
     }
     
-    // Helper to format prices
     formatPrice(price, currency) {
       try {
         return new Intl.NumberFormat('en-US', {
@@ -303,35 +294,21 @@
       }
     }
 
-    // Single authoritative showCartPopupInParent (matches mocked HTML exactly)
     showCartPopupInParent(cart) {
       this.injectCartPopupStyles();
       
-      // Remove any existing popup
       const existingPopup = document.getElementById('chatbot-cart-popup');
       if (existingPopup) existingPopup.remove();
       
-      // Backdrop container
       const popupContainer = document.createElement('div');
       popupContainer.id = 'chatbot-cart-popup';
       popupContainer.className = 'fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[10000]';
       popupContainer.style.animation = 'fadeIn 0.2s ease-out';
       
-      // Content wrapper (constrains width)
       const popupContent = document.createElement('div');
       popupContent.className = 'w-full max-w-md mx-4';
       
-      // Build cart items HTML (slice to first 3 as in mocked)
-      const cartItemsHTML = cart.items && Array.isArray(cart.items) && cart.items.length > 0
-        ? cart.items.slice(0, 3).map((item) => `
-            <div class="flex justify-between text-sm text-gray-600">
-              <span class="truncate flex-1 mr-2">${item.title}</span>
-              <span class="font-medium text-gray-900">${this.formatPrice(item.price, cart.currency)}</span>
-            </div>
-          `).join('') + (cart.items.length > 3 ? `<p class="text-xs text-gray-500 mt-2">+${cart.items.length - 3} more items</p>` : '')
-        : '<p class="text-sm text-gray-500">No items in cart</p>';
-      
-      // Inner card HTML exactly matching provided mocked HTML content/structure/classes
+      // Inner card HTML: removed per-item list; kept only item count + total price horizontally
       const innerContent = `
         <div class="bg-white rounded-2xl shadow-lg overflow-hidden animate-in zoom-in-95 duration-200">
           <div class="text-center pb-4 pt-6 px-6">
@@ -341,34 +318,18 @@
               </svg>
             </div>
             <h3 class="text-xl font-semibold text-green-700">Added to Cart!</h3>
-            <p class="text-sm text-gray-600">This is a preview</p>
+            <p id="cart-countdown-text" class="text-sm text-gray-600">Closing in 5s</p>
           </div>
 
           <div class="px-6 pb-6 space-y-4">
-            <!-- Cart Summary -->
+            <!-- Cart Summary: only count + total price, horizontally aligned -->
             <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
-              <div class="flex items-center justify-between mb-3">
-                <h4 class="font-medium flex items-center gap-2 text-gray-800">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <circle cx="8" cy="21" r="1"></circle>
-                    <circle cx="19" cy="21" r="1"></circle>
-                    <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57L23 6H6"></path>
-                  </svg>
-                  Cart Summary
-                </h4>
-                <span class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-bold text-blue-800">
+              <div class="flex items-center justify-center gap-4 mb-3">
+                <span id="cart-items-count" class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-bold text-blue-800">
                   ${cart.item_count} ${cart.item_count === 1 ? "item" : "items"}
                 </span>
-              </div>
-
-              <div class="space-y-2 max-h-32 overflow-y-auto pr-2">
-                ${cartItemsHTML}
-              </div>
-
-              <div class="border-t border-gray-200 pt-3 mt-3">
-                <div class="flex justify-between items-center text-lg font-bold text-gray-900">
-                  <span>Total:</span>
-                  <span>${this.formatPrice(cart.total_price, cart.currency)}</span>
+                <div id="cart-total-display" class="text-lg font-bold text-gray-900">
+                  ${this.formatPrice(cart.total_price, cart.currency)}
                 </div>
               </div>
             </div>
@@ -398,6 +359,19 @@
       popupContainer.appendChild(popupContent);
       document.body.appendChild(popupContainer);
       
+      // Countdown logic (5s) and robust clearing
+      let remaining = 5;
+      const countdownEl = popupContainer.querySelector('#cart-countdown-text');
+      let countdownInterval = setInterval(() => {
+        remaining -= 1;
+        if (remaining <= 0) {
+          clearInterval(countdownInterval);
+          if (popupContainer.parentNode) popupContainer.parentNode.removeChild(popupContainer);
+          return;
+        }
+        if (countdownEl) countdownEl.textContent = `Closing in ${remaining}s`;
+      }, 1000);
+
       // Event listeners for buttons
       const viewCartBtn = popupContainer.querySelector('#view-cart-btn');
       const checkoutBtn = popupContainer.querySelector('#checkout-btn');
@@ -405,11 +379,18 @@
       
       let isNavigating = false;
       
+      const removePopupAndClear = () => {
+        try {
+          clearInterval(countdownInterval);
+        } catch (e) {}
+        if (popupContainer.parentNode) popupContainer.parentNode.removeChild(popupContainer);
+      };
+
       if (viewCartBtn) {
         viewCartBtn.addEventListener('click', () => {
           if (isNavigating) return;
           isNavigating = true;
-          popupContainer.remove();
+          removePopupAndClear();
           if (window.location.pathname === '/cart') {
             window.location.reload();
           } else {
@@ -422,7 +403,7 @@
         checkoutBtn.addEventListener('click', () => {
           if (isNavigating) return;
           isNavigating = true;
-          popupContainer.remove();
+          removePopupAndClear();
           if (window.location.pathname === '/checkout') {
             window.location.reload();
           } else {
@@ -433,21 +414,14 @@
 
       if (closeBtn) {
         closeBtn.addEventListener('click', () => {
-          popupContainer.remove();
+          removePopupAndClear();
         });
       }
-
-      // Auto-close after 5s
-      setTimeout(() => {
-        if (popupContainer.parentNode) {
-          popupContainer.parentNode.removeChild(popupContainer);
-        }
-      }, 5000);
 
       // Click outside to close
       popupContainer.addEventListener('click', (e) => {
         if (e.target === popupContainer) {
-          popupContainer.remove();
+          removePopupAndClear();
         }
       });
     }
