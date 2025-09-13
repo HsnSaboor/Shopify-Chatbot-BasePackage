@@ -49,12 +49,12 @@ export class BridgeFallbackHandler {
    */
   async handleFallback(context: FallbackContext): Promise<any> {
     if (!this.config.enableFallback) {
-      throw new Error(`Bridge operation failed: ${context.error instanceof Error ? context.error.message : String(context.error)}`);
+      throw new Error(`Bridge operation failed: ${context.error.message}`);
     }
 
     console.warn(`Bridge fallback triggered for operation: ${context.operation}`, {
       attempt: context.attempt,
-      error: context.error instanceof Error ? context.error.message : String(context.error)
+      error: context.error.message
     });
 
     // Mark fallback as active
@@ -137,7 +137,7 @@ export class BridgeFallbackHandler {
       
       return { cart };
     } catch (error) {
-      throw new Error(`Direct API add to cart failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Direct API add to cart failed: ${error.message}`);
     }
   }
 
@@ -175,7 +175,7 @@ export class BridgeFallbackHandler {
         }
       }
       
-      throw new Error(`Direct API get cart failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Direct API get cart failed: ${error.message}`);
     }
   }
 
@@ -203,7 +203,7 @@ export class BridgeFallbackHandler {
       
       return { cart };
     } catch (error) {
-      throw new Error(`Direct API update cart failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Direct API update cart failed: ${error.message}`);
     }
   }
 
@@ -229,7 +229,7 @@ export class BridgeFallbackHandler {
       
       return { cart };
     } catch (error) {
-      throw new Error(`Direct API clear cart failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Direct API clear cart failed: ${error.message}`);
     }
   }
 
@@ -246,7 +246,7 @@ export class BridgeFallbackHandler {
       window.location.href = '/cart';
       return { success: true };
     } catch (error) {
-      throw new Error(`Navigate to cart failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Navigate to cart failed: ${error.message}`);
     }
   }
 
@@ -263,7 +263,7 @@ export class BridgeFallbackHandler {
       window.location.href = '/checkout';
       return { success: true };
     } catch (error) {
-      throw new Error(`Navigate to checkout failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Navigate to checkout failed: ${error.message}`);
     }
   }
 
