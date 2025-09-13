@@ -187,6 +187,14 @@ interface ChatbotWidgetProps {
   mockMessages?: Message[]
   onMockInteraction?: (action: string, data: any) => void
   hideToggle?: boolean
+  headerBackgroundColor?: string
+  headerBackgroundGradient?: string
+  agentName?: string
+  chatbotTagline?: string
+  avatarImageUrl?: string
+  messageBackgroundColor?: string
+  messageBackgroundGradient?: string
+  floatingButtonColor?: string
 }
 
 export function ChatbotWidget({
@@ -194,6 +202,14 @@ export function ChatbotWidget({
   mockMessages = [],
   onMockInteraction,
   hideToggle = false,
+  headerBackgroundColor = "#2563eb",
+  headerBackgroundGradient = "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+  agentName = "AI Shopping Assistant",
+  chatbotTagline = "Online & Ready to Help",
+  avatarImageUrl,
+  messageBackgroundColor = "#2563eb",
+  messageBackgroundGradient = "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+  floatingButtonColor = "#2563eb",
 }: ChatbotWidgetProps = {}) {
   const [isOpen, setIsOpen] = useState(false)
   const [showCartPopup, setShowCartPopup] = useState(false)
@@ -851,12 +867,13 @@ export function ChatbotWidget({
           }}
           className={cn(
             "h-16 w-16 rounded-full shadow-xl transition-all duration-300 hover:scale-110 z-[9998]",
-            "bg-blue-600 hover:bg-blue-700 text-white border-2 border-white",
+            "text-white border-2 border-white",
             isOpen && "scale-0 opacity-0",
             "fixed bottom-6 right-6",
           )}
           size="icon"
           style={{
+            backgroundColor: floatingButtonColor,
             boxShadow: "0 8px 32px rgba(37, 99, 235, 0.3)",
           }}
         >
@@ -911,20 +928,24 @@ export function ChatbotWidget({
         <div
           className={cn("flex items-center justify-between p-4 border-b", isMobile ? "rounded-none" : "rounded-t-xl")}
           style={{
-            backgroundColor: "#2563eb",
+            backgroundColor: headerBackgroundColor,
             color: "white",
-            background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+            background: headerBackgroundGradient,
           }}
         >
           <div className="flex items-center gap-3">
             <Avatar className="h-8 w-8 ring-2 ring-white/20">
-              <AvatarFallback style={{ backgroundColor: "white", color: "#2563eb" }} className="text-xs font-bold">
-                AI
-              </AvatarFallback>
+              {avatarImageUrl ? (
+                <img src={avatarImageUrl} alt="Avatar" className="rounded-full" />
+              ) : (
+                <AvatarFallback style={{ backgroundColor: "white", color: headerBackgroundColor }} className="text-xs font-bold">
+                  AI
+                </AvatarFallback>
+              )}
             </Avatar>
             <div>
               <h3 className="font-semibold text-sm" style={{ color: "white" }}>
-                AI Shopping Assistant
+                {agentName}
                 {isPreview && (
                   <Badge variant="secondary" className="ml-2 bg-white/20 text-white text-xs">
                     Preview
@@ -934,7 +955,7 @@ export function ChatbotWidget({
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                 <p className="text-xs" style={{ color: "rgba(255, 255, 255, 0.9)" }}>
-                  {isPreview ? "Demo Mode" : "Online & Ready to Help"}
+                  {isPreview ? "Demo Mode" : chatbotTagline}
                 </p>
               </div>
             </div>
@@ -1015,12 +1036,16 @@ export function ChatbotWidget({
                 <div className={cn("flex gap-3", message.type === "user" ? "justify-end" : "justify-start")}>
                   {message.type === "bot" && (
                     <Avatar className="h-8 w-8 mt-1 ring-2 ring-blue-100 flex-shrink-0">
-                      <AvatarFallback
-                        style={{ backgroundColor: "#2563eb", color: "white" }}
-                        className="text-xs font-semibold"
-                      >
-                        AI
-                      </AvatarFallback>
+                      {avatarImageUrl ? (
+                        <img src={avatarImageUrl} alt="Avatar" className="rounded-full" />
+                      ) : (
+                        <AvatarFallback
+                          style={{ backgroundColor: headerBackgroundColor, color: "white" }}
+                          className="text-xs font-semibold"
+                        >
+                          AI
+                        </AvatarFallback>
+                      )}
                     </Avatar>
                   )}
                   <div
@@ -1032,9 +1057,9 @@ export function ChatbotWidget({
                     style={
                       message.type === "user"
                         ? {
-                            backgroundColor: "#2563eb",
+                            backgroundColor: messageBackgroundColor,
                             color: "white",
-                            background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                            background: messageBackgroundGradient,
                           }
                         : {}
                     }
