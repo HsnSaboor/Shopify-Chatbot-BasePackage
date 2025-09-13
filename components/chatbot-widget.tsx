@@ -132,6 +132,8 @@ interface Message {
 interface Order {
   id: string;
   order_number: number;
+  created_at: string;
+  fulfillment_status: string | null;
   items: Array<{
     product_id: string;
     title: string;

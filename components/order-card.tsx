@@ -7,6 +7,8 @@ interface OrderCardProps {
   order: {
     id: string;
     order_number: number;
+    created_at: string;
+    fulfillment_status: string | null;
     items: Array<{
       product_id: string;
       title: string;
@@ -33,15 +35,26 @@ interface OrderCardProps {
 
 export function OrderCard({ order }: OrderCardProps) {
   console.log("[OrderCard] Rendering with order:", order);
+
+  const formattedDate = new Date(order.created_at).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
   return (
-    <Card className="w-full max-w-md mx-auto md:max-w-sm hover:shadow-lg transition-all duration-200 border-gray-500">
+    <Card className="w-full max-w-md mx-auto md:max-w-sm hover:shadow-lg transition-all duration-200 border-gray-200">
       <CardHeader className="px-3 py-2">
         <CardTitle className="flex justify-between items-center text-base md:text-lg">
           <span>Order #{order.order_number}</span>
           <Badge variant="default">{order.payment_method}</Badge>
         </CardTitle>
+        <div className="flex justify-between items-center text-xs text-gray-500 pt-1">
+          <span>{formattedDate}</span>
+          <span>{order.fulfillment_status || "Unfulfilled"}</span>
+        </div>
       </CardHeader>
-      <CardContent className="px-3 pb-3 space-y-2">
+      <CardContent className="p-3 space-y-2">
         <div className="border-t border-gray-200 pt-3">
           <h4 className="font-semibold text-sm text-gray-900 mb-2">Items</h4>
           <ul className="space-y-1">

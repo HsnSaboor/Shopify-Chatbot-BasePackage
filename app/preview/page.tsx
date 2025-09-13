@@ -89,6 +89,8 @@ const mockMessages = [
 const mockOrder = {
   id: "5987238871087",
   order_number: 1004,
+  created_at: new Date().toISOString(),
+  fulfillment_status: "fulfilled",
   items: [
     {
       product_id: "7929446826031",
