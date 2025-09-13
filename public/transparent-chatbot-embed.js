@@ -551,7 +551,16 @@
       const popupContent = document.createElement('div');
       popupContent.className = 'w-full max-w-md mx-4';
       
-      // Create the inner content with proper classes - simplified to show only count and price
+      // Create the inner content with proper classes
+      const cartItemsHTML = cart.items && Array.isArray(cart.items) && cart.items.length > 0 
+        ? cart.items.slice(0, 3).map((item) => `
+          <div class="flex justify-between text-sm">
+            <span class="truncate flex-1 mr-2">${item.title}</span>
+            <span class="font-medium">${this.formatPrice(item.price, cart.currency)}</span>
+          </div>
+        `).join('') + (cart.items.length > 3 ? `<p class="text-xs text-gray-500">+${cart.items.length - 3} more items</p>` : '')
+        : '<p class="text-xs text-gray-500">No items in cart</p>';
+
       const innerContent = `
         <div class="bg-white rounded-xl shadow-lg overflow-hidden animate-in zoom-in-95 duration-200">
           <div class="text-center pb-4 pt-6 px-6">
@@ -564,22 +573,37 @@
             <p class="text-sm text-gray-600">Auto-closing in 5 seconds</p>
           </div>
 
-          <div class="px-6 pb-6">
-            <!-- Simplified Cart Summary - only showing count and price -->
+          <div class="px-6 pb-6 space-y-4">
+            <!-- Cart Summary -->
             <div class="bg-gray-50 rounded-lg p-4">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-sm text-gray-600">Cart Total</p>
-                  <p class="text-xl font-semibold text-gray-900">${this.formatPrice(cart.total_price, cart.currency)}</p>
-                </div>
-                <span class="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-800">
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="font-medium flex items-center gap-2">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="8" cy="21" r="1" />
+                    <circle cx="19" cy="21" r="1" />
+                    <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57L23 6H6" />
+                  </svg>
+                  Cart Summary
+                </h4>
+                <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
                   ${cart.item_count} ${cart.item_count === 1 ? "item" : "items"}
                 </span>
+              </div>
+
+              <div class="space-y-2 max-h-32 overflow-y-auto">
+                ${cartItemsHTML}
+              </div>
+
+              <div class="border-t pt-2 mt-3">
+                <div class="flex justify-between font-semibold">
+                  <span>Total:</span>
+                  <span>${this.formatPrice(cart.total_price, cart.currency)}</span>
+                </div>
               </div>
             </div>
 
             <!-- Action Buttons -->
-            <div class="flex gap-3 mt-4">
+            <div class="flex gap-3">
               <button id="view-cart-btn" class="flex-1 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
                 View Cart
               </button>
@@ -588,7 +612,7 @@
               </button>
             </div>
 
-            <button id="close-popup-btn" class="w-full inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 mt-3">
+            <button id="close-popup-btn" class="w-full inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 mt-2">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="m18 6-12 12" />
                 <path d="m6 6 12 12" />
@@ -647,32 +671,6 @@
             // Navigate to checkout page
             window.location.href = '/checkout';
           }
-        });
-      }
-      
-      if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-          popupContainer.remove();
-        });
-      }
-      
-      // Add auto-close functionality
-      setTimeout(() => {
-        if (popupContainer.parentNode) {
-          popupContainer.parentNode.removeChild(popupContainer);
-        }
-      }, 5000); // Auto-close after 5 seconds
-      
-      // Close when clicking outside
-      popupContainer.addEventListener('click', (e) => {
-        if (e.target === popupContainer) {
-          popupContainer.remove();
-        }
-      });
-    }
-    
-    // Add message listener for navigation messages from the cart bridge
-    setupMessageListener() {
       
       // Enhanced origin validation
       const isAllowedOrigin = (origin) => {

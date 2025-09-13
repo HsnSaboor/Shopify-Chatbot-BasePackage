@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { ProductCard } from "@/components/product-card"
-import { CartConfirmationPopup } from "@/components/cart-confirmation-popup"
+
 import { useToast } from "@/hooks/use-toast"
 import type { CartResponse } from "@/lib/shopify-cart"
 import { ChatStateService } from "@/lib/chat-state"
@@ -1103,7 +1103,7 @@ export function ChatbotWidget({
       </div>
 
       {/* Cart Confirmation Popup */}
-      <CartConfirmationPopup isOpen={showCartPopup} onClose={() => setShowCartPopup(false)} cart={cartData} />
+      
     </>
   )
 }

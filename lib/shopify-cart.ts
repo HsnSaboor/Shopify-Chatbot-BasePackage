@@ -45,6 +45,11 @@ export class ShopifyCartService {
       
       console.log('[ShopifyCartService] Normalized cart response:', normalizedCart);
       
+      // NEW: Send message to parent to show popup
+      if (typeof window !== 'undefined') {
+        window.parent.postMessage({ type: 'SHOW_CART_POPUP', cart: normalizedCart }, '*');
+      }
+      
       return normalizedCart;
     } catch (error) {
       console.error('[ShopifyCartService] Failed to add to cart:', error);
@@ -167,11 +172,13 @@ export class ShopifyCartService {
           console.log('[ShopifyCartService] Successful response:', event.data.data);
           // Ensure cart data has proper structure
           const data = event.data.data || {};
-          if (!data.items) {
+          const cart = data.cart || {}; // Extract cart object
+          
+          if (!cart.items) {
             console.warn('[ShopifyCartService] Cart data missing items array, creating empty array');
-            data.items = [];
+            cart.items = [];
           }
-          resolve(data);
+          resolve(cart); // Resolve with the cart object
         } else {
           console.error('[ShopifyCartService] Error response:', event.data.error);
           reject(new Error(event.data.error || 'Unknown error'));
