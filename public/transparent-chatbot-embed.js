@@ -80,6 +80,7 @@
         bottom: 20px;
         right: 20px;
         width: ${CONFIG.iframe.dimensions.pc.containerWidth};
+        height: ${CONFIG.iframe.dimensions.pc.height};
         z-index: 9999;
         pointer-events: none;
         background: transparent;
