@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { MessageCircle, ShoppingCart, Sparkles, Zap } from "lucide-react"
+import { MessageCircle, ShoppingCart, Sparkles, Zap, Eye } from "lucide-react"
 import { ChatbotWidget } from "@/components/chatbot-widget"
 
 const mockMessages = [
@@ -108,17 +108,123 @@ const features = [
   },
 ]
 
+const CartPopupPreview = ({ show, onClose }) => {
+  if (!show) return null;
+
+  const cart = {
+    items: [
+      { title: "Premium Cotton T-Shirt", price: 2999 },
+      { title: "Organic Bamboo Tee", price: 3499 },
+      { title: "Fitness Watch", price: 19999 },
+    ],
+    item_count: 5,
+    total_price: 26496,
+    currency: "USD",
+  };
+
+  const formatPrice = (price, currency) => {
+    try {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currency || 'USD'
+      }).format(price / 100);
+    } catch (error) {
+      return `$${(price / 100).toFixed(2)}`;
+    }
+  };
+
+  const cartItemsHTML = cart.items && Array.isArray(cart.items) && cart.items.length > 0 
+    ? cart.items.slice(0, 3).map((item) => `
+        <div class="flex justify-between text-sm text-gray-600">
+          <span class="truncate flex-1 mr-2">${item.title}</span>
+          <span class="font-medium text-gray-900">${formatPrice(item.price, cart.currency)}</span>
+        </div>
+      `).join('') + (cart.items.length > 3 ? `<p class="text-xs text-gray-500 mt-2">+${cart.items.length - 3} more items</p>` : '')
+    : '<p class="text-sm text-gray-500">No items in cart</p>';
+
+  const innerContent = `
+    <div class="bg-white rounded-2xl shadow-lg overflow-hidden animate-in zoom-in-95 duration-200">
+      <div class="text-center pb-4 pt-6 px-6">
+        <div class="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600">
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold text-green-700">Added to Cart!</h3>
+        <p class="text-sm text-gray-600">This is a preview</p>
+      </div>
+
+      <div class="px-6 pb-6 space-y-4">
+        <!-- Cart Summary -->
+        <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="font-medium flex items-center gap-2 text-gray-800">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="8" cy="21" r="1" />
+                <circle cx="19" cy="21" r="1" />
+                <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57L23 6H6" />
+              </svg>
+              Cart Summary
+            </h4>
+            <span class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-bold text-blue-800">
+              ${cart.item_count} ${cart.item_count === 1 ? "item" : "items"}
+            </span>
+          </div>
+
+          <div class="space-y-2 max-h-32 overflow-y-auto pr-2">
+            ${cartItemsHTML}
+          </div>
+
+          <div class="border-t border-gray-200 pt-3 mt-3">
+            <div class="flex justify-between items-center text-lg font-bold text-gray-900">
+              <span>Total:</span>
+              <span>${formatPrice(cart.total_price, cart.currency)}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-3">
+          <button class="flex-1 inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+            View Cart
+          </button>
+          <button class="flex-1 inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors bg-blue-600 text-white hover:bg-blue-700 h-10 px-4 py-2">
+            Checkout
+          </button>
+        </div>
+
+        <button id="close-popup-btn-preview" class="w-full inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 mt-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m18 6-12 12" />
+            <path d="m6 6 12 12" />
+          </svg>
+          <span class="ml-2">Close</span>
+        </button>
+      </div>
+    </div>
+  `;
+
+  return (
+    <div 
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[10000]"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div className="w-full max-w-md mx-4" dangerouslySetInnerHTML={{ __html: innerContent }} />
+    </div>
+  );
+};
+
+
 export default function PreviewPage() {
   const [showDemo, setShowDemo] = useState(false)
-  const [demoStep, setDemoStep] = useState(0)
+  const [showPopup, setShowPopup] = useState(false)
 
   const startDemo = () => {
     setShowDemo(true)
-    setDemoStep(0)
-  }
-
-  const nextDemoStep = () => {
-    setDemoStep((prev) => prev + 1)
   }
 
   return (
@@ -158,8 +264,9 @@ export default function PreviewPage() {
               <Sparkles className="w-5 h-5 mr-2" />
               Start Interactive Demo
             </Button>
-            <Button variant="outline" size="lg">
-              View Documentation
+            <Button variant="outline" size="lg" onClick={() => setShowPopup(true)}>
+              <Eye className="w-5 h-5 mr-2" />
+              Preview Cart Popup
             </Button>
           </div>
         </div>
@@ -247,6 +354,8 @@ export default function PreviewPage() {
           // Handle mock interactions for demo purposes
         }}
       />
+
+      <CartPopupPreview show={showPopup} onClose={() => setShowPopup(false)} />
     </div>
   )
 }

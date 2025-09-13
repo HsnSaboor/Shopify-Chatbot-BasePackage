@@ -220,7 +220,7 @@
         }
         
         .z-\[10000\] {
-          z-index: 10000;
+          z-index: 10000 !important;
         }
         
         .flex {
@@ -248,8 +248,8 @@
           margin-right: 1rem;
         }
         
-        .bg-black\/50 {
-          background-color: rgba(0, 0, 0, 0.5);
+        .bg-black\/70 {
+          background-color: rgba(0, 0, 0, 0.7);
         }
         
         .backdrop-blur-sm {
@@ -273,10 +273,10 @@
           background-color: #ffffff;
         }
         
-        .rounded-xl {
-          border-radius: 0.75rem;
+        .rounded-2xl {
+          border-radius: 1rem;
         }
-        
+
         .shadow-lg {
           box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
@@ -365,14 +365,22 @@
           background-color: #f9fafb;
         }
         
-        .rounded-lg {
-          border-radius: 0.5rem;
+        .rounded-xl {
+          border-radius: 0.75rem;
         }
-        
+
         .p-4 {
           padding: 1rem;
         }
         
+        .border {
+          border-width: 1px;
+        }
+
+        .border-gray-200 {
+            border-color: #e5e7eb;
+        }
+
         .flex-col {
           flex-direction: column;
         }
@@ -392,6 +400,10 @@
         .font-medium {
           font-weight: 500;
         }
+
+        .font-bold {
+          font-weight: 700;
+        }
         
         .gap-2 {
           gap: 0.5rem;
@@ -409,10 +421,10 @@
           border-radius: 9999px;
         }
         
-        .bg-gray-100 {
-          background-color: #f3f4f6;
+        .bg-blue-100 {
+          background-color: #dbeafe;
         }
-        
+
         .px-3 {
           padding-left: 0.75rem;
           padding-right: 0.75rem;
@@ -428,10 +440,14 @@
           line-height: 1rem;
         }
         
-        .text-gray-800 {
-          color: #1f2937;
+        .text-blue-800 {
+          color: #1e40af;
         }
-        
+
+        .text-gray-900 {
+            color: #111827;
+        }
+
         .justify-between {
           justify-content: space-between;
         }
@@ -440,10 +456,15 @@
           display: flex;
         }
         
-        .rounded-md {
-          border-radius: 0.375rem;
+        .rounded-lg {
+          border-radius: 0.5rem;
         }
         
+        .text-lg {
+            font-size: 1.125rem;
+            line-height: 1.75rem;
+        }
+
         .text-sm {
           font-size: 0.875rem;
           line-height: 1.25rem;
@@ -516,6 +537,183 @@
         }
       `;
       document.head.appendChild(style);
+    }
+    
+    // Helper method to format prices
+    formatPrice(price, currency) {
+      try {
+        return new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: currency || 'USD'
+        }).format(price / 100);
+      } catch (error) {
+        // Fallback formatting
+        return `${(price / 100).toFixed(2)}`;
+      }
+    }
+    
+    // Function to create and display cart popup in parent window
+    showCartPopupInParent(cart) {
+      // Inject required CSS styles
+      this.injectCartPopupStyles();
+      
+      // Remove any existing popup
+      const existingPopup = document.getElementById('chatbot-cart-popup');
+      if (existingPopup) {
+        existingPopup.remove();
+      }
+      
+      // Create popup container with CSS classes
+      const popupContainer = document.createElement('div');
+      popupContainer.id = 'chatbot-cart-popup';
+      popupContainer.className = 'fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[10000]';
+      popupContainer.style.animation = 'fadeIn 0.2s ease-out';
+      
+      // Create popup content with CSS classes
+      const popupContent = document.createElement('div');
+      popupContent.className = 'w-full max-w-md mx-4';
+      
+      // Create the inner content with proper classes
+      const cartItemsHTML = cart.items && Array.isArray(cart.items) && cart.items.length > 0 
+        ? cart.items.slice(0, 3).map((item) => `
+          <div class="flex justify-between text-sm text-gray-600">
+            <span class="truncate flex-1 mr-2">${item.title}</span>
+            <span class="font-medium text-gray-900">${this.formatPrice(item.price, cart.currency)}</span>
+          </div>
+        `).join('') + (cart.items.length > 3 ? `<p class="text-xs text-gray-500 mt-2">+${cart.items.length - 3} more items</p>` : '')
+        : '<p class="text-sm text-gray-500">No items in cart</p>';
+
+      const innerContent = `
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden animate-in zoom-in-95 duration-200">
+          <div class="text-center pb-4 pt-6 px-6">
+            <div class="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600">
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-green-700">Added to Cart!</h3>
+            <p class="text-sm text-gray-600">Auto-closing in 5 seconds</p>
+          </div>
+
+          <div class="px-6 pb-6 space-y-4">
+            <!-- Cart Summary -->
+            <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="font-medium flex items-center gap-2 text-gray-800">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="8" cy="21" r="1" />
+                    <circle cx="19" cy="21" r="1" />
+                    <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57L23 6H6" />
+                  </svg>
+                  Cart Summary
+                </h4>
+                <span class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-bold text-blue-800">
+                  ${cart.item_count} ${cart.item_count === 1 ? "item" : "items"}
+                </span>
+              </div>
+
+              <div class="space-y-2 max-h-32 overflow-y-auto pr-2">
+                ${cartItemsHTML}
+              </div>
+
+              <div class="border-t border-gray-200 pt-3 mt-3">
+                <div class="flex justify-between items-center text-lg font-bold text-gray-900">
+                  <span>Total:</span>
+                  <span>${this.formatPrice(cart.total_price, cart.currency)}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-3">
+              <button id="view-cart-btn" class="flex-1 inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                View Cart
+              </button>
+              <button id="checkout-btn" class="flex-1 inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors bg-blue-600 text-white hover:bg-blue-700 h-10 px-4 py-2">
+                Checkout
+              </button>
+            </div>
+
+            <button id="close-popup-btn" class="w-full inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 mt-2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m18 6-12 12" />
+                <path d="m6 6 12 12" />
+              </svg>
+              <span class="ml-2">Close</span>
+            </button>
+          </div>
+        </div>
+      `;
+      
+      popupContent.innerHTML = innerContent;
+      popupContainer.appendChild(popupContent);
+      document.body.appendChild(popupContainer);
+      
+      // Add event listeners for buttons
+      const viewCartBtn = popupContainer.querySelector('#view-cart-btn');
+      const checkoutBtn = popupContainer.querySelector('#checkout-btn');
+      const closeBtn = popupContainer.querySelector('#close-popup-btn');
+      
+      // Flag to prevent multiple clicks
+      let isNavigating = false;
+      
+      if (viewCartBtn) {
+        viewCartBtn.addEventListener('click', () => {
+          if (isNavigating) return;
+          isNavigating = true;
+          
+          // Remove popup immediately
+          popupContainer.remove();
+          
+          // Check if already on cart page
+          if (window.location.pathname === '/cart') {
+            // Just reload the page
+            window.location.reload();
+          } else {
+            // Navigate to cart page
+            window.location.href = '/cart';
+          }
+        });
+      }
+      
+      if (checkoutBtn) {
+        checkoutBtn.addEventListener('click', () => {
+          if (isNavigating) return;
+          isNavigating = true;
+          
+          // Remove popup immediately
+          popupContainer.remove();
+          
+          // Check if already on checkout page
+          if (window.location.pathname === '/checkout') {
+            // Just reload the page
+            window.location.reload();
+          } else {
+            // Navigate to checkout page
+            window.location.href = '/checkout';
+          }
+        });
+      }
+
+      if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+          popupContainer.remove();
+        });
+      }
+
+      // Add auto-close functionality
+      setTimeout(() => {
+        if (popupContainer.parentNode) {
+          popupContainer.parentNode.removeChild(popupContainer);
+        }
+      }, 5000); // Auto-close after 5 seconds
+
+      // Close when clicking outside
+      popupContainer.addEventListener('click', (e) => {
+        if (e.target === popupContainer) {
+          popupContainer.remove();
+        }
+      });
     }
     
     // Helper method to format prices
