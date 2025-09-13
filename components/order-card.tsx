@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { ExternalLink } from "lucide-react"
 
 interface OrderCardProps {
   order: {
@@ -94,8 +95,9 @@ export function OrderCard({ order }: OrderCardProps) {
               <p className="text-sm">
                 Tracking #:{" "}
                 {order.tracking.tracking_url ? (
-                  <a href={order.tracking.tracking_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                    {order.tracking.tracking_number}
+                  <a href={order.tracking.tracking_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline inline-flex items-center space-x-1">
+                    <span>{order.tracking.tracking_number}</span>
+                    <ExternalLink className="h-3 w-3" />
                   </a>
                 ) : (
                   order.tracking.tracking_number
