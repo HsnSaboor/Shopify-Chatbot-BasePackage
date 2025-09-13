@@ -9,6 +9,11 @@ interface OrderCardProps {
     order_number: number;
     created_at: string;
     fulfillment_status: string | null;
+    tracking: {
+      carrier: string | null;
+      tracking_number: string | null;
+      tracking_url: string | null;
+    };
     items: Array<{
       product_id: string;
       title: string;
@@ -81,6 +86,24 @@ export function OrderCard({ order }: OrderCardProps) {
             <p>{order.shipping_address.country}</p>
           </address>
         </div>
+        {order.tracking && (order.tracking.carrier || order.tracking.tracking_number) && (
+          <div className="border-t border-gray-200 pt-3">
+            <h4 className="font-semibold text-sm text-gray-900 mb-2">Tracking</h4>
+            {order.tracking.carrier && <p className="text-sm">Carrier: {order.tracking.carrier}</p>}
+            {order.tracking.tracking_number && (
+              <p className="text-sm">
+                Tracking #:{" "}
+                {order.tracking.tracking_url ? (
+                  <a href={order.tracking.tracking_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                    {order.tracking.tracking_number}
+                  </a>
+                ) : (
+                  order.tracking.tracking_number
+                )}
+              </p>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   )
