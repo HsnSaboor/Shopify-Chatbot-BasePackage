@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 
 const CONFIG_DIR = path.join(process.cwd(), 'configs');
-const VERCEL_URL = process.env.VERCEL_URL || 'shopify-ai-chatbot-v2.vercel.app';
 
 // Helper to ensure directory exists
 async function ensureDir(dirPath: string) {
@@ -23,31 +22,17 @@ export async function GET(
   { params }: { params: { filename: string } }
 ) {
   const { filename } = params;
+  const configPath = path.join(CONFIG_DIR, `${filename}.json`);
 
-  if (process.env.NODE_ENV === 'production') {
-    try {
-      const response = await fetch(`https://${VERCEL_URL}/api/config/${filename}.json`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch config: ${response.statusText}`);
-      }
-      const config = await response.json();
-      return NextResponse.json(config);
-    } catch (error) {
-      console.error(`Error fetching config file ${filename} from URL:`, error);
-      return NextResponse.json({ error: 'Failed to fetch config file' }, { status: 500 });
+  try {
+    const configContent = await fs.readFile(configPath, 'utf-8');
+    return NextResponse.json(JSON.parse(configContent));
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return NextResponse.json({ error: 'Config file not found' }, { status: 404 });
     }
-  } else {
-    const configPath = path.join(CONFIG_DIR, `${filename}.json`);
-    try {
-      const configContent = await fs.readFile(configPath, 'utf-8');
-      return NextResponse.json(JSON.parse(configContent));
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        return NextResponse.json({ error: 'Config file not found' }, { status: 404 });
-      }
-      console.error(`Error reading config file ${filename}:`, error);
-      return NextResponse.json({ error: 'Failed to read config file' }, { status: 500 });
-    }
+    console.error(`Error reading config file ${filename}:`, error);
+    return NextResponse.json({ error: 'Failed to read config file' }, { status: 500 });
   }
 }
 
