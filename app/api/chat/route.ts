@@ -130,6 +130,7 @@ export async function POST(request: NextRequest) {
           product_name: webhookData.product_name,
           order_id: webhookData.order_id,
           cards: webhookData.cards || webhookData.products || [],
+          order: webhookData.order,
         }
 
         console.log("[v0] Mapped response data:", JSON.stringify(data, null, 2))

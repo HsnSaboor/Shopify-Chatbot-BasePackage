@@ -33,6 +33,7 @@ interface OrderCardProps {
 }
 
 export function OrderCard({ order }: OrderCardProps) {
+  console.log("[OrderCard] Rendering with order:", order);
   return (
     <Card className="w-full max-w-sm hover:shadow-lg transition-all duration-200 border-gray-200">
       <CardHeader className="p-4">
