@@ -3,10 +3,26 @@
 import { useState, useEffect } from "react"
 import { ChatbotWidget } from "@/components/chatbot-widget"
 
+interface ChatbotConfig {
+  headerBackgroundColor: string;
+  headerBackgroundGradient: string;
+  agentName: string;
+  chatbotTagline: string;
+  avatarImageUrl: string;
+  avatarBorderRadius: number;
+  avatarBorderWidth: number;
+  avatarBorderColor: string;
+  messageBackgroundColor: string;
+  messageBackgroundGradient: string;
+  chatbotApiUrl: string;
+  floatingButtonColor: string;
+  n8nWebhookUrl: string;
+}
+
 export default function Home() {
-  const [config, setConfig] = useState(null);
+  const [config, setConfig] = useState<ChatbotConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const fetchConfig = async () => {

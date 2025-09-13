@@ -28,6 +28,31 @@ interface ChatResponse {
       variantId: string
     }>
   }>
+  order?: {
+    id: string;
+    order_number: number;
+    items: Array<{
+      product_id: string;
+      title: string;
+      price: string;
+      variant_id: string;
+      quantity: number;
+    }>;
+    customer: {
+      name: string;
+      email: string | null;
+      phone: string;
+    };
+    shipping_address: {
+      address1: string;
+      address2: string;
+      city: string;
+      province: string;
+      zip: string;
+      country: string;
+    };
+    payment_method: string;
+  };
 }
 
 export async function POST(request: NextRequest) {

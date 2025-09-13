@@ -4,13 +4,29 @@ import { Suspense, useState, useEffect } from "react"
 import { ChatbotWidget } from "@/components/chatbot-widget"
 import { useSearchParams } from "next/navigation"
 
+interface ChatbotConfig {
+  headerBackgroundColor: string;
+  headerBackgroundGradient: string;
+  agentName: string;
+  chatbotTagline: string;
+  avatarImageUrl: string;
+  avatarBorderRadius: number;
+  avatarBorderWidth: number;
+  avatarBorderColor: string;
+  messageBackgroundColor: string;
+  messageBackgroundGradient: string;
+  chatbotApiUrl: string;
+  floatingButtonColor: string;
+  n8nWebhookUrl: string;
+}
+
 function ChatbotContent() {
   const searchParams = useSearchParams()
   const configFilename = searchParams.get("config") || "default";
 
-  const [config, setConfig] = useState(null);
+  const [config, setConfig] = useState<ChatbotConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const fetchConfig = async () => {
@@ -36,7 +52,7 @@ function ChatbotContent() {
   }
 
   if (error) {
-    return <div className="flex items-center justify-center w-full h-full text-red-500">Error loading Chatbot: {error.message}</div>;
+    return <div className="flex items-center justify-center w-full h-full text-red-500">Error loading Chatbot: {error instanceof Error ? error.message : String(error)}</div>;
   }
 
   return (

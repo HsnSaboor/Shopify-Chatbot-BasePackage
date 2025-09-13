@@ -140,7 +140,7 @@ const features = [
   },
 ]
 
-const CartPopupPreview = ({ show, onClose }) => {
+const CartPopupPreview = ({ show, onClose }: { show: boolean; onClose: () => void }) => {
   if (!show) return null;
 
   const cart = {
@@ -154,7 +154,7 @@ const CartPopupPreview = ({ show, onClose }) => {
     currency: "USD",
   };
 
-  const formatPrice = (price, currency) => {
+  const formatPrice = (price: number, currency: string) => {
     try {
       return new Intl.NumberFormat('en-US', {
         style: 'currency',
