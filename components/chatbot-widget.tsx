@@ -192,6 +192,9 @@ interface ChatbotWidgetProps {
   agentName?: string
   chatbotTagline?: string
   avatarImageUrl?: string
+  avatarBorderRadius?: number
+  avatarBorderWidth?: number
+  avatarBorderColor?: string
   messageBackgroundColor?: string
   messageBackgroundGradient?: string
   floatingButtonColor?: string
@@ -207,6 +210,9 @@ export function ChatbotWidget({
   agentName = "AI Shopping Assistant",
   chatbotTagline = "Online & Ready to Help",
   avatarImageUrl,
+  avatarBorderRadius = 50,
+  avatarBorderWidth = 2,
+  avatarBorderColor = "#000000",
   messageBackgroundColor = "#2563eb",
   messageBackgroundGradient = "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
   floatingButtonColor = "#2563eb",
@@ -934,7 +940,15 @@ export function ChatbotWidget({
           }}
         >
           <div className="flex items-center gap-3">
-            <Avatar className="h-8 w-8 ring-2 ring-white/20">
+            <Avatar
+              className="h-8 w-8"
+              style={{
+                borderRadius: `${avatarBorderRadius}%`,
+                borderWidth: avatarBorderWidth,
+                borderColor: avatarBorderColor,
+                borderStyle: "solid",
+              }}
+            >
               {avatarImageUrl ? (
                 <img src={avatarImageUrl} alt="Avatar" className="rounded-full" />
               ) : (
@@ -1035,7 +1049,15 @@ export function ChatbotWidget({
               <div key={message.id} className="space-y-3">
                 <div className={cn("flex gap-3", message.type === "user" ? "justify-end" : "justify-start")}>
                   {message.type === "bot" && (
-                    <Avatar className="h-8 w-8 mt-1 ring-2 ring-blue-100 flex-shrink-0">
+                    <Avatar
+                      className="h-8 w-8 mt-1 flex-shrink-0"
+                      style={{
+                        borderRadius: `${avatarBorderRadius}%`,
+                        borderWidth: avatarBorderWidth,
+                        borderColor: avatarBorderColor,
+                        borderStyle: "solid",
+                      }}
+                    >
                       {avatarImageUrl ? (
                         <img src={avatarImageUrl} alt="Avatar" className="rounded-full" />
                       ) : (

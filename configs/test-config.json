@@ -1,0 +1,15 @@
+{
+  "headerBackgroundColor": "#2563eb",
+  "headerBackgroundGradient": "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+  "agentName": "Test Agent",
+  "chatbotTagline": "Online & Ready to Help",
+  "avatarImageUrl": "",
+  "avatarBorderRadius": 50,
+  "avatarBorderWidth": 2,
+  "avatarBorderColor": "#000000",
+  "messageBackgroundColor": "#2563eb",
+  "messageBackgroundGradient": "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+  "chatbotApiUrl": "https://shopify-ai-chatbot-v2.vercel.app",
+  "floatingButtonColor": "#2563eb",
+  "n8nWebhookUrl": ""
+}
