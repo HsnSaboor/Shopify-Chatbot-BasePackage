@@ -322,8 +322,8 @@ export function ChatbotWidget({
 
       setMessages(messagesWithDates)
 
-      // Auto-reopen if it was previously open
-      if (savedState.isOpen) {
+      // Auto-reopen using the new logic that respects manuallyClosed flag
+      if (ChatStateService.shouldAutoReopen()) {
         setTimeout(() => setIsOpen(true), 500) // Small delay for smooth animation
       }
     }
@@ -341,6 +341,11 @@ export function ChatbotWidget({
       messages,
       isOpen,
       lastActivity: Date.now(),
+      // Preserve the manuallyClosed flag from the existing state
+      ...(() => {
+        const existingState = ChatStateService.loadState();
+        return existingState?.manuallyClosed !== undefined ? { manuallyClosed: existingState.manuallyClosed } : {};
+      })()
     }
     ChatStateService.saveState(state)
   }, [messages, isOpen, isPreview])
@@ -358,6 +363,11 @@ export function ChatbotWidget({
         messages,
         isOpen,
         lastActivity: Date.now(),
+        // Preserve the manuallyClosed flag from the existing state
+        ...(() => {
+          const existingState = ChatStateService.loadState();
+          return existingState?.manuallyClosed !== undefined ? { manuallyClosed: existingState.manuallyClosed } : {};
+        })()
       }
       ChatStateService.saveState(state)
     }
@@ -368,6 +378,11 @@ export function ChatbotWidget({
           messages,
           isOpen,
           lastActivity: Date.now(),
+          // Preserve the manuallyClosed flag from the existing state
+          ...(() => {
+            const existingState = ChatStateService.loadState();
+            return existingState?.manuallyClosed !== undefined ? { manuallyClosed: existingState.manuallyClosed } : {};
+          })()
         }
         ChatStateService.saveState(state)
       }
@@ -866,6 +881,15 @@ export function ChatbotWidget({
         <Button
           onClick={() => {
             setIsOpen(true)
+            // Reset manuallyClosed flag when user opens chat
+            const state = {
+              messages,
+              isOpen: true,
+              lastActivity: Date.now(),
+              manuallyClosed: false, // Reset the manual close flag
+            }
+            ChatStateService.saveState(state)
+            
             // Notify parent window about state change
             if (window.parent !== window) {
               window.parent.postMessage(
@@ -1004,6 +1028,15 @@ export function ChatbotWidget({
                 size="icon"
                 onClick={() => {
                   setIsOpen(false)
+                  // Save state with manuallyClosed flag
+                  const state = {
+                    messages,
+                    isOpen: false,
+                    lastActivity: Date.now(),
+                    manuallyClosed: true, // User explicitly closed the chat
+                  }
+                  ChatStateService.saveState(state)
+                  
                   // Notify parent window about state change
                   if (window.parent !== window) {
                     window.parent.postMessage(

@@ -2,6 +2,7 @@ export interface ChatState {
   messages: any[]
   isOpen: boolean
   lastActivity: number
+  manuallyClosed?: boolean // <-- Add this property
 }
 
 export class ChatStateService {
@@ -80,6 +81,8 @@ export class ChatStateService {
 
   static shouldAutoReopen(): boolean {
     const state = this.loadState()
-    return state?.isOpen === true
+    
+    // New Logic: Reopen only if state exists, it was open, AND it was NOT manually closed.
+    return !!state && state.isOpen === true && !state.manuallyClosed
   }
 }
