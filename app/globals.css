@@ -171,6 +171,13 @@
       flex: 1;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
+      /* Add extra bottom padding to prevent content cutoff */
+      padding-bottom: 10px !important;
+    }
+    
+    /* Keyboard handling */
+    .keyboard-open {
+      transition: height 0.3s ease, max-height 0.3s ease;
     }
   }
 }

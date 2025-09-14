@@ -13,6 +13,7 @@ import { ProductCard } from "@/components/product-card"
 import { OrderCard } from "@/components/order-card"
 
 import { useToast } from "@/hooks/use-toast"
+import { useMobileKeyboard } from "@/hooks/use-mobile-keyboard"
 import type { CartResponse } from "@/lib/shopify-cart"
 import { ChatStateService } from "@/lib/chat-state"
 
@@ -200,6 +201,8 @@ export function ChatbotWidget({
   const [cartData, setCartData] = useState<CartResponse | null>(null)
   const [isMobile, setIsMobile] = useState(false)
   const [isDirectMode, setIsDirectMode] = useState(false)
+  const [viewportHeight, setViewportHeight] = useState(typeof window !== 'undefined' ? window.innerHeight : 0)
+  const { isKeyboardOpen, keyboardHeight } = useMobileKeyboard()
 
   const [messages, setMessages] = useState<Message[]>(
     isPreview && mockMessages.length > 0
@@ -390,17 +393,39 @@ export function ChatbotWidget({
       setIsMobile(window.innerWidth < 768)
     }
 
+    const handleResize = () => {
+      checkMobile()
+      setViewportHeight(window.innerHeight)
+    }
+
+    // Throttle resize events for better performance
+    let resizeTimeout: NodeJS.Timeout;
+    const throttledResize = () => {
+      if (resizeTimeout) {
+        clearTimeout(resizeTimeout);
+      }
+      resizeTimeout = setTimeout(handleResize, 100);
+    };
+
     checkMobile()
-    window.addEventListener("resize", checkMobile)
+    setViewportHeight(window.innerHeight)
+    
+    window.addEventListener("resize", throttledResize)
     
     // Handle orientation changes which might affect viewport height
     window.addEventListener("orientationchange", () => {
-      setTimeout(checkMobile, 100)
+      setTimeout(() => {
+        checkMobile()
+        setViewportHeight(window.innerHeight)
+      }, 300)
     })
 
     return () => {
-      window.removeEventListener("resize", checkMobile)
-      window.removeEventListener("orientationchange", checkMobile)
+      window.removeEventListener("resize", throttledResize)
+      window.removeEventListener("orientationchange", throttledResize)
+      if (resizeTimeout) {
+        clearTimeout(resizeTimeout);
+      }
     }
   }, [])
 
@@ -452,9 +477,21 @@ export function ChatbotWidget({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
+  // Scroll to bottom when messages change
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  // Maintain scroll position when keyboard opens/closes
+  useEffect(() => {
+    if (isMobile) {
+      // Small delay to ensure DOM has updated
+      const timer = setTimeout(() => {
+        scrollToBottom()
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [isKeyboardOpen, isMobile])
 
   const sendMessage = async (messagePayload: {
     type: "text" | "voice"
@@ -882,7 +919,7 @@ export function ChatbotWidget({
           "backdrop-blur-sm border-gray-200 dark:border-gray-700",
           isOpen || hideToggle ? "scale-100 opacity-100" : "scale-0 opacity-0 pointer-events-none",
           isMobile
-            ? "fixed inset-0 rounded-none h-screen w-screen max-h-screen grid grid-rows-[auto_1fr_auto]" 
+            ? `fixed inset-0 rounded-none w-screen max-h-screen grid grid-rows-[auto_1fr_auto] ${isKeyboardOpen ? 'keyboard-open' : ''}` 
             : isDirectMode || hideToggle
               ? "absolute bottom-0 right-0 w-full h-full max-h-screen grid grid-rows-[auto_1fr_auto]" 
               : "fixed bottom-6 right-6 max-w-[500px] w-[500px] h-[800px] grid grid-rows-[auto_1fr_auto]",
@@ -890,13 +927,13 @@ export function ChatbotWidget({
         style={
           isMobile
             ? {
+                height: `${viewportHeight - (isKeyboardOpen ? keyboardHeight : 0)}px`,
+                maxHeight: `${viewportHeight - (isKeyboardOpen ? keyboardHeight : 0)}px`,
                 transformOrigin: "center",
                 boxShadow: "none",
                 margin: 0,
                 padding: 0,
                 width: "100vw",
-                height: "100vh",
-                maxHeight: "100vh",
                 boxSizing: "border-box",
                 overflow: "hidden",
               }
@@ -1024,8 +1061,8 @@ export function ChatbotWidget({
         </div>
 
         {/* Messages */}
-        <ScrollArea className={cn("flex-1", isMobile ? "p-4" : "p-6")}>
-          <div className="space-y-4 pb-2" style={{ minHeight: "100%" }}>
+        <ScrollArea className={cn("flex-1", isMobile ? "p-4 chat-messages-container" : "p-6")} style={isMobile ? { maxHeight: "calc(100vh - 150px)" } : {}}>
+          <div className="space-y-4 pb-2" style={{ minHeight: "100%", paddingBottom: isMobile ? "20px" : "0" }}>
             {messages.map((message) => (
               <div key={message.id} className="space-y-3">
                 <div className={cn("flex gap-3", message.type === "user" ? "justify-end" : "justify-start")}>
