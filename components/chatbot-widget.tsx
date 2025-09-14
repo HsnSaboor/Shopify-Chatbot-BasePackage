@@ -201,8 +201,7 @@ export function ChatbotWidget({
   const [cartData, setCartData] = useState<CartResponse | null>(null)
   const [isMobile, setIsMobile] = useState(false)
   const [isDirectMode, setIsDirectMode] = useState(false)
-  const [viewportHeight, setViewportHeight] = useState(typeof window !== 'undefined' ? window.innerHeight : 0)
-  const { isKeyboardOpen, keyboardHeight } = useMobileKeyboard()
+  const { isKeyboardOpen, keyboardHeight, viewportHeight } = useMobileKeyboard()
 
   const [messages, setMessages] = useState<Message[]>(
     isPreview && mockMessages.length > 0
@@ -393,39 +392,20 @@ export function ChatbotWidget({
       setIsMobile(window.innerWidth < 768)
     }
 
-    const handleResize = () => {
-      checkMobile()
-      setViewportHeight(window.innerHeight)
-    }
-
-    // Throttle resize events for better performance
-    let resizeTimeout: NodeJS.Timeout;
-    const throttledResize = () => {
-      if (resizeTimeout) {
-        clearTimeout(resizeTimeout);
-      }
-      resizeTimeout = setTimeout(handleResize, 100);
-    };
-
     checkMobile()
-    setViewportHeight(window.innerHeight)
-    
-    window.addEventListener("resize", throttledResize)
+
+    window.addEventListener("resize", checkMobile)
     
     // Handle orientation changes which might affect viewport height
     window.addEventListener("orientationchange", () => {
       setTimeout(() => {
         checkMobile()
-        setViewportHeight(window.innerHeight)
       }, 300)
     })
 
     return () => {
-      window.removeEventListener("resize", throttledResize)
-      window.removeEventListener("orientationchange", throttledResize)
-      if (resizeTimeout) {
-        clearTimeout(resizeTimeout);
-      }
+      window.removeEventListener("resize", checkMobile)
+      window.removeEventListener("orientationchange", checkMobile)
     }
   }, [])
 

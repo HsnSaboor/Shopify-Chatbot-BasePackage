@@ -26,6 +26,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="m-0 p-0 w-full h-full">
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content" />
+      </head>
       <body className={`font-sans m-0 p-0 w-full h-full overflow-hidden ${GeistSans.variable} ${GeistMono.variable}`}>
         <Suspense fallback={<LoadingFallback />}>{children}</Suspense>
       </body>
