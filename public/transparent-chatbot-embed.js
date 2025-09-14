@@ -29,9 +29,9 @@
         },
         mobile: {
           width: "100vw",
-          height: "100vh",
+          height: "100dvh",
           maxWidth: "100vw",
-          maxHeight: "100vh"
+          maxHeight: "100dvh"
         }
       }
     },
