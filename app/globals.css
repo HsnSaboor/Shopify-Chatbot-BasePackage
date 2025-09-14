@@ -160,8 +160,8 @@
   /* Fix for ultra-tall mobile screens */
   @media (max-width: 768px) {
     .chat-window-mobile {
-      height: 100dvh !important;
-      max-height: 100dvh !important;
+      height: var(--chat-window-height, 100dvh) !important;
+      max-height: var(--chat-window-max-height, 100dvh) !important;
       overflow: hidden !important;
       padding-top: env(safe-area-inset-top);
       padding-bottom: env(safe-area-inset-bottom);
@@ -171,6 +171,19 @@
       flex: 1;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
+      max-height: var(--messages-container-max-height, calc(100dvh - 140px)) !important;
+    }
+    
+    /* Specific fix for ultra-tall screens */
+    @media (min-height: 950px) {
+      .chat-window-mobile {
+        height: var(--chat-window-height, 100dvh) !important;
+        max-height: var(--chat-window-max-height, 100dvh) !important;
+      }
+      
+      .chat-messages-container {
+        max-height: var(--messages-container-max-height, calc(100dvh - 140px)) !important;
+      }
     }
   }
 }

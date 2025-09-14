@@ -404,6 +404,54 @@ export function ChatbotWidget({
     }
   }, [])
 
+  // Effect to handle ultra-tall screens
+  useEffect(() => {
+    // Only run on client-side
+    if (typeof window === 'undefined') {
+      return;
+    }
+    
+    // Prevent body scrolling when chat is open on mobile
+    if (isMobile && isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    
+    const handleResize = () => {
+      if (isMobile) {
+        // Get the actual viewport height
+        const viewportHeight = window.innerHeight;
+        
+        // Set CSS custom properties
+        document.documentElement.style.setProperty('--chat-window-height', `${viewportHeight}px`);
+        document.documentElement.style.setProperty('--chat-window-max-height', `${viewportHeight}px`);
+        
+        // For ultra-tall screens, adjust the messages container height
+        const headerHeight = 70; // Approximate header height
+        const inputHeight = 80;  // Approximate input area height
+        const adjustedHeight = viewportHeight - headerHeight - inputHeight;
+        document.documentElement.style.setProperty('--messages-container-max-height', `${adjustedHeight}px`);
+      }
+    };
+
+    // Run on mount and when mobile state changes
+    handleResize();
+    
+    // Also listen for resize events
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      // Clean up CSS custom properties
+      document.documentElement.style.removeProperty('--chat-window-height');
+      document.documentElement.style.removeProperty('--chat-window-max-height');
+      document.documentElement.style.removeProperty('--messages-container-max-height');
+      // Reset body overflow
+      document.body.style.overflow = '';
+    };
+  }, [isMobile, isOpen]);
+
   useEffect(() => {
     // Only run on client-side
     if (typeof window === 'undefined') {
@@ -898,6 +946,7 @@ export function ChatbotWidget({
                 height: "100dvh",
                 maxHeight: "100dvh",
                 boxSizing: "border-box",
+                overflow: "hidden",
               }
             : hideToggle
               ? {
@@ -910,6 +959,7 @@ export function ChatbotWidget({
                   maxHeight: "100dvh",
                   minHeight: "800px",
                   boxSizing: "border-box",
+                  overflow: "hidden",
                 }
               : {
                   transformOrigin: "bottom right",
@@ -918,6 +968,7 @@ export function ChatbotWidget({
                   height: "800px",
                   maxHeight: "calc(100dvh - 2rem)",
                   boxSizing: "border-box",
+                  overflow: "hidden",
                 }
         }
       >
@@ -1023,7 +1074,7 @@ export function ChatbotWidget({
         </div>
 
         {/* Messages */}
-        <ScrollArea className={cn("flex-1 chat-messages-container", isMobile ? "p-4" : "p-6")}>
+        <ScrollArea className={cn("flex-1 chat-messages-container", isMobile ? "p-4" : "p-6")} style={{ maxHeight: "calc(100dvh - 140px)" }}>
           <div className="space-y-4 pb-2" style={{ minHeight: "100%" }}>
             {messages.map((message) => (
               <div key={message.id} className="space-y-3">
