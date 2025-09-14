@@ -157,27 +157,25 @@
     box-sizing: border-box !important;
   }
   
-  /* Fix for ultra-tall mobile screens */
-  @media (max-width: 768px) {
-    .chat-window-mobile {
-      height: 100vh !important;
-      max-height: 100vh !important;
-      overflow: hidden !important;
-      padding-top: env(safe-area-inset-top);
-      padding-bottom: env(safe-area-inset-bottom);
-    }
-    
-    .chat-messages-container {
-      flex: 1;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      /* Add extra bottom padding to prevent content cutoff */
-      padding-bottom: 10px !important;
-    }
-    
-    /* Keyboard handling */
-    .keyboard-open {
-      transition: height 0.3s ease, max-height 0.3s ease;
-    }
-  }
+  /* Fix for ultra-tall mobile devices */
+.chat-messages-container {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Add extra bottom padding to prevent content cutoff */
+  padding-bottom: 10px !important;
+}
+
+/* Hide scrollbars but keep scrolling functionality */
+.scrollbar-none {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+  overflow-y: auto; /* Ensure scrolling still works */
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari, Opera */
+}
+
+/* Keyboard handling */
 }

@@ -919,10 +919,10 @@ export function ChatbotWidget({
           "backdrop-blur-sm border-gray-200 dark:border-gray-700",
           isOpen || hideToggle ? "scale-100 opacity-100" : "scale-0 opacity-0 pointer-events-none",
           isMobile
-            ? `fixed inset-0 rounded-none w-screen max-h-screen grid grid-rows-[auto_1fr_auto] ${isKeyboardOpen ? 'keyboard-open' : ''}` 
+            ? `fixed inset-0 rounded-none w-screen h-screen grid grid-rows-[auto_1fr_auto] ${isKeyboardOpen ? 'keyboard-open' : ''}` 
             : isDirectMode || hideToggle
-              ? "absolute bottom-0 right-0 w-full h-full max-h-screen grid grid-rows-[auto_1fr_auto]" 
-              : "fixed bottom-6 right-6 max-w-[500px] w-[500px] h-[800px] grid grid-rows-[auto_1fr_auto]",
+              ? "absolute inset-0 w-full h-full grid grid-rows-[auto_1fr_auto]" 
+              : "fixed bottom-6 right-6 w-[500px] h-[800px] grid grid-rows-[auto_1fr_auto]",
         )}
         style={
           isMobile
@@ -1061,7 +1061,12 @@ export function ChatbotWidget({
         </div>
 
         {/* Messages */}
-        <ScrollArea className={cn("flex-1", isMobile ? "p-4 chat-messages-container" : "p-6")} style={isMobile ? { maxHeight: "calc(100vh - 150px)" } : {}}>
+        <ScrollArea 
+          className={cn("flex-1", isMobile ? "p-4 chat-messages-container" : "p-6")} 
+          style={isMobile ? { maxHeight: "calc(100vh - 150px)" } : {}}
+          showScrollbar={!isMobile}
+          showScrollToBottom={true}
+        >
           <div className="space-y-4 pb-2" style={{ minHeight: "100%", paddingBottom: isMobile ? "20px" : "0" }}>
             {messages.map((message) => (
               <div key={message.id} className="space-y-3">
