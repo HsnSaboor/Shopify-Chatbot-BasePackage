@@ -392,8 +392,16 @@ export function ChatbotWidget({
 
     checkMobile()
     window.addEventListener("resize", checkMobile)
+    
+    // Handle orientation changes which might affect viewport height
+    window.addEventListener("orientationchange", () => {
+      setTimeout(checkMobile, 100)
+    })
 
-    return () => window.removeEventListener("resize", checkMobile)
+    return () => {
+      window.removeEventListener("resize", checkMobile)
+      window.removeEventListener("orientationchange", checkMobile)
+    }
   }, [])
 
   useEffect(() => {
@@ -423,19 +431,22 @@ export function ChatbotWidget({
     if (isPreview) return
 
     if (window.parent !== window) {
+      const height = isOpen || hideToggle ? "100dvh" : "70px";
+      const width = isOpen || hideToggle ? (isMobile ? "100vw" : "500px") : "70px";
+      
       window.parent.postMessage(
         {
           type: "CHATBOT_RESIZE",
           data: {
             isOpen: isOpen || hideToggle,
-            width: isOpen || hideToggle ? 400 : 70,
-            height: isOpen || hideToggle ? 800 : 70,
+            width,
+            height,
           },
         },
         "*",
       )
     }
-  }, [isOpen, hideToggle, isPreview])
+  }, [isOpen, hideToggle, isPreview, isMobile])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -868,12 +879,12 @@ export function ChatbotWidget({
       <div
         className={cn(
           "bg-white dark:bg-gray-900 rounded-xl shadow-2xl border transition-all duration-300 flex flex-col z-[9999]",
-          "backdrop-blur-sm border-gray-200 dark:border-gray-700",
+          "backdrop-blur-sm border-gray-200 dark:border-gray-700 chat-window-mobile",
           isOpen || hideToggle ? "scale-100 opacity-100" : "scale-0 opacity-0 pointer-events-none",
           isMobile
-            ? "inset-0 rounded-none h-screen w-screen" 
+            ? "inset-0 rounded-none h-[100dvh] w-screen max-h-[100dvh]" 
             : isDirectMode || hideToggle
-              ? "absolute bottom-0 right-0 w-full h-full" 
+              ? "absolute bottom-0 right-0 w-full h-full max-h-[100dvh]" 
               : "fixed bottom-6 right-6 max-w-[500px] w-[500px] h-[800px]",
         )}
         style={
@@ -884,7 +895,8 @@ export function ChatbotWidget({
                 margin: 0,
                 padding: 0,
                 width: "100vw",
-                height: "100vh",
+                height: "100dvh",
+                maxHeight: "100dvh",
                 boxSizing: "border-box",
               }
             : hideToggle
@@ -895,6 +907,7 @@ export function ChatbotWidget({
                   padding: 0,
                   width: "100%",
                   height: "100%",
+                  maxHeight: "100dvh",
                   minHeight: "800px",
                   boxSizing: "border-box",
                 }
@@ -903,6 +916,7 @@ export function ChatbotWidget({
                   boxShadow: "0 8px 32px rgba(37, 99, 235, 0.3)",
                   width: "500px",
                   height: "800px",
+                  maxHeight: "calc(100dvh - 2rem)",
                   boxSizing: "border-box",
                 }
         }
@@ -914,6 +928,7 @@ export function ChatbotWidget({
             backgroundColor: "#2563eb",
             color: "white",
             background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+            paddingTop: isMobile ? "calc(1rem + env(safe-area-inset-top))" : "1rem",
           }}
         >
           <div className="flex items-center gap-3">
@@ -1008,8 +1023,8 @@ export function ChatbotWidget({
         </div>
 
         {/* Messages */}
-        <ScrollArea className={cn("flex-1", isMobile ? "p-4" : "p-6")}>
-          <div className="space-y-4">
+        <ScrollArea className={cn("flex-1 chat-messages-container", isMobile ? "p-4" : "p-6")}>
+          <div className="space-y-4 pb-2" style={{ minHeight: "100%" }}>
             {messages.map((message) => (
               <div key={message.id} className="space-y-3">
                 <div className={cn("flex gap-3", message.type === "user" ? "justify-end" : "justify-start")}>
@@ -1095,6 +1110,9 @@ export function ChatbotWidget({
             "border-t bg-gray-50/50 dark:bg-gray-800/50",
             isMobile ? "p-4 rounded-none" : "p-6 rounded-b-xl",
           )}
+          style={{
+            paddingBottom: isMobile ? "calc(1rem + env(safe-area-inset-bottom))" : "1rem",
+          }}
         >
           <div className="flex gap-2">
             <Input
