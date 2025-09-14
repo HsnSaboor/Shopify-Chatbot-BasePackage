@@ -14,9 +14,9 @@ export default function TestUltraTallPage() {
         <div 
           className="bg-white rounded-lg shadow-xl p-8 text-center"
           style={{ 
-            width: '300px', 
-            height: '800px', 
-            maxHeight: '90vh',
+            width: '360px', 
+            height: '1000px', 
+            maxHeight: '100vh',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'center'
@@ -27,7 +27,7 @@ export default function TestUltraTallPage() {
           
           <div className="bg-gray-100 rounded-lg p-4 mb-6">
             <p className="text-sm">Screen dimensions:</p>
-            <p className="font-mono text-xs">300px × 800px</p>
+            <p className="font-mono text-xs">360px × 1000px</p>
             <p className="text-xs text-gray-500">(Simulating 21:9 aspect ratio)</p>
           </div>
           
