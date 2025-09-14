@@ -427,9 +427,23 @@ export function ChatbotWidget({
         document.documentElement.style.setProperty('--chat-window-height', `${viewportHeight}px`);
         document.documentElement.style.setProperty('--chat-window-max-height', `${viewportHeight}px`);
         
-        // For ultra-tall screens, adjust the messages container height
-        const headerHeight = 70; // Approximate header height
-        const inputHeight = 80;  // Approximate input area height
+        // More accurate calculation by measuring actual elements when possible
+        const chatWindow = document.querySelector('.chat-window-mobile');
+        const header = chatWindow?.querySelector('[class*="border-b"]');
+        const inputArea = chatWindow?.querySelector('[class*="border-t"]');
+        
+        let headerHeight = 70; // Default approximation
+        let inputHeight = 90;  // Default approximation
+        
+        if (header) {
+          headerHeight = (header as HTMLElement).offsetHeight;
+        }
+        
+        if (inputArea) {
+          inputHeight = (inputArea as HTMLElement).offsetHeight;
+        }
+        
+        // Calculate available height for messages
         const adjustedHeight = viewportHeight - headerHeight - inputHeight;
         document.documentElement.style.setProperty('--messages-container-max-height', `${adjustedHeight}px`);
       }
@@ -943,8 +957,8 @@ export function ChatbotWidget({
                 margin: 0,
                 padding: 0,
                 width: "100vw",
-                height: "100dvh",
-                maxHeight: "100dvh",
+                height: "var(--chat-window-height, 100dvh)",
+                maxHeight: "var(--chat-window-max-height, 100dvh)",
                 boxSizing: "border-box",
                 overflow: "hidden",
               }
@@ -1074,7 +1088,7 @@ export function ChatbotWidget({
         </div>
 
         {/* Messages */}
-        <ScrollArea className={cn("flex-1 chat-messages-container", isMobile ? "p-4" : "p-6")} style={{ maxHeight: "calc(100dvh - 140px)" }}>
+        <ScrollArea className={cn("flex-1 chat-messages-container", isMobile ? "p-4" : "p-6")} style={{ maxHeight: "var(--messages-container-max-height, calc(100dvh - 160px))" }}>
           <div className="space-y-4 pb-2" style={{ minHeight: "100%" }}>
             {messages.map((message) => (
               <div key={message.id} className="space-y-3">

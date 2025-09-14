@@ -1,0 +1,13 @@
+/* Ultra-tall screen simulation */
+@media (min-height: 800px) and (max-width: 400px) {
+  .ultra-tall-test {
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+  
+  .ultra-tall-chat-window {
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+  }
+}
