@@ -6,7 +6,7 @@ import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { ProductCard } from "@/components/product-card"
@@ -16,6 +16,29 @@ import { useToast } from "@/hooks/use-toast"
 import { useMobileKeyboard } from "@/hooks/use-mobile-keyboard"
 import type { CartResponse } from "@/lib/shopify-cart"
 import { ChatStateService } from "@/lib/chat-state"
+
+const chatbotProps = {
+  closedWindow: {
+    backgroundColor: "#2563eb",
+    borderColor: "#ffffff"
+  },
+  chatHeader: {
+    backgroundColor: "#3b82f6",
+    name: "ShopBot Assistant",
+    tagline: "Your AI Shopping Assistant"
+  },
+  avatar: {
+    imageUrl: "https://cdn-icons-png.flaticon.com/512/4712/4712107.png",
+    borderStyle: "2px solid #ffffff",
+    showBorder: true
+  },
+  userMessage: {
+    backgroundColor: "#3b82f6"
+  },
+  sendButton: {
+    backgroundColor: "#2563eb"
+  }
+};
 
 // Simple icon components to avoid import issues
 const MessageCircleIcon = () => (
@@ -135,6 +158,11 @@ interface Order {
   order_number: number;
   created_at: string;
   fulfillment_status: string | null;
+  tracking: {
+    carrier: string | null;
+    tracking_number: string | null;
+    tracking_url: string | null;
+  };
   items: Array<{
     product_id: string;
     title: string;
@@ -205,16 +233,19 @@ export function ChatbotWidget({
 
   const [messages, setMessages] = useState<Message[]>(
     isPreview && mockMessages.length > 0
-      ? mockMessages.map((msg) => ({
-          ...msg,
-          type: msg.role === "user" ? "user" : "bot",
-        }))
+      ? mockMessages.map((msg) => {
+          if (!msg) return undefined;
+          return {
+            ...msg,
+            type: msg.role === "user" ? "user" : "bot",
+          } as Message;
+        }).filter((msg): msg is Message => msg !== undefined)
       : [
           {
             id: "1",
             type: "bot",
             content:
-              "Hi! I'm your AI shopping assistant. I can help you find products, check order status, and answer any questions you have. How can I help you today?",
+              "Hello! I'm ShopBot, your AI shopping assistant. I can help you discover products, answer questions, and guide you through your shopping journey. What can I help you with today?",
             timestamp: new Date(),
           },
         ],
@@ -315,10 +346,15 @@ export function ChatbotWidget({
     const savedState = ChatStateService.loadState()
     if (savedState && savedState.messages && Array.isArray(savedState.messages)) {
       // Convert timestamp strings back to Date objects
-      const messagesWithDates = savedState.messages.map((msg: any) => ({
-        ...msg,
-        timestamp: new Date(msg.timestamp),
-      }))
+      const messagesWithDates = savedState.messages.map((msg: any) => {
+        // Check if msg is valid before accessing its properties
+        if (!msg) return msg;
+        
+        return {
+          ...msg,
+          timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+        };
+      })
 
       setMessages(messagesWithDates)
 
@@ -864,7 +900,7 @@ export function ChatbotWidget({
         id: "1",
         type: "bot",
         content:
-          "Hi! I'm your AI shopping assistant. I can help you find products, check order status, and answer any questions you have. How can I help you today?",
+          "Hello! I'm ShopBot, your AI shopping assistant. I can help you discover products, answer questions, and guide you through your shopping journey. What can I help you with today?",
         timestamp: new Date(),
       },
     ])
@@ -910,6 +946,8 @@ export function ChatbotWidget({
           size="icon"
           style={{
             boxShadow: "0 8px 32px rgba(37, 99, 235, 0.3)",
+            backgroundColor: chatbotProps.closedWindow.backgroundColor,
+            borderColor: chatbotProps.closedWindow.borderColor
           }}
         >
           <MessageCircleIcon />
@@ -967,21 +1005,23 @@ export function ChatbotWidget({
         <div
           className={cn("flex items-center justify-between p-4 border-b", isMobile ? "rounded-none" : "rounded-t-xl")}
           style={{
-            backgroundColor: "#2563eb",
+            backgroundColor: chatbotProps.chatHeader.backgroundColor,
             color: "white",
-            background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
             paddingTop: isMobile ? "calc(1rem + env(safe-area-inset-top))" : "1rem",
           }}
         >
           <div className="flex items-center gap-3">
-            <Avatar className="h-8 w-8 ring-2 ring-white/20">
-              <AvatarFallback style={{ backgroundColor: "white", color: "#2563eb" }} className="text-xs font-bold">
-                AI
-              </AvatarFallback>
+            <Avatar className={`h-8 w-8 ${chatbotProps.avatar.showBorder ? 'ring-2 ring-white/20' : ''}`}>
+              <AvatarImage 
+                src={chatbotProps.avatar.imageUrl} 
+                alt="Chatbot Avatar" 
+                className="h-full w-full object-cover rounded-full"
+                style={{ border: chatbotProps.avatar.borderStyle }}
+              />
             </Avatar>
             <div>
               <h3 className="font-semibold text-sm" style={{ color: "white" }}>
-                AI Shopping Assistant
+                {chatbotProps.chatHeader.name}
                 {isPreview && (
                   <Badge variant="secondary" className="ml-2 bg-white/20 text-white text-xs">
                     Preview
@@ -991,7 +1031,7 @@ export function ChatbotWidget({
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                 <p className="text-xs" style={{ color: "rgba(255, 255, 255, 0.9)" }}>
-                  {isPreview ? "Demo Mode" : "Online & Ready to Help"}
+                  {isPreview ? "Demo Mode" : chatbotProps.chatHeader.tagline}
                 </p>
               </div>
             </div>
@@ -1085,13 +1125,13 @@ export function ChatbotWidget({
               <div key={message.id} className="space-y-3">
                 <div className={cn("flex gap-3", message.type === "user" ? "justify-end" : "justify-start")}>
                   {message.type === "bot" && (
-                    <Avatar className="h-8 w-8 mt-1 ring-2 ring-blue-100 flex-shrink-0">
-                      <AvatarFallback
-                        style={{ backgroundColor: "#2563eb", color: "white" }}
-                        className="text-xs font-semibold"
-                      >
-                        AI
-                      </AvatarFallback>
+                    <Avatar className={`h-8 w-8 mt-1 flex-shrink-0 ${chatbotProps.avatar.showBorder ? 'ring-2 ring-blue-100' : ''}`}>
+                      <AvatarImage
+                        src={chatbotProps.avatar.imageUrl}
+                        alt="Chatbot Avatar"
+                        className="h-full w-full object-cover rounded-full"
+                        style={{ border: chatbotProps.avatar.borderStyle }}
+                      />
                     </Avatar>
                   )}
                   <div
@@ -1103,9 +1143,8 @@ export function ChatbotWidget({
                     style={
                       message.type === "user"
                         ? {
-                            backgroundColor: "#2563eb",
+                            backgroundColor: chatbotProps.userMessage.backgroundColor,
                             color: "white",
-                            background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
                           }
                         : {}
                     }
@@ -1140,13 +1179,13 @@ export function ChatbotWidget({
             {/* Loading indicator */}
             {isLoading && (
               <div className="flex gap-3 justify-start">
-                <Avatar className="h-8 w-8 mt-1 ring-2 ring-blue-100">
-                  <AvatarFallback
-                    style={{ backgroundColor: "#2563eb", color: "white" }}
-                    className="text-xs font-semibold"
-                  >
-                    AI
-                  </AvatarFallback>
+                <Avatar className={`h-8 w-8 mt-1 flex-shrink-0 ${chatbotProps.avatar.showBorder ? 'ring-2 ring-blue-100' : ''}`}>
+                  <img 
+                    src={chatbotProps.avatar.imageUrl} 
+                    alt="Chatbot Avatar" 
+                    className="h-full w-full object-cover rounded-full"
+                    style={{ border: chatbotProps.avatar.borderStyle }}
+                  />
                 </Avatar>
                 <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl px-3 py-2 text-sm shadow-sm">
                   <div className="flex items-center gap-2">
@@ -1206,6 +1245,7 @@ export function ChatbotWidget({
                 "rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition-all duration-200 shadow-sm",
                 isMobile ? "h-10 w-10" : "h-12 w-12",
               )}
+              style={{ backgroundColor: chatbotProps.sendButton.backgroundColor }}
             >
               <SendIcon />
             </Button>

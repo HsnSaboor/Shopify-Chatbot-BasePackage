@@ -1,14 +1,12 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { GeistSans } from "geist/font/sans"
-import { GeistMono } from "geist/font/mono"
 import { Suspense } from "react"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "v0 App",
-  description: "Created with v0",
-  generator: "v0.app",
+  title: "Shopify Chatbot",
+  description: "A redistributable Shopify AI chatbot widget",
+  generator: "Next.js",
 }
 
 function LoadingFallback() {
@@ -28,8 +26,9 @@ export default function RootLayout({
     <html lang="en" className="m-0 p-0 w-full h-full">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
-      <body className={`font-sans m-0 p-0 w-full h-full overflow-hidden ${GeistSans.variable} ${GeistMono.variable}`}>
+      <body className="font-sans m-0 p-0 w-full h-full overflow-hidden">
         <Suspense fallback={<LoadingFallback />}>{children}</Suspense>
       </body>
     </html>

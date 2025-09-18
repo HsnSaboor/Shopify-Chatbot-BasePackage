@@ -1,23 +1,29 @@
 "use client"
 
-import { Suspense } from "react"
+import { useState, useEffect } from "react"
 import { ChatbotWidget } from "@/components/chatbot-widget"
-import { useSearchParams } from "next/navigation"
-
-function ChatbotContent() {
-  const searchParams = useSearchParams()
-
-  return (
-    <div className="bg-transparent overflow-hidden">
-      <ChatbotWidget />
-    </div>
-  )
-}
 
 export default function ChatbotPage() {
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  // Don't render the chatbot on the server side to avoid hydration issues
+  if (!isClient) {
+    return (
+      <div className="w-full h-screen bg-transparent p-0 m-0 overflow-hidden">
+        <div className="flex items-center justify-center h-full">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <Suspense fallback={<div />}>
-      <ChatbotContent />
-    </Suspense>
+    <div className="w-full h-screen bg-transparent p-0 m-0 overflow-hidden">
+      <ChatbotWidget hideToggle={true} />
+    </div>
   )
 }

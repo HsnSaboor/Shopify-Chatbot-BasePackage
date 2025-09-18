@@ -7,8 +7,9 @@ import { cn } from '@/lib/utils'
 
 function Avatar({
   className,
+  children,
   ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Root>) {
+}: React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root> & { className?: string; children?: React.ReactNode; }) {
   return (
     <AvatarPrimitive.Root
       data-slot="avatar"
@@ -17,14 +18,16 @@ function Avatar({
         className,
       )}
       {...props}
-    />
+    >
+      {children}
+    </AvatarPrimitive.Root>
   )
 }
 
 function AvatarImage({
   className,
   ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Image>) {
+}: React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image> & { className?: string; }) {
   return (
     <AvatarPrimitive.Image
       data-slot="avatar-image"
@@ -37,7 +40,7 @@ function AvatarImage({
 function AvatarFallback({
   className,
   ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Fallback>) {
+}: React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Fallback> & { className?: string; }) {
   return (
     <AvatarPrimitive.Fallback
       data-slot="avatar-fallback"

@@ -136,7 +136,7 @@ export class BridgeFallbackHandler {
       }
       
       return { cart };
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Direct API add to cart failed: ${error.message}`);
     }
   }
@@ -166,7 +166,7 @@ export class BridgeFallbackHandler {
       }
       
       return cart;
-    } catch (error) {
+    } catch (error: any) {
       // Try to return cached data if available
       if (this.config.useLocalStorageCache) {
         const cachedCart = this.getCachedCartData();
@@ -202,7 +202,7 @@ export class BridgeFallbackHandler {
       }
       
       return { cart };
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Direct API update cart failed: ${error.message}`);
     }
   }
@@ -228,7 +228,7 @@ export class BridgeFallbackHandler {
       }
       
       return { cart };
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Direct API clear cart failed: ${error.message}`);
     }
   }
@@ -245,7 +245,7 @@ export class BridgeFallbackHandler {
     try {
       window.location.href = '/cart';
       return { success: true };
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Navigate to cart failed: ${error.message}`);
     }
   }
@@ -262,7 +262,7 @@ export class BridgeFallbackHandler {
     try {
       window.location.href = '/checkout';
       return { success: true };
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Navigate to checkout failed: ${error.message}`);
     }
   }

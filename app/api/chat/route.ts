@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 
+const webhookUrl = process.env.CHATBOT_WEBHOOK_URL || "https://n8n.botomation.tech/webhook-test/chat";
+
 interface ChatRequest {
   type: "text" | "voice"
   message?: string
@@ -89,8 +91,7 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Request validation passed ✓")
 
-    const webhookUrl = "https://n8n.botomation.tech/webhook-test/chat"
-    console.log("[v0] Using hardcoded webhook URL:", webhookUrl)
+    console.log("[v0] Using webhook URL:", webhookUrl)
 
     // Forward request to the actual webhook
     const controller = new AbortController()
