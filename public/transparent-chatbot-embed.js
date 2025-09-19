@@ -1,31 +1,8 @@
 ( () => {
   "use strict";
 
-  const CONFIG = {
-    apiUrl: "http://localhost:9292",
-    iframe: {
-      src: "/chatbot?embedded=true",
-      dimensions: {
-        pc: {
-          width: "500px",
-          minWidth: "500px",
-          maxWidth: "500px",
-          height: "800px",
-          containerWidth: "520px"
-        },
-        mobile: {
-          width: "100vw",
-          height: "100dvh",
-          maxWidth: "100vw",
-          maxHeight: "100dvh"
-        }
-      }
-    },
-    responsive: {
-      mobileBreakpoint: 768,
-      desktopBreakpoint: 769
-    }
-  };
+  // THIS IS THE NEW PLACEHOLDER. A VALID EMPTY OBJECT WITH A COMMENT MARKER.
+  const CONFIG = {}; /* __CONFIG_PLACEHOLDER__ */
 
   console.log('[TransparentChatbotEmbed] Initializing embed script');
   
@@ -71,7 +48,7 @@
         'right: 20px;' +
         'width: ' + CONFIG.iframe.dimensions.pc.containerWidth + ';' +
         'height: ' + CONFIG.iframe.dimensions.pc.height + ';' +
-        'z-index: 9999;' +
+        'z-index: 999;' +
         'pointer-events: none;' +
         'background: transparent;' +
         'margin: 0;' +
@@ -100,7 +77,7 @@
         'box-sizing: border-box;' +
         'border-radius: 12px;' +
         'overflow: hidden;' +
-        'z-index: 99999;';
+        'z-index: 9999;';
       
       this.iframe.setAttribute("allowTransparency", "true");
     }
@@ -163,7 +140,7 @@
       }
     }
     
-    injectCartPopupStyles() {
+        injectCartPopupStyles() {
       if (document.getElementById('chatbot-cart-popup-styles')) {
         return;
       }
@@ -171,94 +148,106 @@
       const fontFamily = getShopifyFont();
       const style = document.createElement('style');
       style.id = 'chatbot-cart-popup-styles';
-      style.textContent =
-        '@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }' +
-        '@keyframes zoomIn95 { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }' +
-        '.fixed { position: fixed; }' +
-        '.inset-0 { top: 0; right: 0; bottom: 0; left: 0; }' +
-        '.z-\[10000\] { z-index: 10000 !important; }' +
-        '.flex { display: flex; }' +
-        '.items-center { align-items: center; }' +
-        '.justify-center { justify-content: center; }' +
-        '.w-full { width: 100%; }' +
-        '.max-w-md { max-width: 28rem; }' +
-        '.mx-4 { margin-left: 1rem; margin-right: 1rem; }' +
-        '.bg-black\/70 { background-color: rgba(0,0,0,0.7); }' +
-        '.backdrop-blur-sm { backdrop-filter: blur(4px); }' +
-        '.animate-in { animation-fill-mode: both; }' +
-        '.zoom-in-95 { animation-name: zoomIn95; }' +
-        '.duration-200 { animation-duration: 200ms; }' +
-        '.bg-white { background-color: #ffffff; }' +
-        '.rounded-2xl { border-radius: 1rem; }' +
-        '.shadow-lg { box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); }' +
-        '.overflow-hidden { overflow: hidden; }' +
-        '.text-center { text-align: center; }' +
-        '.pb-4 { padding-bottom: 1rem; }' +
-        '.pt-6 { padding-top: 1.5rem; }' +
-        '.px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }' +
-        '.mx-auto { margin-left: auto; margin-right: auto; }' +
-        '.w-16 { width: 4rem; }' +
-        '.h-16 { height: 4rem; }' +
-        '.bg-green-100 { background-color: #dcfce7; }' +
-        '.rounded-full { border-radius: 9999px; }' +
-        '.mb-4 { margin-bottom: 1rem; }' +
-        '.text-green-600 { color: #16a34a; }' +
-        '.text-xl { font-size: 1.25rem; line-height: 1.75rem; }' +
-        '.font-semibold { font-weight: 600; }' +
-        '.text-green-700 { color: #15803d; }' +
-        '.text-sm { font-size: 0.875rem; line-height: 1.25rem; }' +
-        '.text-gray-600 { color: #4b5563; }' +
-        '.pb-6 { padding-bottom: 1.5rem; }' +
-        '.space-y-4 > * + * { margin-top: 1rem; }' +
-        '.bg-gray-50 { background-color: #f9fafb; }' +
-        '.rounded-xl { border-radius: 0.75rem; }' +
-        '.p-4 { padding: 1rem; }' +
-        '.border { border-width: 1px; }' +
-        '.border-gray-200 { border-color: #e5e7eb; }' +
-        '.flex-col { flex-direction: column; }' +
-        '.items-start { align-items: flex-start; }' +
-        '.flex-wrap { flex-wrap: wrap; }' +
-        '.mb-3 { margin-bottom: 0.75rem; }' +
-        '.font-medium { font-weight: 500; }' +
-        '.font-bold { font-weight: 700; }' +
-        '.gap-2 { gap: 0.5rem; }' +
-        '.inline-flex { display: inline-flex; }' +
-        '.bg-blue-100 { background-color: #dbeafe; }' +
-        '.px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }' +
-        '.py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }' +
-        '.text-xs { font-size: 0.75rem; line-height: 1rem; }' +
-        '.text-blue-800 { color: #1e40af; }' +
-        '.text-gray-900 { color: #111827; }' +
-        '.justify-between { justify-content: space-between; }' +
-        '.rounded-lg { border-radius: 0.5rem; }' +
-        '.text-lg { font-size: 1.125rem; line-height: 1.75rem; }' +
-        '.transition-colors { transition: background-color 150ms cubic-bezier(.4,0,.2,1), color 150ms cubic-bezier(.4,0,.2,1); }' +
-        '.border-input { border-color: #e5e7eb; }' +
-        '.bg-background { background-color: #ffffff; }' +
-        '.hover\:bg-accent:hover { background-color: #f3f4f6; }' +
-        '.hover\:text-accent-foreground:hover { color: #111827; }' +
-        '.h-10 { height: 2.5rem; }' +
-        '.px-4 { padding-left: 1rem; padding-right: 1rem; }' +
-        '.py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }' +
-        '.bg-blue-600 { background-color: #2563eb; }' +
-        '.text-white { color: #ffffff; }' +
-        '.hover\:bg-blue-700:hover { background-color: #1d4ed8; }' +
-        '.ml-2 { margin-left: 0.5rem; }' +
-        '.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }' +
-        '.flex-1 { flex: 1 1 0%; }' +
-        '.mr-2 { margin-right: 0.5rem; }' +
-        '.max-h-32 { max-height: 8rem; }' +
-        '.overflow-y-auto { overflow-y: auto; }' +
-        '.pr-2 { padding-right: 0.5rem; }' +
-        '.border-t { border-top-width: 1px; border-top-color: #e5e7eb; }' +
-        '.pt-3 { padding-top: 0.75rem; }' +
-        '.mt-3 { margin-top: 0.75rem; }' +
-        '#chatbot-cart-popup { font-family: ' + fontFamily + '; }' +
-        '#chatbot-cart-popup button:focus,' +
-        '#chatbot-cart-popup button:focus-visible {' +
-          'outline: 2px solid #2563eb;' +
-          'outline-offset: 2px;' +
-        '}';
+      style.textContent = `
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes zoomIn95 { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        .fixed { position: fixed; }
+        .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+        .z-\\[99999\\] { z-index: 99999 !important; }
+        .flex { display: flex; }
+        .items-center { align-items: center; }
+        .justify-center { justify-content: center; }
+        .w-full { width: 100%; }
+        .max-w-md { max-width: 28rem; }
+        .mx-4 { margin-left: 1rem; margin-right: 1rem; }
+        .bg-black\\/70 { background-color: rgba(0,0,0,0.7); }
+        .backdrop-blur-sm { backdrop-filter: blur(4px); }
+        .animate-in { animation-fill-mode: both; }
+        .zoom-in-95 { animation-name: zoomIn95; }
+        .duration-200 { animation-duration: 200ms; }
+
+        .bg-white { background-color: #ffffff; }
+        .rounded-2xl { border-radius: 1rem; }
+        .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); }
+        .overflow-hidden { overflow: hidden; }
+
+        .text-center { text-align: center; }
+        .pb-4 { padding-bottom: 1rem; }
+        .pt-6 { padding-top: 1.5rem; }
+        .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+
+        .mx-auto { margin-left: auto; margin-right: auto; }
+        .w-16 { width: 4rem; }
+        .h-16 { height: 4rem; }
+        .bg-green-100 { background-color: #dcfce7; }
+        .rounded-full { border-radius: 9999px; }
+        .flex { display: flex; }
+        .items-center { align-items: center; }
+        .justify-center { justify-content: center; }
+        .mb-4 { margin-bottom: 1rem; }
+        .text-green-600 { color: #16a34a; }
+        .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+        .font-semibold { font-weight: 600; }
+        .text-green-700 { color: #15803d; }
+        .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+        .text-gray-600 { color: #4b5563; }
+
+        .pb-6 { padding-bottom: 1.5rem; }
+        .space-y-4 > * + * { margin-top: 1rem; }
+        .bg-gray-50 { background-color: #f9fafb; }
+        .rounded-xl { border-radius: 0.75rem; }
+        .p-4 { padding: 1rem; }
+        .border { border-width: 1px; }
+        .border-gray-200 { border-color: #e5e7eb; }
+        .flex-col { flex-direction: column; }
+        .items-start { align-items: flex-start; }
+        .flex-wrap { flex-wrap: wrap; }
+        .mb-3 { margin-bottom: 0.75rem; }
+        .font-medium { font-weight: 500; }
+        .font-bold { font-weight: 700; }
+        .gap-2 { gap: 0.5rem; }
+        .inline-flex { display: inline-flex; }
+        .bg-blue-100 { background-color: #dbeafe; }
+        .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+        .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+        .text-xs { font-size: 0.75rem; line-height: 1rem; }
+        .text-blue-800 { color: #1e40af; }
+        .text-gray-900 { color: #111827; }
+        .justify-between { justify-content: space-between; }
+        .rounded-lg { border-radius: 0.5rem; }
+        .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+        .transition-colors { transition: background-color 150ms cubic-bezier(.4,0,.2,1), color 150ms cubic-bezier(.4,0,.2,1); }
+        .border-input { border-color: #e5e7eb; }
+        .bg-background { background-color: #ffffff; }
+        .hover\\:bg-accent:hover { background-color: #f3f4f6; }
+        .hover\\:text-accent-foreground:hover { color: #111827; }
+        .h-10 { height: 2.5rem; }
+        .px-4 { padding-left: 1rem; padding-right: 1rem; }
+        .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+        .bg-blue-600 { background-color: #2563eb; }
+        .text-white { color: #ffffff; }
+        .hover\\:bg-blue-700:hover { background-color: #1d4ed8; }
+        .ml-2 { margin-left: 0.5rem; }
+        .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .flex-1 { flex: 1 1 0%; }
+        .mr-2 { margin-right: 0.5rem; }
+        .max-h-32 { max-height: 8rem; }
+        .overflow-y-auto { overflow-y: auto; }
+        .pr-2 { padding-right: 0.5rem; }
+        .border-t { border-top-width: 1px; border-top-color: #e5e7eb; }
+        .pt-3 { padding-top: 0.75rem; }
+        .mt-3 { margin-top: 0.75rem; }
+        .font-medium { font-weight: 500; }
+
+        #chatbot-cart-popup { font-family: ${fontFamily}; }
+
+        #chatbot-cart-popup button:focus,
+        #chatbot-cart-popup button:focus-visible {
+          outline: 2px solid #2563eb;
+          outline-offset: 2px;
+        }
+      `;
       document.head.appendChild(style);
     }
     
@@ -269,7 +258,7 @@
           currency: currency || 'USD'
         }).format(price / 100);
       } catch (error) {
-        return '$' + (price / 100).toFixed(2);
+        return `${(price / 100).toFixed(2)}`;
       }
     }
 
@@ -281,59 +270,64 @@
       
       const popupContainer = document.createElement('div');
       popupContainer.id = 'chatbot-cart-popup';
-      popupContainer.className = 'fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[10000]';
+      popupContainer.className = 'fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[99999]';
       popupContainer.style.animation = 'fadeIn 0.2s ease-out';
       
       const popupContent = document.createElement('div');
       popupContent.className = 'w-full max-w-md mx-4';
       
-      const innerContent =
-        '<div class="bg-white rounded-2xl shadow-lg overflow-hidden animate-in zoom-in-95 duration-200">' +
-          '<div class="text-center pb-4 pt-6 px-6">' +
-            '<div class="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">' +
-              '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600" aria-hidden="true">' +
-                '<path d="m18 6-12 12"></path>' +
-                '<path d="m6 6 12 12"></path>' +
-              '</svg>' +
-            '</div>' +
-            '<h3 class="text-xl font-semibold text-green-700">Added to Cart!</h3>' +
-            '<p id="cart-countdown-text" class="text-sm text-gray-600">Closing in 5s</p>' +
-          '</div>' +
-          '<div class="px-6 pb-6 space-y-4">' +
-            '<!-- Cart Summary: only count + total price, horizontally aligned -->' +
-            '<div class="bg-gray-50 rounded-xl p-4 border border-gray-200">' +
-              '<div class="flex items-center justify-center gap-4 mb-3">' +
-                '<span id="cart-items-count" class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-bold text-blue-800">' +
-                  cart.item_count + ' ' + (cart.item_count === 1 ? "item" : "items") +
-                '</span>' +
-                '<div id="cart-total-display" class="text-lg font-bold text-gray-900">' +
-                  this.formatPrice(cart.total_price, cart.currency) +
-                '</div>' +
-              '</div>' +
-            '</div>' +
-            '<!-- Action Buttons -->' +
-            '<div class="flex gap-3">' +
-              '<button id="view-cart-btn" class="flex-1 inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">' +
-                'View Cart' + 
-              '</button>' +
-              '<button id="checkout-btn" class="flex-1 inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors bg-blue-600 text-white hover:bg-blue-700 h-10 px-4 py-2">' +
-                'Checkout' + 
-              '</button>' +
-            '</div>' +
-            '<button id="close-popup-btn" class="w-full inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 mt-2">' +
-              '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-                '<path d="m18 6-12 12"></path>' +
-                '<path d="m6 6 12 12"></path>' +
-              '</svg>' +
-              '<span class="ml-2">Close</span>' +
-            '</button>' +
-          '</div>' +
-        '</div>';
+      // Inner card HTML: removed per-item list; kept only item count + total price horizontally
+      const innerContent = `
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden animate-in zoom-in-95 duration-200">
+          <div class="text-center pb-4 pt-6 px-6">
+            <div class="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600" aria-hidden="true">
+                <path d="M20 6 9 17l-5-5"></path>
+              </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-green-700">Added to Cart!</h3>
+            <p id="cart-countdown-text" class="text-sm text-gray-600">Closing in 5s</p>
+          </div>
+
+          <div class="px-6 pb-6 space-y-4">
+            <!-- Cart Summary: only count + total price, horizontally aligned -->
+            <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+              <div class="flex items-center justify-center gap-4 mb-3">
+                <span id="cart-items-count" class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-bold text-blue-800">
+                  ${cart.item_count} ${cart.item_count === 1 ? "item" : "items"}
+                </span>
+                <div id="cart-total-display" class="text-lg font-bold text-gray-900">
+                  ${this.formatPrice(cart.total_price, cart.currency)}
+                </div>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-3">
+              <button id="view-cart-btn" class="flex-1 inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                View Cart
+              </button>
+              <button id="checkout-btn" class="flex-1 inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors bg-blue-600 text-white hover:bg-blue-700 h-10 px-4 py-2">
+                Checkout
+              </button>
+            </div>
+
+            <button id="close-popup-btn" class="w-full inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 mt-2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m18 6-12 12"></path>
+                <path d="m6 6 12 12"></path>
+              </svg>
+              <span class="ml-2">Close</span>
+            </button>
+          </div>
+        </div>
+      `;
       
       popupContent.innerHTML = innerContent;
       popupContainer.appendChild(popupContent);
       document.body.appendChild(popupContainer);
       
+      // Countdown logic (5s) and robust clearing
       let remaining = 5;
       const countdownEl = popupContainer.querySelector('#cart-countdown-text');
       let countdownInterval = setInterval(() => {
@@ -343,9 +337,10 @@
           if (popupContainer.parentNode) popupContainer.parentNode.removeChild(popupContainer);
           return;
         }
-        if (countdownEl) countdownEl.textContent = 'Closing in ' + remaining + 's';
+        if (countdownEl) countdownEl.textContent = `Closing in ${remaining}s`;
       }, 1000);
 
+      // Event listeners for buttons
       const viewCartBtn = popupContainer.querySelector('#view-cart-btn');
       const checkoutBtn = popupContainer.querySelector('#checkout-btn');
       const closeBtn = popupContainer.querySelector('#close-popup-btn');
@@ -391,6 +386,7 @@
         });
       }
 
+      // Click outside to close
       popupContainer.addEventListener('click', (e) => {
         if (e.target === popupContainer) {
           removePopupAndClear();

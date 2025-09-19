@@ -17,28 +17,24 @@ import { useMobileKeyboard } from "@/hooks/use-mobile-keyboard"
 import type { CartResponse } from "@/lib/shopify-cart"
 import { ChatStateService } from "@/lib/chat-state"
 
-const chatbotProps = {
-  closedWindow: {
-    backgroundColor: "#2563eb",
-    borderColor: "#ffffff"
-  },
-  chatHeader: {
-    backgroundColor: "#3b82f6",
-    name: "ShopBot Assistant",
-    tagline: "Your AI Shopping Assistant"
-  },
-  avatar: {
-    imageUrl: "https://cdn-icons-png.flaticon.com/512/4712/4712107.png",
-    borderStyle: "2px solid #ffffff",
-    showBorder: true
-  },
-  userMessage: {
-    backgroundColor: "#3b82f6"
-  },
-  sendButton: {
-    backgroundColor: "#2563eb"
-  }
-};
+// Add this interface to define the shape of the styling configuration
+// At the top of the file, ensure the interface is defined:
+interface ChatbotStylingProps {
+  closedWindow: { backgroundColor: string; borderColor: string; };
+  chatHeader: { backgroundColor: string; name: string; tagline: string; };
+  avatar: { imageUrl: string; borderStyle: string; showBorder: boolean; };
+  userMessage: { backgroundColor: string; };
+  sendButton: { backgroundColor: string; };
+}
+
+// THIS IS THE NEW PLACEHOLDER. IT IS A VALID OBJECT WITH A COMMENT MARKER.
+const chatbotProps: ChatbotStylingProps = {
+  closedWindow: { backgroundColor: '', borderColor: '' },
+  chatHeader: { backgroundColor: '', name: '', tagline: '' },
+  avatar: { imageUrl: '', borderStyle: '', showBorder: false },
+  userMessage: { backgroundColor: '' },
+  sendButton: { backgroundColor: '' }
+}; /* __CHATBOT_PROPS_PLACEHOLDER__ */
 
 // Simple icon components to avoid import issues
 const MessageCircleIcon = () => (
@@ -245,7 +241,7 @@ export function ChatbotWidget({
             id: "1",
             type: "bot",
             content:
-              "Hello! I'm ShopBot, your AI shopping assistant. I can help you discover products, answer questions, and guide you through your shopping journey. What can I help you with today?",
+              "__AI_FIRST_REPLY_PLACEHOLDER__",
             timestamp: new Date(),
           },
         ],
@@ -886,7 +882,7 @@ export function ChatbotWidget({
           id: "1",
           type: "bot",
           content:
-            "Hi! I'm your AI shopping assistant. I can help you find products, check order status, and answer any questions you have. How can I help you today?",
+            "__AI_FIRST_REPLY_PLACEHOLDER__",
           timestamp: new Date(),
         },
       ])
@@ -900,7 +896,7 @@ export function ChatbotWidget({
         id: "1",
         type: "bot",
         content:
-          "Hello! I'm ShopBot, your AI shopping assistant. I can help you discover products, answer questions, and guide you through your shopping journey. What can I help you with today?",
+          "__AI_FIRST_REPLY_PLACEHOLDER__",
         timestamp: new Date(),
       },
     ])
@@ -1114,90 +1110,80 @@ export function ChatbotWidget({
         </div>
 
         {/* Messages */}
-        <ScrollArea 
-          className={cn("flex-1", isMobile ? "p-4 chat-messages-container" : "p-6")} 
-          style={isMobile ? { maxHeight: "calc(100vh - 150px)" } : {}}
-          showScrollbar={!isMobile}
-          showScrollToBottom={true}
-        >
-          <div className="space-y-4 pb-2" style={{ minHeight: "100%", paddingBottom: isMobile ? "20px" : "0" }}>
-            {messages.map((message) => (
-              <div key={message.id} className="space-y-3">
-                <div className={cn("flex gap-3", message.type === "user" ? "justify-end" : "justify-start")}>
-                  {message.type === "bot" && (
-                    <Avatar className={`h-8 w-8 mt-1 flex-shrink-0 ${chatbotProps.avatar.showBorder ? 'ring-2 ring-blue-100' : ''}`}>
-                      <AvatarImage
-                        src={chatbotProps.avatar.imageUrl}
-                        alt="Chatbot Avatar"
-                        className="h-full w-full object-cover rounded-full"
-                        style={{ border: chatbotProps.avatar.borderStyle }}
-                      />
-                    </Avatar>
-                  )}
-                  <div
-                    className={cn(
-                      isMobile ? "max-w-[85%]" : "max-w-[75%]",
-                      "rounded-2xl px-3 py-2 text-sm leading-relaxed",
-                      message.type === "user" ? "ml-auto shadow-sm" : "bg-gray-50 dark:bg-gray-800 shadow-sm",
+        <div className="relative flex-1 overflow-y-auto">
+          <div className="p-4 sm:p-6"> {/* Add padding to this inner container */}
+            <div className="space-y-4">
+              {messages.map((message) => (
+                <div key={message.id} className="space-y-3">
+                  <div className={cn("flex items-start gap-3", message.type === "user" ? "justify-end" : "justify-start")}>
+                    {message.type === "bot" && (
+                      <Avatar className={`h-8 w-8 flex-shrink-0 ${chatbotProps.avatar.showBorder ? 'ring-2 ring-blue-100' : ''}`}>
+                        <AvatarImage
+                          src={chatbotProps.avatar.imageUrl}
+                          alt="Chatbot Avatar"
+                          className="h-full w-full rounded-full object-cover"
+                          style={{ border: chatbotProps.avatar.borderStyle }}
+                        />
+                      </Avatar>
                     )}
-                    style={
-                      message.type === "user"
-                        ? {
-                            backgroundColor: chatbotProps.userMessage.backgroundColor,
-                            color: "white",
-                          }
-                        : {}
-                    }
-                  >
-                    <p className="text-pretty">{message.content}</p>
-                    {/* {message.event_type && (
-                      <Badge variant="secondary" className="mt-2 text-xs">
-                        {message.event_type.replace("_", " ")}
-                      </Badge>
-                    )} */}
+                    <div
+                      className={cn(
+                        "max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed",
+                        message.type === "user" 
+                          ? "ml-auto bg-blue-600 text-white shadow-sm" 
+                          : "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-50 shadow-sm",
+                      )}
+                      style={
+                        message.type === "user"
+                          ? { backgroundColor: chatbotProps.userMessage.backgroundColor, color: "white" }
+                          : {}
+                      }
+                    >
+                      <p className="text-pretty">{message.content}</p>
+                    </div>
+                  </div>
+
+                  {/* Product Cards */}
+                  {((message.cards && message.cards.length > 0) || (message.products && message.products.length > 0)) && (
+                    <div className={cn("space-y-3", message.type === "bot" ? "ml-11" : "")}>
+                      {(message.cards || message.products || []).map((product) => (
+                        <ProductCard key={product.id} product={product} onAddToCart={handleAddToCartSuccess} />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Order Card */}
+                  {message.order && (
+                    <div className={cn("space-y-3", message.type === "bot" ? "ml-11" : "")}>
+                      <OrderCard order={message.order} />
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {/* Loading indicator */}
+              {isLoading && (
+                <div className="flex items-start gap-3 justify-start">
+                  <Avatar className={`h-8 w-8 flex-shrink-0 ${chatbotProps.avatar.showBorder ? 'ring-2 ring-blue-100' : ''}`}>
+                    <img 
+                      src={chatbotProps.avatar.imageUrl} 
+                      alt="Chatbot Avatar" 
+                      className="h-full w-full rounded-full object-cover"
+                      style={{ border: chatbotProps.avatar.borderStyle }}
+                    />
+                  </Avatar>
+                  <div className="rounded-2xl bg-gray-100 px-3 py-2 text-sm text-gray-900 shadow-sm dark:bg-gray-800 dark:text-gray-50">
+                    <div className="flex items-center gap-2">
+                      <LoaderIcon />
+                      <span>{chatbotProps.chatHeader.name} is thinking...</span>
+                    </div>
                   </div>
                 </div>
-
-                {/* Product Cards - support both cards and products */}
-                {((message.cards && message.cards.length > 0) || (message.products && message.products.length > 0)) && (
-                  <div className={cn(message.type === "bot" ? "ml-11" : "", "space-y-3")}>
-                    {(message.cards || message.products || []).map((product: any) => (
-                      <ProductCard key={product.id} product={product} onAddToCart={handleAddToCartSuccess} />
-                    ))}
-                  </div>
-                )}
-
-                {/* Order Card */}
-                {message.order && (
-                  <div className={cn(message.type === "bot" ? "ml-11" : "", "space-y-3")}>
-                    <OrderCard order={message.order} />
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {/* Loading indicator */}
-            {isLoading && (
-              <div className="flex gap-3 justify-start">
-                <Avatar className={`h-8 w-8 mt-1 flex-shrink-0 ${chatbotProps.avatar.showBorder ? 'ring-2 ring-blue-100' : ''}`}>
-                  <img 
-                    src={chatbotProps.avatar.imageUrl} 
-                    alt="Chatbot Avatar" 
-                    className="h-full w-full object-cover rounded-full"
-                    style={{ border: chatbotProps.avatar.borderStyle }}
-                  />
-                </Avatar>
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl px-3 py-2 text-sm shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <LoaderIcon />
-                    <span>AI is thinking...</span>
-                  </div>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
+            <div ref={messagesEndRef} /> {/* Ref for scrolling to bottom */}
           </div>
-          <div ref={messagesEndRef} />
-        </ScrollArea>
+        </div>
 
         {/* Input */}
         <div

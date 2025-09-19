@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 
-const webhookUrl = process.env.CHATBOT_WEBHOOK_URL || "https://n8n.botomation.tech/webhook-test/chat";
+const webhookUrl = process.env.CHATBOT_WEBHOOK_URL || "__WEBHOOK_URL_PLACEHOLDER__";
 
 interface ChatRequest {
   type: "text" | "voice"
