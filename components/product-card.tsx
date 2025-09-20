@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -114,16 +114,28 @@ interface ProductCardProps {
       name?: string
       type?: string
       value?: string
-      weight?: string
+      price?: string // Added support for variant-level pricing
+      compare_at_price?: string // Added support for variant-level compare at price
     }>
   }
   onAddToCart?: (cart: CartResponse) => void
+  accentColor?: string
 }
 
-export function ProductCard({ product, onAddToCart }: ProductCardProps) {
-  const productName = product.name || product.title || "Product"
-  const productPrice = typeof product.price === "number" ? `$${(product.price / 100).toFixed(2)}` : product.price
-  const compareAtPrice = product.compareAtPrice ? `$${(product.compareAtPrice / 100).toFixed(2)}` : null
+export function ProductCard({ product, onAddToCart, accentColor = "#4f46e5" }: ProductCardProps) {
+   const productName = product.name || product.title || "Product"
+   // Format price with currency
+   const formatPrice = (price: string | number) => {
+     if (typeof price === "number") {
+       return `$${(price / 100).toFixed(2)}`
+     }
+     // If price is already a string with currency symbol, return as is
+     if (typeof price === "string" && (price.startsWith("$") || price.includes("USD"))) {
+       return price
+     }
+     // Default to USD formatting if no currency info
+     return `$${price}`
+   }
 
   const galleryImages = []
   if (product.image_url || product.image) {
@@ -149,6 +161,32 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
   const [quantity, setQuantity] = useState(1)
   const [isAddingToCart, setIsAddingToCart] = useState(false)
   const { toast } = useToast()
+
+  // Get current variant pricing
+  const getCurrentVariantPricing = () => {
+    if (selectedVariant && product.variants) {
+      const variant = product.variants.find(
+        (v) => v.variant_id === selectedVariant || v.variantId === selectedVariant
+      )
+      if (variant?.price) {
+        return {
+          price: variant.price,
+          compareAtPrice: variant.compare_at_price || null
+        }
+      }
+    }
+    // Fallback to product level pricing
+    return {
+      price: product.price,
+      compareAtPrice: product.compareAtPrice || null
+    }
+  }
+
+  const { price: currentPrice, compareAtPrice: currentCompareAtPrice } = getCurrentVariantPricing()
+
+  const productPrice = formatPrice(currentPrice)
+  const compareAtPrice = currentCompareAtPrice ? formatPrice(currentCompareAtPrice) : null
+
 
   const goToPreviousImage = () => {
     setCurrentImageIndex((prev) => (prev === 0 ? galleryImages.length - 1 : prev - 1))
@@ -305,6 +343,31 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
 
   const { colors, sizes } = processVariants()
 
+  // Auto-select color if there's only one option
+  useEffect(() => {
+    if (colors.length === 1 && !selectedColor) {
+      setSelectedColor(colors[0].name)
+      // Find matching variant
+      const matchingVariant = product.variants?.find(
+        (v) =>
+          (v.type === "color" && v.name === colors[0].name) ||
+          v.color === colors[0].name ||
+          v.variant_id === colors[0].id ||
+          v.variantId === colors[0].id,
+      )
+      if (matchingVariant) {
+        setSelectedVariant(matchingVariant.variantId || matchingVariant.variant_id || "")
+      }
+    }
+  }, [selectedColor, product.variants])
+
+  // Update prices when selected variant changes
+  useEffect(() => {
+    const { price, compareAtPrice } = getCurrentVariantPricing()
+    // Note: We don't need to set state here since we're calculating the values on render
+  }, [selectedVariant, product])
+
+
   const handleAddToCart = async () => {
     setIsAddingToCart(true)
     try {
@@ -439,7 +502,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
           <div>
             <h4 className="font-semibold text-sm line-clamp-2 text-gray-900 mb-2">{productName}</h4>
             <div className="flex items-center gap-2">
-              <p className="text-lg font-bold text-blue-600">{productPrice}</p>
+              <p className="text-lg font-bold" style={{ color: accentColor }}>{productPrice}</p>
               {compareAtPrice && <p className="text-sm text-gray-500 line-through">{compareAtPrice}</p>}
             </div>
           </div>
@@ -447,33 +510,37 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
           {colors.length > 0 && (
             <div className="space-y-2">
               <Label className="text-xs font-medium text-gray-700">Color</Label>
-              <div className="flex flex-wrap gap-2">
-                {colors.map((color) => (
-                  <button
-                    key={color.id}
-                    onClick={() => handleColorSelect(color.id, color.name)}
-                    className={cn(
-                      "relative w-8 h-8 rounded-full border-2 transition-all duration-200 hover:scale-110",
-                      selectedColor === color.name
-                        ? "border-blue-500 ring-2 ring-blue-200"
-                        : "border-gray-300 hover:border-gray-400",
-                    )}
-                    style={{ backgroundColor: color.value }}
-                    title={color.name}
-                  >
-                    {selectedColor === color.name && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <CheckIcon />
-                      </div>
-                    )}
-                    {/* White border for light colors */}
-                    {(color.value === "#FFFFFF" || color.value.toLowerCase() === "white") && (
-                      <div className="absolute inset-0 rounded-full border border-gray-200" />
-                    )}
-                  </button>
-                ))}
-              </div>
-              {selectedColor && <p className="text-xs text-gray-600">Selected: {selectedColor}</p>}
+              {colors.length > 1 ? (
+                <div className="flex flex-wrap gap-2">
+                  {colors.map((color) => (
+                    <button
+                      key={color.id}
+                      onClick={() => handleColorSelect(color.id, color.name)}
+                      className={cn(
+                        "relative w-8 h-8 rounded-full border-2 transition-all duration-200 hover:scale-110",
+                        selectedColor === color.name
+                          ? "border-blue-500 ring-2 ring-blue-200"
+                          : "border-gray-300 hover:border-gray-400",
+                      )}
+                      style={{ backgroundColor: color.value }}
+                      title={color.name}
+                    >
+                      {selectedColor === color.name && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <CheckIcon />
+                        </div>
+                      )}
+                      {/* White border for light colors */}
+                      {(color.value === "#FFFFFF" || color.value.toLowerCase() === "white") && (
+                        <div className="absolute inset-0 rounded-full border border-gray-200" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-600">Color: {selectedColor}</p>
+              )}
+              {selectedColor && colors.length > 1 && <p className="text-xs text-gray-600">Selected: {selectedColor}</p>}
             </div>
           )}
 
@@ -488,9 +555,13 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
                     className={cn(
                       "px-3 py-1.5 text-xs font-medium rounded-lg border transition-all duration-200 hover:scale-105",
                       selectedSize === size.name
-                        ? "bg-blue-600 text-white border-blue-600"
+                        ? "text-white border"
                         : "bg-white text-gray-700 border-gray-300 hover:border-gray-400 hover:bg-gray-50",
                     )}
+                    style={selectedSize === size.name ? {
+                      backgroundColor: accentColor,
+                      borderColor: accentColor
+                    } : {}}
                   >
                     {size.value}
                   </button>
@@ -535,8 +606,9 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
             <Button
               onClick={handleAddToCart}
               size="sm"
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md transition-all duration-200"
+              className="flex-1 text-white shadow-sm hover:shadow-md transition-all duration-200"
               disabled={isAddingToCart}
+              style={{ backgroundColor: accentColor }}
             >
               <ShoppingCartIcon />
               <span className="ml-1">{isAddingToCart ? "Adding..." : "Add to Cart"}</span>
