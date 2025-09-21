@@ -23,12 +23,12 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="m-0 p-0 w-full h-full">
+    <html lang="en" className="m-0 p-0 w-full h-full overflow-auto">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
-      <body className="font-sans m-0 p-0 w-full h-full overflow-hidden">
+      <body className="font-sans m-0 p-0 w-full h-full">
         <Suspense fallback={<LoadingFallback />}>{children}</Suspense>
       </body>
     </html>

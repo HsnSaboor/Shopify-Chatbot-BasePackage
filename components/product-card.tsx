@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -90,6 +90,37 @@ const ChevronRightIcon = () => (
   </svg>
 )
 
+const MaximizeIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="white"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+  </svg>
+)
+
+const XIcon = () => (
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
+  </svg>
+)
+
 interface ProductCardProps {
   product: {
     id: string
@@ -100,7 +131,7 @@ interface ProductCardProps {
     image_url?: string // Added support for webhook image_url field
     images?: string[] // Added support for webhook images array
     price: string | number
-    compareAtPrice?: number
+    compareAtPrice?: string | number
     url?: string
     product_url?: string // Added support for webhook product_url field
     variants?: Array<{
@@ -115,39 +146,42 @@ interface ProductCardProps {
       type?: string
       value?: string
       price?: string // Added support for variant-level pricing
-      compare_at_price?: string // Added support for variant-level compare at price
+      compareAtPrice?: string // Added support for variant-level compare at price
     }>
   }
   onAddToCart?: (cart: CartResponse) => void
   accentColor?: string
+  isFullscreen?: boolean
+  onToggleFullscreen?: () => void
 }
 
-export function ProductCard({ product, onAddToCart, accentColor = "#4f46e5" }: ProductCardProps) {
+export function ProductCard({ product, onAddToCart, accentColor = "#4f46e5", isFullscreen = false, onToggleFullscreen }: ProductCardProps) {
    const productName = product.name || product.title || "Product"
-   // Format price with currency
+   // Format price with currency based on whether any price has decimals
    const formatPrice = (price: string | number) => {
-     if (typeof price === "number") {
-       return `$${(price / 100).toFixed(2)}`
-     }
-     // If price is already a string with currency symbol, return as is
-     if (typeof price === "string" && (price.startsWith("$") || price.includes("USD"))) {
-       return price
-     }
-     // Default to USD formatting if no currency info
-     return `$${price}`
+     const num = parseFloat(String(price));
+     if (isNaN(num)) return "$0";
+     const options: Intl.NumberFormatOptions = {
+       style: "currency",
+       currency: "USD",
+       minimumFractionDigits: hasDecimals ? 2 : 0,
+       maximumFractionDigits: hasDecimals ? 2 : 0,
+     };
+     return new Intl.NumberFormat("en-US", options).format(num);
    }
 
-  const galleryImages = []
-  if (product.image_url || product.image) {
-    galleryImages.push(product.image_url || product.image)
+  let galleryImages: string[] = [];
+  if (product.image) {
+    galleryImages.push(product.image);
   }
-  if (product.images && product.images.length > 0) {
-    galleryImages.push(...product.images)
+  if (product.images && Array.isArray(product.images)) {
+    const additional = product.images.filter((img) => img !== product.image);
+    galleryImages.push(...additional);
   }
-  // Fallback to placeholder if no images
-  if (galleryImages.length === 0) {
-    galleryImages.push("/placeholder.svg")
+  if (product.image_url && !galleryImages.includes(product.image_url)) {
+    galleryImages.push(product.image_url);
   }
+  const finalGalleryImages = galleryImages.length > 0 ? galleryImages : ["/placeholder.svg"];
 
   const productUrl = product.product_url || product.url || "#"
 
@@ -161,6 +195,77 @@ export function ProductCard({ product, onAddToCart, accentColor = "#4f46e5" }: P
   const [quantity, setQuantity] = useState(1)
   const [isAddingToCart, setIsAddingToCart] = useState(false)
   const { toast } = useToast()
+  
+    const [isFullScreenGallery, setIsFullScreenGallery] = useState(false)
+    const [fullScreenIndex, setFullScreenIndex] = useState(0)
+    const [isMobile, setIsMobile] = useState(false)
+    const [mainItemWidth, setMainItemWidth] = useState(0)
+    const [thumbItemWidth, setThumbItemWidth] = useState(0)
+  
+    const touchRef = useRef({ startX: 0, deltaX: 0 })
+    const thumbRef = useRef<HTMLDivElement>(null)
+    const mainGalleryRef = useRef<HTMLDivElement>(null)
+    const scrollerRef = useRef<HTMLDivElement>(null)
+    const modalRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+      const updateThumbWidth = () => {
+        if (thumbRef.current && thumbRef.current.children.length > 0) {
+          setThumbItemWidth((thumbRef.current.children[0] as HTMLElement)?.offsetWidth || 0)
+        }
+      }
+      updateThumbWidth()
+      window.addEventListener('resize', updateThumbWidth)
+      return () => window.removeEventListener('resize', updateThumbWidth)
+    }, [galleryImages.length])
+
+    useEffect(() => {
+      const updateMainWidth = () => {
+        if (scrollerRef.current) {
+          const firstContainer = scrollerRef.current.querySelector('.flex-shrink-0') as HTMLElement
+          setMainItemWidth(firstContainer?.offsetWidth || 0)
+        }
+      }
+      updateMainWidth()
+      window.addEventListener('resize', updateMainWidth)
+      return () => window.removeEventListener('resize', updateMainWidth)
+    }, [galleryImages.length])
+  
+    useEffect(() => {
+      const mediaQuery = window.matchMedia('(max-width: 768px)')
+      setIsMobile(mediaQuery.matches)
+      const handleChange = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+      mediaQuery.addEventListener('change', handleChange)
+      return () => mediaQuery.removeEventListener('change', handleChange)
+    }, [])
+
+    // Ensure initial index on mount
+    useEffect(() => {
+      if (galleryImages.length > 0) {
+        setCurrentImageIndex(0)
+      }
+    }, [galleryImages.length])
+
+    // No continuous scroll listener or observer to prevent flicker during swipe; index updates on touchEnd/navigation (mirroring fullscreen discrete updates)
+
+
+  const hasDecimals = useMemo(() => {
+    const prices: number[] = [parseFloat(String(product.price))];
+    if (product.compareAtPrice) {
+      prices.push(parseFloat(String(product.compareAtPrice)));
+    }
+    if (product.variants) {
+      product.variants.forEach((variant) => {
+        if (variant.price) {
+          prices.push(parseFloat(String(variant.price)));
+        }
+        if (variant.compareAtPrice) {
+          prices.push(parseFloat(String(variant.compareAtPrice)));
+        }
+      });
+    }
+    return prices.some((p) => !isNaN(p) && p % 1 !== 0);
+  }, [product]);
 
   // Get current variant pricing
   const getCurrentVariantPricing = () => {
@@ -169,9 +274,12 @@ export function ProductCard({ product, onAddToCart, accentColor = "#4f46e5" }: P
         (v) => v.variant_id === selectedVariant || v.variantId === selectedVariant
       )
       if (variant?.price) {
+        const resolvedCompareAtPrice = (variant.compareAtPrice == null || variant.compareAtPrice === '')
+          ? product.compareAtPrice
+          : variant.compareAtPrice;
         return {
           price: variant.price,
-          compareAtPrice: variant.compare_at_price || null
+          compareAtPrice: resolvedCompareAtPrice || null
         }
       }
     }
@@ -185,20 +293,134 @@ export function ProductCard({ product, onAddToCart, accentColor = "#4f46e5" }: P
   const { price: currentPrice, compareAtPrice: currentCompareAtPrice } = getCurrentVariantPricing()
 
   const productPrice = formatPrice(currentPrice)
-  const compareAtPrice = currentCompareAtPrice ? formatPrice(currentCompareAtPrice) : null
+  const rawCompareAtPrice = currentCompareAtPrice
+  const shouldShowCompareAtPrice = rawCompareAtPrice && parseFloat(String(rawCompareAtPrice)) > parseFloat(String(currentPrice))
+  const compareAtPrice = shouldShowCompareAtPrice ? formatPrice(rawCompareAtPrice) : null
 
 
   const goToPreviousImage = () => {
-    setCurrentImageIndex((prev) => (prev === 0 ? galleryImages.length - 1 : prev - 1))
+    const newIndex = currentImageIndex === 0 ? galleryImages.length - 1 : currentImageIndex - 1
+    setCurrentImageIndex(newIndex)
+    if (scrollerRef.current && mainItemWidth > 0) {
+      scrollerRef.current.scrollTo({ left: newIndex * mainItemWidth, behavior: 'smooth' })
+    }
+    if (thumbRef.current && thumbItemWidth > 0) {
+      thumbRef.current.scrollTo({ left: newIndex * thumbItemWidth, behavior: 'smooth' })
+    }
   }
 
   const goToNextImage = () => {
-    setCurrentImageIndex((prev) => (prev === galleryImages.length - 1 ? 0 : prev + 1))
+    const newIndex = currentImageIndex === galleryImages.length - 1 ? 0 : currentImageIndex + 1
+    setCurrentImageIndex(newIndex)
+    if (scrollerRef.current && mainItemWidth > 0) {
+      scrollerRef.current.scrollTo({ left: newIndex * mainItemWidth, behavior: 'smooth' })
+    }
+    if (thumbRef.current && thumbItemWidth > 0) {
+      thumbRef.current.scrollTo({ left: newIndex * thumbItemWidth, behavior: 'smooth' })
+    }
   }
 
   const goToImage = (index: number) => {
     setCurrentImageIndex(index)
+    if (scrollerRef.current && mainItemWidth > 0) {
+      scrollerRef.current.scrollTo({ left: index * mainItemWidth, behavior: 'smooth' })
+    }
+    if (thumbRef.current && thumbItemWidth > 0) {
+      thumbRef.current.scrollTo({ left: index * thumbItemWidth, behavior: 'smooth' })
+    }
   }
+  
+  const goToFullScreenPrevious = () => {
+    setFullScreenIndex((prev) => (prev === 0 ? galleryImages.length - 1 : prev - 1))
+  }
+  
+  const goToFullScreenNext = () => {
+    setFullScreenIndex((prev) => (prev === galleryImages.length - 1 ? 0 : prev + 1))
+  }
+  
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (galleryImages.length <= 1) return
+    touchRef.current.startX = e.touches[0].clientX
+    touchRef.current.deltaX = 0
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (galleryImages.length <= 1 || !touchRef.current.startX) return
+    const currentX = e.touches[0].clientX
+    touchRef.current.deltaX = currentX - touchRef.current.startX
+    if (Math.abs(touchRef.current.deltaX) > 10 && scrollerRef.current) {
+      e.preventDefault()
+      scrollerRef.current.scrollLeft -= touchRef.current.deltaX
+    }
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (galleryImages.length <= 1 || !touchRef.current.startX) return
+    const endX = e.changedTouches[0].clientX
+    const diff = touchRef.current.startX - endX
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) {
+        goToNextImage()
+      } else {
+        goToPreviousImage()
+      }
+    } else if (scrollerRef.current && mainItemWidth > 0) {
+      const scrollLeft = scrollerRef.current.scrollLeft
+      const index = Math.round(scrollLeft / mainItemWidth)
+      const boundedIndex = Math.min(Math.max(index, 0), galleryImages.length - 1)
+      scrollerRef.current.scrollTo({ left: boundedIndex * mainItemWidth, behavior: 'smooth' })
+      setCurrentImageIndex(boundedIndex)
+    }
+    touchRef.current.startX = 0
+    touchRef.current.deltaX = 0
+  }
+  
+  const handleFullScreenTouchStart = (e: React.TouchEvent) => {
+    if (galleryImages.length <= 1) return
+    touchRef.current.startX = e.touches[0].clientX
+    touchRef.current.deltaX = 0
+  }
+
+  const handleFullScreenTouchMove = (e: React.TouchEvent) => {
+    if (galleryImages.length <= 1 || !touchRef.current.startX) return
+    const currentX = e.touches[0].clientX
+    touchRef.current.deltaX = currentX - touchRef.current.startX
+    if (Math.abs(touchRef.current.deltaX) > 50) {
+      e.preventDefault()
+    }
+  }
+
+  const handleFullScreenTouchEnd = (e: React.TouchEvent) => {
+    if (galleryImages.length <= 1 || !touchRef.current.startX) return
+    const endX = e.changedTouches[0].clientX
+    const diff = touchRef.current.startX - endX
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) {
+        goToFullScreenNext()
+      } else {
+        goToFullScreenPrevious()
+      }
+    }
+    touchRef.current.startX = 0
+    touchRef.current.deltaX = 0
+  }
+
+  useEffect(() => {
+    if (isFullScreenGallery) {
+      modalRef.current?.focus()
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          setIsFullScreenGallery(false)
+        } else if (e.key === 'ArrowLeft') {
+          goToFullScreenPrevious()
+        } else if (e.key === 'ArrowRight') {
+          goToFullScreenNext()
+        }
+      }
+      document.addEventListener('keydown', handleKeyDown)
+      return () => document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isFullScreenGallery, fullScreenIndex])
 
   const processVariants = () => {
     if (!product.variants) return { colors: [], sizes: [] }
@@ -214,54 +436,129 @@ export function ProductCard({ product, onAddToCart, accentColor = "#4f46e5" }: P
     }
 
     product.variants.forEach((variant) => {
-      if (variant.options && variant.options.length > 0) {
-        const option = variant.options[0] // Assuming first option is size for now
-        const variantId = variant.variant_id || variant.variantId || ""
+      let variantColor = variant.color || '';
+      let variantSize = variant.size || '';
+      let variantTitle = variant.variant_title || variant.name || '';
+      if (!variantColor && !variantSize && variantTitle.includes('/')) {
+        const parts = variantTitle.split('/').map(p => p.trim());
+        if (parts.length >= 2) {
+          variantColor = parts[0];
+          variantSize = parts[1];
+        }
+      }
 
-        // Check if it's a size (S, M, L, XL, 2XL, etc.)
-        if (/^(XXS|XS|S|M|L|XL|2XL|3XL|XXL|XXXL|\d+XL?|\d+)$/i.test(option)) {
-          console.log('[ProductCard] Found size:', option, 'for variant:', variantId)
-          const existing = sizes.find((s) => s.name === option)
+      // If size contains color, split it more robustly
+      if (variantSize && (variantSize.includes('/') || variantSize.includes(' / '))) {
+        // Split on / with optional spaces
+        const parts = variantSize.split('/').map(p => p.trim());
+        if (parts.length >= 2) {
+          variantColor = parts[0];
+          variantSize = parts[1];
+        }
+      }
+
+      const variantId = variant.variant_id || variant.variantId || ""
+
+      // Add color if present and not empty
+      if (variantColor && variantColor.trim()) {
+        console.log('[ProductCard] Found color:', variantColor, 'for variant:', variantId)
+        const existing = colors.find((c) => c.name.toLowerCase() === variantColor.toLowerCase().trim())
+        if (!existing) {
+          colors.push({
+            name: variantColor.trim(),
+            value: variantColor.toLowerCase().includes("white")
+              ? "#FFFFFF"
+              : variantColor.toLowerCase().includes("black")
+                ? "#000000"
+                : variantColor.toLowerCase().includes("blue")
+                  ? "#3B82F6"
+                  : variantColor.toLowerCase().includes("red")
+                    ? "#EF4444"
+                    : variantColor.toLowerCase().includes("green")
+                      ? "#10B981"
+                      : variantColor.toLowerCase().includes("yellow")
+                        ? "#F59E0B"
+                        : variantColor.toLowerCase().includes("purple")
+                          ? "#8B5CF6"
+                          : variantColor.toLowerCase().includes("pink")
+                            ? "#EC4899"
+                            : variantColor.toLowerCase().includes("gray")
+                              ? "#6B7280"
+                              : variantColor.toLowerCase().includes("navy")
+                                ? "#1E3A8A"
+                                : "#6B7280",
+            id: variantId,
+          })
+        }
+      }
+
+      // Add size if present and valid
+      if (variantSize && variantSize.trim()) {
+        console.log('[ProductCard] Found size:', variantSize, 'for variant:', variantId)
+        const cleanSize = variantSize.trim()
+        // Check if it's a valid size
+        if (/^(XXS|XS|S|M|L|XL|2XL|3XL|XXL|XXXL|\d+XL?|\d+)$/i.test(cleanSize)) {
+          const existing = sizes.find((s) => s.name.toLowerCase() === cleanSize.toLowerCase())
           if (!existing) {
             sizes.push({
-              name: option,
-              value: option,
+              name: cleanSize,
+              value: cleanSize,
               id: variantId,
             })
           }
         }
-        // Otherwise treat as color
-        else {
-          console.log('[ProductCard] Found color:', option, 'for variant:', variantId)
-          const existing = colors.find((c) => c.name === option)
-          if (!existing) {
-            colors.push({
-              name: option,
-              value: option.toLowerCase().includes("white")
-                ? "#FFFFFF"
-                : option.toLowerCase().includes("black")
-                  ? "#000000"
-                  : option.toLowerCase().includes("blue")
-                    ? "#3B82F6"
-                    : option.toLowerCase().includes("red")
-                      ? "#EF4444"
-                      : option.toLowerCase().includes("green")
-                        ? "#10B981"
-                        : option.toLowerCase().includes("yellow")
-                          ? "#F59E0B"
-                          : option.toLowerCase().includes("purple")
-                            ? "#8B5CF6"
-                            : option.toLowerCase().includes("pink")
-                              ? "#EC4899"
-                              : option.toLowerCase().includes("gray")
-                                ? "#6B7280"
-                                : option.toLowerCase().includes("navy")
-                                  ? "#1E3A8A"
-                                  : "#6B7280",
-              id: variantId,
-            })
+      }
+
+      // Fallback to options if no color/size found
+      if (variant.options && variant.options.length > 0) {
+        variant.options.forEach(option => {
+          const cleanOption = option.trim()
+          if (!variantColor && !variantSize) {
+            // Check if it's a size
+            if (/^(XXS|XS|S|M|L|XL|2XL|3XL|XXL|XXXL|\d+XL?|\d+)$/i.test(cleanOption)) {
+              console.log('[ProductCard] Found size from options:', cleanOption, 'for variant:', variantId)
+              const existing = sizes.find((s) => s.name.toLowerCase() === cleanOption.toLowerCase())
+              if (!existing) {
+                sizes.push({
+                  name: cleanOption,
+                  value: cleanOption,
+                  id: variantId,
+                })
+              }
+            } else {
+              // Treat as color
+              console.log('[ProductCard] Found color from options:', cleanOption, 'for variant:', variantId)
+              const existing = colors.find((c) => c.name.toLowerCase() === cleanOption.toLowerCase())
+              if (!existing) {
+                colors.push({
+                  name: cleanOption,
+                  value: cleanOption.toLowerCase().includes("white")
+                    ? "#FFFFFF"
+                    : cleanOption.toLowerCase().includes("black")
+                      ? "#000000"
+                      : cleanOption.toLowerCase().includes("blue")
+                        ? "#3B82F6"
+                        : cleanOption.toLowerCase().includes("red")
+                          ? "#EF4444"
+                          : cleanOption.toLowerCase().includes("green")
+                            ? "#10B981"
+                            : cleanOption.toLowerCase().includes("yellow")
+                              ? "#F59E0B"
+                              : cleanOption.toLowerCase().includes("purple")
+                                ? "#8B5CF6"
+                                : cleanOption.toLowerCase().includes("pink")
+                                  ? "#EC4899"
+                                  : cleanOption.toLowerCase().includes("gray")
+                                    ? "#6B7280"
+                                    : cleanOption.toLowerCase().includes("navy")
+                                      ? "#1E3A8A"
+                                      : "#6B7280",
+                  id: variantId,
+                })
+              }
+            }
           }
-        }
+        })
       }
 
       // Handle new format with type property
@@ -371,7 +668,21 @@ export function ProductCard({ product, onAddToCart, accentColor = "#4f46e5" }: P
   const handleAddToCart = async () => {
     setIsAddingToCart(true)
     try {
-      const cart = await ShopifyCartService.addToCart(selectedVariant, quantity)
+      let effectiveVariantId = selectedVariant;
+      if (!effectiveVariantId && colors.length === 1 && selectedSize && product.variants) {
+        const matchingVariant = product.variants.find((v) => {
+          const title = (v.variant_title || v.name || '').trim();
+          const parts = title.split('/').map((p) => p.trim());
+          return parts.length >= 2 && parts[0] === selectedColor && parts[1] === selectedSize;
+        });
+        if (matchingVariant) {
+          effectiveVariantId = matchingVariant.variant_id || matchingVariant.variantId || '';
+        }
+      }
+      if (!effectiveVariantId && product.variants && product.variants.length > 0) {
+        effectiveVariantId = product.variants[0].variant_id || product.variants[0].variantId || '';
+      }
+      const cart = await ShopifyCartService.addToCart(effectiveVariantId, quantity)
 
       toast({
         title: "Added to Cart!",
@@ -413,14 +724,19 @@ export function ProductCard({ product, onAddToCart, accentColor = "#4f46e5" }: P
   const handleSizeSelect = (sizeId: string, sizeName: string) => {
     setSelectedSize(sizeName)
     // Find matching variant
-    const matchingVariant = product.variants?.find(
-      (v) =>
-        (v.type === "size" && v.id === sizeId) ||
-        v.size === sizeName ||
-        v.variant_id === sizeId ||
-        v.variantId === sizeId ||
-        (v.options && v.options.includes(sizeName)),
-    )
+    const matchingVariant = product.variants?.find((v) => {
+      if (colors.length === 1) {
+        const title = v.variant_title || v.name || '';
+        const parts = title.split('/').map(p => p.trim());
+        return parts.length >= 2 && parts[0] === selectedColor && parts[1] === sizeName;
+      } else {
+        return (v.type === "size" && v.id === sizeId) ||
+               v.size === sizeName ||
+               v.variant_id === sizeId ||
+               v.variantId === sizeId ||
+               (v.options && v.options.includes(sizeName));
+      }
+    })
     if (matchingVariant) {
       setSelectedVariant(matchingVariant.variantId || matchingVariant.variant_id || "")
     }
@@ -431,15 +747,82 @@ export function ProductCard({ product, onAddToCart, accentColor = "#4f46e5" }: P
       <CardContent className="p-4">
         <div className="space-y-3 mb-4">
           {/* Main image with navigation arrows */}
-          <div className="aspect-square relative rounded-xl overflow-hidden bg-gray-50 group">
-            <Image
-              src={galleryImages[currentImageIndex] || "/placeholder.svg"}
-              alt={productName}
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            />
-            {compareAtPrice && <Badge className="absolute top-2 left-2 bg-red-500 text-white text-xs">Sale</Badge>}
+          {/* Main gallery - scrollable on mobile, single view with arrows on desktop */}
+          <div
+            ref={mainGalleryRef}
+            className="relative w-full rounded-lg bg-gray-50 group cursor-pointer h-80 overflow-hidden"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            {/* Scroller wrapper */}
+            <div
+              ref={scrollerRef}
+              className="flex overflow-x-auto md:overflow-hidden snap-x snap-mandatory scrollbar-hide h-full"
+              style={{
+                scrollSnapType: 'x mandatory',
+                WebkitOverflowScrolling: 'touch',
+                touchAction: 'pan-x',
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+              }}
+            >
+              <div className="flex h-fit w-full md:w-max">
+                {galleryImages.map((image, index) => (
+                  <div
+                    key={index}
+                    className="flex-shrink-0 w-full md:w-[400px] h-80 snap-center flex items-center justify-center relative rounded-lg border border-gray-200 overflow-hidden"
+                    onClick={(e) => {
+                      if (isMobile && !(e.target as Element)?.closest('button')) {
+                        setIsFullScreenGallery(true)
+                        setFullScreenIndex(index)
+                      }
+                    }}
+                  >
+                    <Image
+                      src={image || "/placeholder.svg"}
+                      alt={`${productName} ${index + 1}`}
+                      width={400}
+                      height={400}
+                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300 rounded-lg"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 400px"
+                    />
+                    {compareAtPrice && index === 0 && <Badge className="absolute top-2 left-2 bg-red-500 text-white text-xs z-10">Sale</Badge>}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Fixed overlays for counter and gallery fullscreen button - does not slide with swipe */}
+            {galleryImages.length > 1 && (
+              <div className="absolute inset-0 z-20 flex justify-between items-end pb-2 px-2 pointer-events-none">
+                {/* Image counter - fixed position, updates with index */}
+                <Badge
+                  variant="secondary"
+                  className="bg-black/80 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full pointer-events-auto"
+                >
+                  {currentImageIndex + 1} / {galleryImages.length}
+                </Badge>
+
+                {/* Gallery fullscreen button - overlaid on top */}
+                {!isFullScreenGallery && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setIsFullScreenGallery(true)
+                      setFullScreenIndex(currentImageIndex)
+                    }}
+                    className="h-8 w-8 p-0 bg-black/80 backdrop-blur-sm hover:bg-black/90 text-white opacity-50 hover:opacity-100 transition-opacity duration-200 z-30 pointer-events-auto"
+                    aria-label="Enter fullscreen gallery"
+                    title="Open fullscreen gallery"
+                  >
+                    <MaximizeIcon />
+                  </Button>
+                )}
+              </div>
+            )}
 
             {/* Navigation arrows - only show if more than one image */}
             {galleryImages.length > 1 && (
@@ -448,7 +831,7 @@ export function ProductCard({ product, onAddToCart, accentColor = "#4f46e5" }: P
                   variant="ghost"
                   size="sm"
                   onClick={goToPreviousImage}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0 bg-white/80 hover:bg-white/90 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                  className="hidden md:block absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0 bg-white/80 hover:bg-white/90 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
                 >
                   <ChevronLeftIcon />
                 </Button>
@@ -456,24 +839,44 @@ export function ProductCard({ product, onAddToCart, accentColor = "#4f46e5" }: P
                   variant="ghost"
                   size="sm"
                   onClick={goToNextImage}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0 bg-white/80 hover:bg-white/90 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                  className="hidden md:block absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0 bg-white/80 hover:bg-white/90 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
                 >
                   <ChevronRightIcon />
                 </Button>
               </>
             )}
 
-            {/* Image counter */}
-            {galleryImages.length > 1 && (
-              <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
-                {currentImageIndex + 1} / {galleryImages.length}
-              </div>
+            {/* Fullscreen indicator - only in non-fullscreen mode */}
+            {!isFullscreen && onToggleFullscreen && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onToggleFullscreen()
+                }}
+                className="absolute top-2 right-2 h-8 w-8 p-0 bg-black/60 hover:bg-black/80 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
+                aria-label="Expand image gallery to fullscreen"
+                role="button"
+              >
+                <MaximizeIcon />
+              </Button>
             )}
           </div>
 
           {/* Thumbnail navigation - only show if more than one image */}
           {galleryImages.length > 1 && (
-            <div className="flex gap-2 overflow-x-auto pb-1">
+            <div
+              ref={thumbRef}
+              className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide h-fit"
+              style={{
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+              }}
+              onScroll={(e) => {
+                e.currentTarget.style.setProperty('webkit-overflow-scrolling', 'touch')
+              }}
+            >
               {galleryImages.map((image, index) => (
                 <button
                   key={index}
@@ -501,46 +904,42 @@ export function ProductCard({ product, onAddToCart, accentColor = "#4f46e5" }: P
         <div className="space-y-4">
           <div>
             <h4 className="font-semibold text-sm line-clamp-2 text-gray-900 mb-2">{productName}</h4>
-            <div className="flex items-center gap-2">
-              <p className="text-lg font-bold" style={{ color: accentColor }}>{productPrice}</p>
+            <div className="flex flex-col items-start gap-1">
               {compareAtPrice && <p className="text-sm text-gray-500 line-through">{compareAtPrice}</p>}
+              <p className="text-lg font-bold" style={{ color: accentColor }}>{productPrice}</p>
             </div>
           </div>
 
-          {colors.length > 0 && (
+          {colors.length > 1 && (
             <div className="space-y-2">
               <Label className="text-xs font-medium text-gray-700">Color</Label>
-              {colors.length > 1 ? (
-                <div className="flex flex-wrap gap-2">
-                  {colors.map((color) => (
-                    <button
-                      key={color.id}
-                      onClick={() => handleColorSelect(color.id, color.name)}
-                      className={cn(
-                        "relative w-8 h-8 rounded-full border-2 transition-all duration-200 hover:scale-110",
-                        selectedColor === color.name
-                          ? "border-blue-500 ring-2 ring-blue-200"
-                          : "border-gray-300 hover:border-gray-400",
-                      )}
-                      style={{ backgroundColor: color.value }}
-                      title={color.name}
-                    >
-                      {selectedColor === color.name && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <CheckIcon />
-                        </div>
-                      )}
-                      {/* White border for light colors */}
-                      {(color.value === "#FFFFFF" || color.value.toLowerCase() === "white") && (
-                        <div className="absolute inset-0 rounded-full border border-gray-200" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-gray-600">Color: {selectedColor}</p>
-              )}
-              {selectedColor && colors.length > 1 && <p className="text-xs text-gray-600">Selected: {selectedColor}</p>}
+              <div className="flex flex-wrap gap-2">
+                {colors.map((color) => (
+                  <button
+                    key={color.id}
+                    onClick={() => handleColorSelect(color.id, color.name)}
+                    className={cn(
+                      "relative w-8 h-8 rounded-full border-2 transition-all duration-200 hover:scale-110",
+                      selectedColor === color.name
+                        ? "border-blue-500 ring-2 ring-blue-200"
+                        : "border-gray-300 hover:border-gray-400",
+                    )}
+                    style={{ backgroundColor: color.value }}
+                    title={color.name}
+                  >
+                    {selectedColor === color.name && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <CheckIcon />
+                      </div>
+                    )}
+                    {/* White border for light colors */}
+                    {(color.value === "#FFFFFF" || color.value.toLowerCase() === "white") && (
+                      <div className="absolute inset-0 rounded-full border border-gray-200" />
+                    )}
+                  </button>
+                ))}
+              </div>
+              {selectedColor && <p className="text-xs text-gray-600">Selected: {selectedColor}</p>}
             </div>
           )}
 
@@ -625,6 +1024,94 @@ export function ProductCard({ product, onAddToCart, accentColor = "#4f46e5" }: P
           </div>
         </div>
       </CardContent>
+
+      {/* Full-screen mobile gallery modal */}
+      {isFullScreenGallery && galleryImages.length > 0 && (
+        <div
+          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${productName} image gallery`}
+          onClick={() => setIsFullScreenGallery(false)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setIsFullScreenGallery(false)
+            }
+          }}
+          tabIndex={-1}
+        >
+          <div
+            ref={modalRef}
+            className="relative w-full h-fit max-h-[90vh] max-w-6xl flex items-center justify-center p-4"
+            onClick={(e) => {
+              const target = e.target as Element
+              if (target === e.currentTarget || (!(target as Element)?.closest('button') && target.tagName !== 'IMG')) {
+                setIsFullScreenGallery(false)
+              }
+            }}
+            onTouchStart={handleFullScreenTouchStart}
+            onTouchMove={handleFullScreenTouchMove}
+            onTouchEnd={handleFullScreenTouchEnd}
+          >
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute top-4 right-4 z-10 text-white hover:bg-white/20"
+              onClick={(e) => {
+                e.stopPropagation()
+                setIsFullScreenGallery(false)
+              }}
+            >
+              <XIcon />
+            </Button>
+
+            <div className="flex items-center justify-center h-fit max-h-[90vh] rounded-lg overflow-hidden">
+              <Image
+                src={galleryImages[fullScreenIndex] || "/placeholder.svg"}
+                alt={`${productName} full screen ${fullScreenIndex + 1}`}
+                width={1200}
+                height={1200}
+                className="block max-w-full max-h-[85vh] object-cover mx-auto rounded-lg"
+                sizes="90vw"
+              />
+            </div>
+
+            {galleryImages.length > 1 && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    goToFullScreenPrevious()
+                  }}
+                  className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 h-12 w-12 p-0 bg-white/20 hover:bg-white/30 text-white z-10"
+                >
+                  <ChevronLeftIcon />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    goToFullScreenNext()
+                  }}
+                  className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 h-12 w-12 p-0 bg-white/20 hover:bg-white/30 text-white z-10"
+                >
+                  <ChevronRightIcon />
+                </Button>
+              </>
+            )}
+
+            {galleryImages.length > 1 && (
+              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-sm text-white text-sm px-3 py-1 rounded-full z-20 sm:bottom-10 sm:px-4 sm:py-1.5 sm:text-base">
+                {fullScreenIndex + 1} / {galleryImages.length}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
     </Card>
   )
 }

@@ -137,6 +137,36 @@ const LoaderIcon = () => (
   </svg>
 )
 
+const MaximizeIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+  </svg>
+)
+
+const MinimizeIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M15 3h6v6M21 15v6a2 2 0 0 1-2 2h-6m4-22H3a2 2 0 0 0-2 2v6m20 0V3m0 18h-6a2 2 0 0 1-2-2v-6M4 16h6a2 2 0 0 0 2 2v6m-4-28v6a2 2 0 0 0 2 2h6" />
+  </svg>
+)
+
 interface Message {
   id: string
   role?: "user" | "assistant"
@@ -225,6 +255,7 @@ export function ChatbotWidget({
   const [cartData, setCartData] = useState<CartResponse | null>(null)
   const [isMobile, setIsMobile] = useState(false)
   const [isDirectMode, setIsDirectMode] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const { isKeyboardOpen, keyboardHeight, viewportHeight } = useMobileKeyboard()
 
   const [messages, setMessages] = useState<Message[]>(
@@ -483,14 +514,20 @@ export function ChatbotWidget({
     if (isPreview) return
 
     if (window.parent !== window) {
-      const height = isOpen || hideToggle ? "100dvh" : "70px";
-      const width = isOpen || hideToggle ? (isMobile ? "100vw" : "500px") : "70px";
+      let height = isOpen || hideToggle ? "100dvh" : "70px";
+      let width = isOpen || hideToggle ? (isMobile ? "100vw" : "500px") : "70px";
+      
+      if (isFullscreen && !isMobile && (isOpen || hideToggle)) {
+        width = "100vw";
+        height = "100vh";
+      }
       
       window.parent.postMessage(
         {
           type: "CHATBOT_RESIZE",
           data: {
             isOpen: isOpen || hideToggle,
+            isFullscreen: isFullscreen && !isMobile,
             width,
             height,
           },
@@ -498,7 +535,7 @@ export function ChatbotWidget({
         "*",
       )
     }
-  }, [isOpen, hideToggle, isPreview, isMobile])
+  }, [isOpen, hideToggle, isPreview, isMobile, isFullscreen])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -771,6 +808,10 @@ export function ChatbotWidget({
     })
   }
 
+  const toggleFullscreen = () => {
+    setIsFullscreen((prev) => !prev)
+  }
+
   const startRecording = async () => {
     // Only run on client-side
     if (typeof window === 'undefined' || typeof navigator === 'undefined') {
@@ -956,45 +997,57 @@ export function ChatbotWidget({
           "bg-white dark:bg-gray-900 rounded-xl shadow-2xl border transition-all duration-300 z-[9999]",
           "backdrop-blur-sm border-gray-200 dark:border-gray-700",
           isOpen || hideToggle ? "scale-100 opacity-100" : "scale-0 opacity-0 pointer-events-none",
+          isFullscreen && !isMobile ? "fixed inset-0 w-full h-screen rounded-none" :
           isMobile
-            ? `fixed inset-0 rounded-none w-screen h-screen grid grid-rows-[auto_1fr_auto] ${isKeyboardOpen ? 'keyboard-open' : ''}` 
+            ? `fixed inset-0 rounded-none w-screen h-screen grid grid-rows-[auto_1fr_auto] ${isKeyboardOpen ? 'keyboard-open' : ''}`
             : isDirectMode || hideToggle
-              ? "absolute inset-0 w-full h-full grid grid-rows-[auto_1fr_auto]" 
+              ? "absolute inset-0 w-full h-full grid grid-rows-[auto_1fr_auto]"
               : "fixed bottom-6 right-6 w-[500px] h-[800px] grid grid-rows-[auto_1fr_auto]",
         )}
         style={
-          isMobile
+          isFullscreen && !isMobile
             ? {
-                height: `${viewportHeight - (isKeyboardOpen ? keyboardHeight : 0)}px`,
-                maxHeight: `${viewportHeight - (isKeyboardOpen ? keyboardHeight : 0)}px`,
                 transformOrigin: "center",
-                boxShadow: "none",
+                boxShadow: "0 0 0 1px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(0, 0, 0, 0.05)",
+                width: "100vw",
+                height: "100vh",
                 margin: 0,
                 padding: 0,
-                width: "100vw",
                 boxSizing: "border-box",
                 overflow: "hidden",
               }
-            : hideToggle
+            : isMobile
               ? {
-                  transformOrigin: "bottom right",
+                  height: `${viewportHeight - (isKeyboardOpen ? keyboardHeight : 0)}px`,
+                  maxHeight: `${viewportHeight - (isKeyboardOpen ? keyboardHeight : 0)}px`,
+                  transformOrigin: "center",
                   boxShadow: "none",
                   margin: 0,
                   padding: 0,
-                  width: "100%",
-                  height: "100%",
-                  maxHeight: "100vh",
-                  minHeight: "800px",
+                  width: "100vw",
                   boxSizing: "border-box",
+                  overflow: "hidden",
                 }
-              : {
-                  transformOrigin: "bottom right",
-                  boxShadow: "0 8px 32px rgba(37, 99, 235, 0.3)",
-                  width: "500px",
-                  height: "800px",
-                  maxHeight: "calc(100vh - 2rem)",
-                  boxSizing: "border-box",
-                }
+              : hideToggle
+                ? {
+                    transformOrigin: "bottom right",
+                    boxShadow: "none",
+                    margin: 0,
+                    padding: 0,
+                    width: "100%",
+                    height: "100%",
+                    maxHeight: "100vh",
+                    minHeight: "800px",
+                    boxSizing: "border-box",
+                  }
+                : {
+                    transformOrigin: "bottom right",
+                    boxShadow: "0 8px 32px rgba(37, 99, 235, 0.3)",
+                    width: "500px",
+                    height: "800px",
+                    maxHeight: "calc(100vh - 2rem)",
+                    boxSizing: "border-box",
+                  }
         }
       >
         {/* Header */}
@@ -1147,13 +1200,13 @@ export function ChatbotWidget({
                   {((message.cards && message.cards.length > 0) || (message.products && message.products.length > 0)) && (
                     <div className={cn("space-y-3", message.type === "bot" ? "ml-11" : "")}>
                       {(message.cards || message.products || []).map((product) => (
-                        <ProductCard key={product.id} product={product} onAddToCart={handleAddToCartSuccess} />
+                        <ProductCard key={product.id} product={product} onAddToCart={handleAddToCartSuccess} isFullscreen={isFullscreen} onToggleFullscreen={toggleFullscreen} />
                       ))}
                     </div>
                   )}
 
                   {/* Order Card */}
-                  {message.order && (
+                  {message.order && Object.keys(message.order).length > 0 && (
                     <div className={cn("space-y-3", message.type === "bot" ? "ml-11" : "")}>
                       <OrderCard order={message.order} />
                     </div>
