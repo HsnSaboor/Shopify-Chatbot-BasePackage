@@ -155,6 +155,28 @@ export function ChatbotWidget({
     }
   }, [propEmbedded])
 
+  // Inject styles for embedded mode
+  useEffect(() => {
+    if (isEmbedded && typeof window !== 'undefined') {
+      const style = document.createElement('style');
+      style.textContent = `
+        body, html {
+          background: ###fff !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          height: 100% !important;
+        }
+      `;
+      document.head.appendChild(style);
+
+      return () => {
+        if (style.parentNode) {
+          style.parentNode.removeChild(style);
+        }
+      };
+    }
+  }, [isEmbedded]);
+
   // Force desktop layout in embedded mode to avoid mobile styles in iframe
   useEffect(() => {
     if (isEmbedded) {
@@ -180,12 +202,17 @@ export function ChatbotWidget({
     const urlParams = new URLSearchParams(window.location.search)
     const mode = urlParams.get("mode")
     const embedded = urlParams.get("embedded")
+    const respectClosed = urlParams.get("respectClosed") === "true"
     
     setIsDirectMode(mode === "direct")
 
-    // Hide toggle if embedded via external script or hideToggle prop
+    // Force open only if embedded/hideToggle, respecting manual close universally and onboarding
     if (hideToggle || embedded === "true") {
-      setIsOpen(true)
+      const saved = ChatStateService.loadState();
+      const onboarded = localStorage.getItem('chatbotOnboarded') === 'true';
+      if (onboarded && (!respectClosed || !saved?.manuallyClosed)) {
+        setIsOpen(true);
+      }
     }
   }, [hideToggle])
 
@@ -302,6 +329,8 @@ export function ChatbotWidget({
     }
   }
 
+  const shouldShowOnboarding = showOnboarding || (isEmbedded && messages.length === 0);
+
   return (
     <>
       {/* Chat Widget Button */}
@@ -349,17 +378,10 @@ export function ChatbotWidget({
       {/* Chat Window */}
       <div
         className={cn(
-          "bg-white dark:bg-gray-900 rounded-xl shadow-2xl border transition-all duration-300 z-[9999]",
-          "backdrop-blur-sm border-gray-200 dark:border-gray-700",
+          isEmbedded ? "bg-transparent relative h-full w-full grid grid-rows-[auto_1fr_auto] overflow-hidden" : "bg-white dark:bg-gray-900 rounded-xl shadow-2xl border transition-all duration-300 z-[9999]",
+          isEmbedded ? "" : "backdrop-blur-sm border-gray-200 dark:border-gray-700",
           isOpen || hideToggle ? "scale-100 opacity-100" : "scale-0 opacity-0 pointer-events-none",
-          isEmbedded
-            ? "relative w-full h-full grid grid-rows-[auto_1fr_auto] rounded-none overflow-hidden"
-            : isFullscreen && !isMobile ? "fixed inset-0 w-full h-screen rounded-none" :
-            isMobile
-              ? `fixed inset-0 rounded-none w-screen h-screen grid grid-rows-[auto_1fr_auto] ${isKeyboardOpen ? 'keyboard-open' : ''}`
-              : isDirectMode || hideToggle
-                ? "absolute inset-0 w-full h-full grid grid-rows-[auto_1fr_auto]"
-                : "fixed bottom-6 right-6 w-[500px] h-[800px] grid grid-rows-[auto_1fr_auto]",
+          isEmbedded ? "" : isFullscreen && !isMobile ? "fixed inset-0 w-full h-screen rounded-none" : isMobile ? `fixed inset-0 rounded-none w-screen h-screen grid grid-rows-[auto_1fr_auto] ${isKeyboardOpen ? 'keyboard-open' : ''}` : isDirectMode || hideToggle ? "absolute inset-0 w-full h-full grid grid-rows-[auto_1fr_auto]" : "fixed bottom-6 right-6 w-[500px] h-[800px] grid grid-rows-[auto_1fr_auto]",
         )}
         style={
           isEmbedded
@@ -443,7 +465,7 @@ export function ChatbotWidget({
           isEmbedded={isEmbedded}
         />
 
-        {showOnboarding ? (
+        {shouldShowOnboarding ? (
           <OnboardingForm
             onSubmit={() => setShowOnboarding(false)}
             chatbotProps={chatbotProps}

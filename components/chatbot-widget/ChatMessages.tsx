@@ -60,7 +60,7 @@ export function ChatMessages({
 
   return (
     <div
-      className="relative flex-1 overflow-y-auto"
+      className="relative flex-1 overflow-y-auto min-h-0"
       style={
         (isMobile && !isEmbedded)
           ? {
@@ -106,7 +106,7 @@ export function ChatMessages({
               {((message.cards && message.cards.length > 0) || (message.products && message.products.length > 0)) && (
                 <div className={cn("space-y-3", message.type === "bot" ? "ml-11" : "")}>
                   {(message.cards || message.products || []).map((product: any) => (
-                    <ProductCard key={product.id} product={product} onAddToCart={handleAddToCartSuccess} isFullscreen={isFullscreen} onToggleFullscreen={toggleFullscreen} />
+                    <ProductCard key={product.id} product={product} currency={product.currency || message.currency || "PKR"} onAddToCart={handleAddToCartSuccess} isFullscreen={isFullscreen} onToggleFullscreen={toggleFullscreen} />
                   ))}
                 </div>
               )}

@@ -21,6 +21,7 @@ export interface ChatResponse {
   product_id?: string
   product_name?: string
   order_id?: string
+  currency?: string
   cards?: Array<{
     id: string
     variantId: string
@@ -30,6 +31,7 @@ export interface ChatResponse {
     price: string
     compareAtPrice?: string
     url: string
+    currency?: string
     variants: Array<{
       size: string
       color: string
@@ -69,6 +71,7 @@ export interface ChatResponse {
       country: string;
     };
     payment_method: string;
+    currency?: string;
   }
 }
 

@@ -91,13 +91,14 @@ interface ProductCardProps {
       compareAtPrice?: string // Added support for variant-level compare at price
     }>
   }
+  currency?: string
   onAddToCart?: (cart: CartResponse) => void
   accentColor?: string
   isFullscreen?: boolean
   onToggleFullscreen?: () => void
 }
 
-export function ProductCard({ product, onAddToCart, accentColor = "#4f46e5", isFullscreen = false, onToggleFullscreen }: ProductCardProps) {
+export function ProductCard({ product, currency, onAddToCart, accentColor = "#4f46e5", isFullscreen = false, onToggleFullscreen }: ProductCardProps) {
   const productName = product.name || product.title || "Product"
 
   let galleryImages: string[] = [];
@@ -124,7 +125,7 @@ export function ProductCard({ product, onAddToCart, accentColor = "#4f46e5", isF
   const [isAddingToCart, setIsAddingToCart] = useState(false)
   const { toast } = useToast()
   
-  const { productPrice, compareAtPrice } = useProductPricing(product, selectedVariant)
+  const { productPrice, compareAtPrice } = useProductPricing(product, selectedVariant, currency)
 
   const processVariants = () => {
     if (!product.variants) return { colors: [], sizes: [] }
@@ -344,6 +345,10 @@ export function ProductCard({ product, onAddToCart, accentColor = "#4f46e5", isF
 
   const { colors, sizes } = processVariants()
 
+  const requiresColorSelection = colors.length > 1
+  const requiresSizeSelection = sizes.length > 0
+  const isVariantSelected = (!requiresColorSelection || !!selectedColor) && (!requiresSizeSelection || !!selectedSize)
+
   // Auto-select color if there's only one option
   useEffect(() => {
     if (colors.length === 1 && !selectedColor) {
@@ -363,6 +368,22 @@ export function ProductCard({ product, onAddToCart, accentColor = "#4f46e5", isF
   }, [selectedColor, product.variants])
 
   const handleAddToCart = async () => {
+    if (!isVariantSelected) {
+      toast({
+        variant: "destructive",
+        title: "Selection Required",
+        description: (
+          <div className="flex items-center gap-2">
+            <svg className="h-4 w-4 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            Please select a variant / size / color first.
+          </div>
+        ),
+      })
+      return
+    }
+
     setIsAddingToCart(true)
     try {
       await addToCart({
@@ -537,12 +558,20 @@ export function ProductCard({ product, onAddToCart, accentColor = "#4f46e5", isF
             <Button
               onClick={handleAddToCart}
               size="sm"
-              className="flex-1 text-white shadow-sm hover:shadow-md transition-all duration-200"
-              disabled={isAddingToCart}
+              className={cn(
+                "flex-1 text-white shadow-sm hover:shadow-md transition-all duration-200 relative overflow-hidden",
+                !isVariantSelected && !isAddingToCart && "cursor-not-allowed"
+              )}
+              disabled={isAddingToCart || !isVariantSelected}
               style={{ backgroundColor: accentColor }}
             >
-              <ShoppingCartIcon />
-              <span className="ml-1">{isAddingToCart ? "Adding..." : "Add to Cart"}</span>
+              <div className="relative z-10 flex items-center">
+                <ShoppingCartIcon />
+                <span className="ml-1">{isAddingToCart ? "Adding..." : "Add to Cart"}</span>
+              </div>
+              {!isVariantSelected && !isAddingToCart && (
+                <div className="absolute inset-0 bg-gray-400/50 z-0 pointer-events-none" />
+              )}
             </Button>
             <Button
               onClick={handleViewProduct}

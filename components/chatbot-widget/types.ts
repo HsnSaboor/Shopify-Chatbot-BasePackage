@@ -8,6 +8,7 @@ export interface Message {
   products?: any[]
   order?: Order
   event_type?: string
+  currency?: string
 }
 
 export interface Order {
@@ -50,6 +51,7 @@ export interface ProductCardData {
   name: string
   image: string
   price: string
+  currency?: string
   url: string
   variants: Array<{
     size: string

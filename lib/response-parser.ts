@@ -92,6 +92,7 @@ export async function parseResponse(responseText: string): Promise<ChatResponse 
           country: rawOrder.shipping_address?.country || '',
         },
         payment_method: rawOrder.payment_gateway_names?.[0] || rawOrder.financial_status || 'Unknown',
+        currency: webhookData.currency || 'USD',
       };
     }
 
@@ -99,6 +100,7 @@ export async function parseResponse(responseText: string): Promise<ChatResponse 
     let transformedCards: ChatResponse['cards'] = [];
     const rawProducts = webhookData.cards || webhookData.products;
     if (rawProducts) {
+      const currency = webhookData.currency || 'USD';
       if (Array.isArray(rawProducts)) {
         // If already an array, map each to ProductCardData
         transformedCards = rawProducts.map((product: any) => ({
@@ -110,6 +112,7 @@ export async function parseResponse(responseText: string): Promise<ChatResponse 
           price: product.price?.toString() || '0',
           compareAtPrice: product.compare_at_price ? product.compare_at_price.toString() : undefined,
           url: product.product_url || product.url || '',
+          currency,
           variants: (product.variants || product.sizes || []).map((variant: any) => parseVariant(variant, product)),
         }));
       } else if (typeof rawProducts === 'object' && rawProducts !== null) {
@@ -123,6 +126,7 @@ export async function parseResponse(responseText: string): Promise<ChatResponse 
           price: rawProducts.price?.toString() || '0',
           compareAtPrice: rawProducts.compare_at_price ? rawProducts.compare_at_price.toString() : undefined,
           url: rawProducts.product_url || rawProducts.url || '',
+          currency,
           variants: (rawProducts.variants || rawProducts.sizes || []).map((variant: any) => parseVariant(variant, rawProducts)),
         }];
       }
@@ -134,6 +138,7 @@ export async function parseResponse(responseText: string): Promise<ChatResponse 
       product_id: webhookData.product_id,
       product_name: webhookData.product_name,
       order_id: webhookData.order_id,
+      currency: webhookData.currency || 'USD',
       cards: transformedCards,
       order: transformedOrder,
     }

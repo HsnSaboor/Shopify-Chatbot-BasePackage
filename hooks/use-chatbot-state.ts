@@ -10,7 +10,11 @@ interface UseChatbotStateProps {
 }
 
 export function useChatbotState({ isPreview = false, mockMessages = [] }: UseChatbotStateProps) {
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const saved = ChatStateService.loadState();
+    return saved?.isOpen ?? false;
+  });
   const [messages, setMessages] = useState<Message[]>(() => {
     if (isPreview && mockMessages.length > 0) {
       return mockMessages
@@ -33,7 +37,7 @@ export function useChatbotState({ isPreview = false, mockMessages = [] }: UseCha
     ]
   })
 
-  // Load saved state on mount
+  // Load saved state on mount (early effect for messages)
   useEffect(() => {
     if (typeof window === 'undefined') return
     if (isPreview) return
@@ -49,10 +53,11 @@ export function useChatbotState({ isPreview = false, mockMessages = [] }: UseCha
       })
 
       setMessages(messagesWithDates)
+    }
 
-      if (ChatStateService.shouldAutoReopen()) {
-        setTimeout(() => setIsOpen(true), 500)
-      }
+    // Auto-reopen only if should (respects manuallyClosed) and onboarded
+    if (ChatStateService.shouldAutoReopen() && localStorage.getItem('chatbotOnboarded') === 'true') {
+      setTimeout(() => setIsOpen(true), 500)
     }
   }, [isPreview])
 

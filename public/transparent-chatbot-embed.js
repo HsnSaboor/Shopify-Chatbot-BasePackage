@@ -4,6 +4,14 @@
   // THIS IS THE NEW PLACEHOLDER. A VALID EMPTY OBJECT WITH A COMMENT MARKER.
   const CONFIG = {}; /* __CONFIG_PLACEHOLDER__ */
 
+  // Fix CONFIG handling: fallback if apiUrl or iframe.src is missing
+  if (!CONFIG.apiUrl || !CONFIG.iframe?.src) {
+    console.error('[TransparentChatbotEmbed] CONFIG missing apiUrl or iframe.src, using fallback');
+    CONFIG.apiUrl = window.location.origin;
+    CONFIG.iframe = CONFIG.iframe || {};
+    CONFIG.iframe.src = '/chatbot?embedded=true';
+  }
+
   console.log('[TransparentChatbotEmbed] Initializing embed script');
   
   if (typeof window === 'undefined') {
@@ -59,49 +67,114 @@
       console.log('[TransparentChatbotEmbed] Creating container');
       this.container = document.createElement('div');
       this.container.id = 'transparent-chatbot-container';
-      this.container.style.cssText =
-        'position: fixed;' +
-        'bottom: 20px;' +
-        'right: 20px;' +
-        'width: 500px;' +
-        'height: 800px;' +
-        'z-index: 999;' +
-        'pointer-events: none;' +
-        'background: transparent;' +
-        'margin: 0;' +
-        'padding: 0;' +
-        'box-sizing: border-box;';
+
+      // Set initial responsive container styles based on screen width
+      const setInitialContainerStyles = () => {
+        if (window.innerWidth >= 1024) {
+          // Desktop: fixed bottom-right, 500x800
+          this.container.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            left: auto;
+            top: auto;
+            width: 500px;
+            height: 800px;
+            max-height: 800px;
+            z-index: 999;
+            pointer-events: none;
+            background: transparent;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;`;
+        } else if (window.innerWidth >= 768) {
+          // Tablet: fixed bottom-right, 450x650
+          this.container.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            left: auto;
+            top: auto;
+            width: 450px;
+            height: 650px;
+            max-height: 650px;
+            z-index: 999;
+            pointer-events: none;
+            background: transparent;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;`;
+        } else {
+          // Mobile: full viewport
+          this.container.style.cssText = `
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            left: 0;
+            top: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 999;
+            pointer-events: none;
+            background: transparent;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;`;
+        }
+      };
+
+      setInitialContainerStyles();
     }
     
     createIframe() {
       console.log('[TransparentChatbotEmbed] Creating iframe');
       this.iframe = document.createElement('iframe');
       this.iframe.id = 'transparent-chatbot-iframe';
-      this.iframe.src = CONFIG.apiUrl + CONFIG.iframe.src;
+      const baseSrc = CONFIG.apiUrl + CONFIG.iframe.src;
+      let src = baseSrc;
+      if (baseSrc.includes('?')) {
+        src += '&respectClosed=true';
+      } else {
+        src += '?respectClosed=true';
+      }
+      this.iframe.src = src;
       
-      this.iframe.style.cssText =
-        'position: relative;' +
-        'width: 500px;' +
-        'min-width: 500px;' +
-        'max-width: 500px;' +
-        'height: calc(100vh - 40px);' +
-        'max-height: calc(100vh - 40px);' +
-        'border: none;' +
-        'background: transparent;' +
-        'pointer-events: auto;' +
-        'margin: 0;' +
-        'padding: 0;' +
-        'box-sizing: border-box;' +
-        'border-radius: 12px;' +
-        'overflow: hidden;' +
-        'z-index: 9999;';
-       this.iframe.setAttribute("allowTransparency", "true");
+      // Add load/error logging
+      this.iframe.onload = () => {
+        console.log('[TransparentChatbotEmbed] Iframe loaded successfully');
+        if (this.iframe.contentWindow) {
+          this.iframe.contentWindow.postMessage({ type: 'EMBEDDED_CONFIRM', embedded: true }, '*');
+        }
+      };
+      this.iframe.onerror = () => console.log('[TransparentChatbotEmbed] Iframe failed to load');
+      
+      this.iframe.style.cssText = `position: relative; width: 100vw; height: 100%; border: none; background: transparent; pointer-events: auto; margin: 0; padding: 0; box-sizing: border-box; border-radius: 0; z-index: 9999;`;
+      this.iframe.setAttribute("allowTransparency", "true");
        
-       // Set initial PC styles with min height
-       if (window.innerWidth >= 768) {
-         this.iframe.style.height = '800px';
-         this.iframe.style.maxHeight = 'calc(100vh - 40px)';
-       }
+       // Set initial responsive dimensions for iframe only (container set in createContainer)
+       const setInitialDimensions = () => {
+         if (window.innerWidth >= 1024) {
+           // lg: 500px w / 800px h
+           this.iframe.style.width = '500px';
+           this.iframe.style.height = '800px';
+           this.iframe.style.maxHeight = '800px';
+           this.iframe.style.borderRadius = '12px';
+         } else if (window.innerWidth >= 768) {
+           // md: 450px w / 650px h
+           this.iframe.style.width = '450px';
+           this.iframe.style.height = '650px';
+           this.iframe.style.maxHeight = '650px';
+           this.iframe.style.borderRadius = '12px';
+         } else {
+           // mobile: full viewport
+           this.iframe.style.width = '100vw';
+           this.iframe.style.height = '100vh';
+           this.iframe.style.maxHeight = 'none';
+           this.iframe.style.borderRadius = '0';
+         }
+       };
+       setInitialDimensions();
+       window.addEventListener('resize', setInitialDimensions);
      }
      
     addResponsiveStyles() {
@@ -110,61 +183,61 @@
       if (!document.getElementById(styleId)) {
         const styleTag = document.createElement('style');
         styleTag.id = styleId;
-        styleTag.textContent =
-          '@media (min-width: 768px) {' +
-            '#transparent-chatbot-container {' +
-              'width: 500px !important;' +
-            '}' +
-            '#transparent-chatbot-iframe {' +
-              'width: 500px !important;' +
-              'min-width: 500px !important;' +
-              'max-width: 500px !important;' +
-              'height: calc(100vh - 40px) !important;' +
-              'max-height: calc(100vh - 40px) !important;' +
-            '}' +
-          '}' +
-          '@media (max-width: 767px) {' +
-            '#transparent-chatbot-container {' +
-              'bottom: 0 !important;' +
-              'right: 0 !important;' +
-              'left: 0 !important;' +
-              'top: 0 !important;' +
-              'width: 100dvw !important;' +
-              'height: 100dvh !important;' +
-            '}' +
-            '#transparent-chatbot-iframe {' +
-              'width: 100dvw !important;' +
-              'height: 100dvh !important;' +
-              'min-width: unset !important;' +
-              'max-width: none !important;' +
-              'max-height: none !important;' +
-              'border-radius: 0 !important;' +
-            '}' +
-          '}' +
-          '@media (min-width: 768px) {' +
-            '#transparent-chatbot-iframe {' +
-              'height: 800px !important;' +
-              'max-height: calc(100vh - 40px) !important;' +
-            '}' +
-          '}' +
-          '@media (max-width: 767px) {' +
-            '#transparent-chatbot-container {' +
-              'bottom: 0 !important;' +
-              'right: 0 !important;' +
-              'left: 0 !important;' +
-              'top: 0 !important;' +
-              'width: 100dvw !important;' +
-              'height: 100dvh !important;' +
-            '}' +
-            '#transparent-chatbot-iframe {' +
-              'width: 100dvw !important;' +
-              'height: 100dvh !important;' +
-              'min-width: unset !important;' +
-              'max-width: none !important;' +
-              'max-height: none !important;' +
-              'border-radius: 0 !important;' +
-            '}' +
-          '}';
+        styleTag.textContent = `
+          @media (min-width: 1024px) {
+            #transparent-chatbot-container {
+              width: 500px !important;
+              height: 800px !important;
+              max-height: 800px !important;
+              bottom: 20px !important;
+              right: 20px !important;
+              left: auto !important;
+              top: auto !important;
+            }
+            #transparent-chatbot-iframe {
+              width: 500px !important;
+              height: 800px !important;
+              max-height: 800px !important;
+              min-width: 500px !important;
+              max-width: 500px !important;
+            }
+          }
+          @media (min-width: 768px) and (max-width: 1023px) {
+            #transparent-chatbot-container {
+              width: 450px !important;
+              height: 650px !important;
+              max-height: 650px !important;
+              bottom: 20px !important;
+              right: 20px !important;
+              left: auto !important;
+              top: auto !important;
+            }
+            #transparent-chatbot-iframe {
+              width: 450px !important;
+              height: 650px !important;
+              max-height: 650px !important;
+              min-width: 450px !important;
+              max-width: 450px !important;
+            }
+          }
+          @media (max-width: 767px) {
+            #transparent-chatbot-container {
+              bottom: 0 !important;
+              right: 0 !important;
+              left: 0 !important;
+              top: 0 !important;
+              width: 100dvw !important;
+              height: 100dvh !important;
+            }
+            #transparent-chatbot-iframe {
+              width: 100dvw !important;
+              height: 100dvh !important;
+              min-width: unset !important;
+              max-width: none !important;
+              border-radius: 0 !important;
+            }
+          }
+        `;
         document.head.appendChild(styleTag);
       }
     }
@@ -174,15 +247,22 @@
       if (!document.getElementById('transparent-chatbot-css-reset')) {
         const style = document.createElement('style');
         style.id = 'transparent-chatbot-css-reset';
-        style.textContent =
-          '#transparent-chatbot-container, #transparent-chatbot-container * {' +
-            'margin: 0 !important;' +
-            'padding: 0 !important;' +
-            'box-sizing: border-box !important;' +
-          '}' +
-          '#transparent-chatbot-iframe {' +
-            'background: transparent !important;' +
-          '}'
+        style.textContent = `
+          #transparent-chatbot-container, #transparent-chatbot-container * {
+            margin: 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
+          }
+          #transparent-chatbot-iframe {
+            background: transparent !important;
+          }
+          #transparent-chatbot-iframe body, #transparent-chatbot-iframe html {
+            background: transparent !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+        `;
         document.head.appendChild(style);
       }
     }
@@ -299,13 +379,68 @@
     }
     
     formatPrice(price, currency) {
+      const currencySymbols = {
+        USD: "$",    // United States Dollar
+        EUR: "€",    // Eurozone
+        JPY: "¥",    // Japan
+        GBP: "£",    // United Kingdom
+        AUD: "A$",   // Australia
+        CAD: "C$",   // Canada
+        CHF: "CHF",  // Switzerland
+        CNY: "¥",    // China (Renminbi)
+        HKD: "HK$",  // Hong Kong
+        NZD: "NZ$",  // New Zealand
+        SEK: "kr",   // Sweden
+        KRW: "₩",    // South Korea
+        SGD: "S$",   // Singapore
+        NOK: "kr",   // Norway
+        MXN: "Mex$", // Mexico
+        INR: "₹",    // India
+        RUB: "₽",    // Russia
+        ZAR: "R",    // South Africa
+        TRY: "₺",    // Turkey
+        BRL: "R$",   // Brazil
+        TWD: "NT$",  // Taiwan
+        DKK: "kr",   // Denmark
+        PLN: "zł",   // Poland
+        THB: "฿",    // Thailand
+        IDR: "Rp",   // Indonesia
+        HUF: "Ft",   // Hungary
+        CZK: "Kč",   // Czech Republic
+        ILS: "₪",    // Israel
+        CLP: "CLP$", // Chile
+        PHP: "₱",    // Philippines
+        AED: "AED",  // United Arab Emirates
+        COP: "COP$", // Colombia
+        SAR: "SAR",  // Saudi Arabia
+        MYR: "RM",   // Malaysia
+        RON: "lei",  // Romania
+        PKR: "₨",    // Pakistan
+        VND: "₫",    // Vietnam
+        EGP: "EGP",  // Egypt
+        NGN: "₦",    // Nigeria
+        KES: "KSh",  // Kenya
+        ARS: "ARS$", // Argentina
+        QAR: "QAR",  // Qatar
+        KWD: "KWD",  // Kuwait
+        BDT: "৳",    // Bangladesh
+        LKR: "LKR",  // Sri Lanka
+        MAD: "MAD",  // Morocco
+        JOD: "JOD",  // Jordan
+        OMR: "OMR",  // Oman
+        BHD: "BHD",  // Bahrain
+        UAH: "₴"     // Ukraine
+      };
       try {
-        return new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: currency || 'USD'
-        }).format(price / 100);
+        const num = parseFloat(String(price)) / 100;
+        if (isNaN(num)) {
+          return "$ 0.00";
+        }
+        const upperCurrency = (currency || 'USD').toUpperCase();
+        const symbol = currencySymbols[upperCurrency] || upperCurrency || '$';
+        return `${symbol} ${num.toFixed(2)}`;
       } catch (error) {
-        return `${(price / 100).toFixed(2)}`;
+        return "$ 0.00";
       }
     }
 
