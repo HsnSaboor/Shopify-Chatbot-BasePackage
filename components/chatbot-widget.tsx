@@ -2,24 +2,51 @@
 
 import type React from "react"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useEffect } from "react"
+
+declare global {
+  interface Navigator {
+    virtualKeyboard?: VirtualKeyboard;
+  }
+
+  interface VirtualKeyboard {
+    overlaysContent: boolean;
+    geometry: {
+      height: number;
+    };
+    addEventListener(type: 'geometrychange', listener: () => void): void;
+    removeEventListener(type: 'geometrychange', listener: () => void): void;
+    ontouchstart?: boolean;
+  }
+}
+import { useSearchParams } from "next/navigation"
+import { useChatbotMessaging } from "@/hooks/useChatbotMessaging"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { ProductCard } from "@/components/product-card"
-import { OrderCard } from "@/components/order-card"
+
+import { ChatHeader } from "./chatbot-widget/ChatHeader"
+import { ChatMessages } from "./chatbot-widget/ChatMessages"
+import { ChatInput } from "./chatbot-widget/ChatInput"
+import { OnboardingForm } from "./chatbot-widget/OnboardingForm"
+import { sendMessage } from "@/lib/chat-service"
 
 import { useToast } from "@/hooks/use-toast"
-import { useMobileKeyboard } from "@/hooks/use-mobile-keyboard"
 import type { CartResponse } from "@/lib/shopify-cart"
 import { ChatStateService } from "@/lib/chat-state"
 
+import {
+  MessageCircleIcon} from "./chatbot-widget/icons"
+
+import type {
+  ChatbotWidgetProps
+} from "./chatbot-widget/types"
+
+import { useChatbotState } from "@/hooks/use-chatbot-state"
+import { useShopifyCookies } from "@/hooks/useShopifyCookies"
+
 // Add this interface to define the shape of the styling configuration
 // At the top of the file, ensure the interface is defined:
-interface ChatbotStylingProps {
+export interface ChatbotStylingProps {
   closedWindow: { backgroundColor: string; borderColor: string; };
   chatHeader: { backgroundColor: string; name: string; tagline: string; };
   avatar: { imageUrl: string; borderStyle: string; showBorder: boolean; };
@@ -36,456 +63,113 @@ const chatbotProps: ChatbotStylingProps = {
   sendButton: { backgroundColor: '' }
 }; /* __CHATBOT_PROPS_PLACEHOLDER__ */
 
-// Simple icon components to avoid import issues
-const MessageCircleIcon = () => (
-  <svg
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-  </svg>
-)
-
-const XIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="m18 6-12 12" />
-    <path d="m6 6 12 12" />
-  </svg>
-)
-
-const SendIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="m22 2-7 20-4-9-9-4Z" />
-    <path d="M22 2 11 13" />
-  </svg>
-)
-
-const MicIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
-    <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-    <path d="M12 19v3" />
-  </svg>
-)
-
-const MicOffIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <line x1="2" x2="22" y1="2" y2="22" />
-    <path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2" />
-    <path d="M5 10v2a7 7 0 0 0 12 5" />
-    <path d="M15 9.34V5a3 3 0 0 0-5.68-1.33" />
-    <path d="M9 9v3a3 3 0 0 0 5.12 2.12" />
-    <path d="M12 19v3" />
-  </svg>
-)
-
-const LoaderIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="animate-spin"
-  >
-    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-  </svg>
-)
-
-const MaximizeIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
-  </svg>
-)
-
-const MinimizeIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M15 3h6v6M21 15v6a2 2 0 0 1-2 2h-6m4-22H3a2 2 0 0 0-2 2v6m20 0V3m0 18h-6a2 2 0 0 1-2-2v-6M4 16h6a2 2 0 0 0 2 2v6m-4-28v6a2 2 0 0 0 2 2h6" />
-  </svg>
-)
-
-interface Message {
-  id: string
-  role?: "user" | "assistant"
-  type?: "user" | "bot"
-  content: string
-  timestamp: Date
-  cards?: ProductCardData[]
-  products?: any[]
-  order?: Order
-  event_type?: string
-}
-
-interface Order {
-  id: string;
-  order_number: number;
-  created_at: string;
-  fulfillment_status: string | null;
-  tracking: {
-    carrier: string | null;
-    tracking_number: string | null;
-    tracking_url: string | null;
-  };
-  items: Array<{
-    product_id: string;
-    title: string;
-    price: string;
-    variant_id: string;
-    quantity: number;
-  }>;
-  customer: {
-    name: string;
-    email: string | null;
-    phone: string | null;
-  };
-  shipping_address: {
-    name: string;
-    address1: string;
-    address2: string;
-    city: string;
-    province: string;
-    zip: string;
-    country: string;
-  };
-  payment_method: string;
-}
-
-interface ProductCardData {
-  id: string
-  variantId: string
-  name: string
-  image: string
-  price: string
-  url: string
-  variants: Array<{
-    size: string
-    color: string
-    variantId: string
-  }>
-}
-
-interface ChatResponse {
-  message: string
-  event_type: string
-  product_id?: string
-  product_name?: string
-  order_id?: string
-  cards?: ProductCardData[]
-  order?: Order
-}
-
-interface ChatbotWidgetProps {
-  isPreview?: boolean
-  mockMessages?: Message[]
-  onMockInteraction?: (action: string, data: any) => void
-  hideToggle?: boolean
-}
 
 export function ChatbotWidget({
   isPreview = false,
   mockMessages = [],
   onMockInteraction,
   hideToggle = false,
-}: ChatbotWidgetProps = {}) {
-  const [isOpen, setIsOpen] = useState(false)
+  embedded: propEmbedded = false,
+}: ChatbotWidgetProps & { embedded?: boolean } = {}) {
+  const searchParams = useSearchParams()
   const [showCartPopup, setShowCartPopup] = useState(false)
   const [cartData, setCartData] = useState<CartResponse | null>(null)
   const [isMobile, setIsMobile] = useState(false)
+  const [isEmbedded, setIsEmbedded] = useState(propEmbedded)
   const [isDirectMode, setIsDirectMode] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const { isKeyboardOpen, keyboardHeight, viewportHeight } = useMobileKeyboard()
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false)
+  const [keyboardHeight, setKeyboardHeight] = useState(0)
+  const [viewportHeight, setViewportHeight] = useState(0)
 
-  const [messages, setMessages] = useState<Message[]>(
-    isPreview && mockMessages.length > 0
-      ? mockMessages.map((msg) => {
-          if (!msg) return undefined;
-          return {
-            ...msg,
-            type: msg.role === "user" ? "user" : "bot",
-          } as Message;
-        }).filter((msg): msg is Message => msg !== undefined)
-      : [
-          {
-            id: "1",
-            type: "bot",
-            content:
-              "__AI_FIRST_REPLY_PLACEHOLDER__",
-            timestamp: new Date(),
-          },
-        ],
-  )
+  const { messages, setMessages, isOpen, setIsOpen } = useChatbotState({ isPreview, mockMessages })
 
   const [inputValue, setInputValue] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [isRecording, setIsRecording] = useState(false)
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
-  const [audioChunks, setAudioChunks] = useState<Blob[]>([])
+  const [showOnboarding, setShowOnboarding] = useState(false)
 
-  const messagesEndRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
 
-  useEffect(() => {
-    // Only run on client-side
-    if (typeof window === 'undefined') {
-      return;
-    }
-    
-    if (isPreview) return
+  const cookies = useShopifyCookies()
 
-    const handleMessage = (event: MessageEvent) => {
-      const { type, data } = event.data
-
-      switch (type) {
-        case "REOPEN_CHATBOT":
-        case "OPEN_CHATBOT":
-        case "OPEN_CHAT":
-          setIsOpen(true)
-          break
-
-        case "CLOSE_CHATBOT":
-        case "CLOSE_CHAT":
-          setIsOpen(false)
-          break
-          
-        case "TOGGLE_CHAT":
-          setIsOpen(prev => !prev)
-          break
-
-        case "CLEAR_HISTORY":
-          clearChatHistory()
-          break
-          
-        case "EXTERNAL_CONTROL_ACTIVE":
-          // External script is managing the iframe - this is normal
-          console.log('External control active for chatbot iframe')
-          break
-      }
-    }
-
-    window.addEventListener("message", handleMessage)
-
-    // Notify parent that chatbot is ready
-    if (window.parent !== window) {
-      window.parent.postMessage(
+  const clearChatHistory = () => {
+    if (isPreview) {
+      setMessages([
         {
-          type: "CHATBOT_READY",
-          timestamp: Date.now(),
+          id: "1",
+          type: "bot",
+          content:
+            "__AI_FIRST_REPLY_PLACEHOLDER__",
+          timestamp: new Date(),
         },
-        "*",
-      )
+      ])
+      onMockInteraction?.("clear_history", {})
+      return
     }
 
-    return () => {
-      window.removeEventListener("message", handleMessage)
-    }
-  }, [isPreview])
+    ChatStateService.clearState()
+    setMessages([
+      {
+        id: "1",
+        type: "bot",
+        content:
+          "__AI_FIRST_REPLY_PLACEHOLDER__",
+        timestamp: new Date(),
+      },
+    ])
+    toast({
+      title: "Chat cleared",
+      description: "Your conversation history has been cleared.",
+    })
+  }
+
+  useChatbotMessaging({
+    isOpen,
+    setIsOpen,
+    messages,
+    isPreview,
+    hideToggle,
+    isMobile,
+    isFullscreen,
+    clearChatHistory,
+  })
 
   useEffect(() => {
-    // Only run on client-side
-    if (typeof window === 'undefined') {
-      return;
-    }
-    
-    if (isPreview) return
-
-    if (window.parent !== window) {
-      window.parent.postMessage(
-        {
-          type: "CHATBOT_STATE_CHANGED",
-          data: { isOpen, messageCount: messages.length },
-        },
-        "*",
-      )
-    }
-  }, [isOpen, messages.length, isPreview])
-
-  useEffect(() => {
-    // Only run on client-side
-    if (typeof window === 'undefined') {
-      return;
-    }
-    
-    if (isPreview) return
-
-    const savedState = ChatStateService.loadState()
-    if (savedState && savedState.messages && Array.isArray(savedState.messages)) {
-      // Convert timestamp strings back to Date objects
-      const messagesWithDates = savedState.messages.map((msg: any) => {
-        // Check if msg is valid before accessing its properties
-        if (!msg) return msg;
-        
-        return {
-          ...msg,
-          timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
-        };
-      })
-
-      setMessages(messagesWithDates)
-
-      // Auto-reopen using the new logic that respects manuallyClosed flag
-      if (ChatStateService.shouldAutoReopen()) {
-        setTimeout(() => setIsOpen(true), 500) // Small delay for smooth animation
-      }
-    }
-  }, [isPreview])
-
-  useEffect(() => {
-    // Only run on client-side
-    if (typeof window === 'undefined') {
-      return;
-    }
-    
-    if (isPreview) return
-
-    const state = {
-      messages,
-      isOpen,
-      lastActivity: Date.now(),
-      // Preserve the manuallyClosed flag from the existing state
-      ...(() => {
-        const existingState = ChatStateService.loadState();
-        return existingState?.manuallyClosed !== undefined ? { manuallyClosed: existingState.manuallyClosed } : {};
-      })()
-    }
-    ChatStateService.saveState(state)
-  }, [messages, isOpen, isPreview])
-
-  useEffect(() => {
-    // Only run on client-side
-    if (typeof window === 'undefined') {
-      return;
-    }
-    
-    if (isPreview) return
-
-    const handleBeforeUnload = () => {
-      const state = {
-        messages,
-        isOpen,
-        lastActivity: Date.now(),
-        // Preserve the manuallyClosed flag from the existing state
-        ...(() => {
-          const existingState = ChatStateService.loadState();
-          return existingState?.manuallyClosed !== undefined ? { manuallyClosed: existingState.manuallyClosed } : {};
-        })()
-      }
-      ChatStateService.saveState(state)
-    }
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden") {
-        const state = {
-          messages,
-          isOpen,
-          lastActivity: Date.now(),
-          // Preserve the manuallyClosed flag from the existing state
-          ...(() => {
-            const existingState = ChatStateService.loadState();
-            return existingState?.manuallyClosed !== undefined ? { manuallyClosed: existingState.manuallyClosed } : {};
-          })()
-        }
-        ChatStateService.saveState(state)
-      }
-    }
-
-    window.addEventListener("beforeunload", handleBeforeUnload)
-    document.addEventListener("visibilitychange", handleVisibilityChange)
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload)
-      document.removeEventListener("visibilitychange", handleVisibilityChange)
-    }
-  }, [messages, isOpen, isPreview])
-
-  useEffect(() => {
-    // Only run on client-side
-    if (typeof window === 'undefined') {
-      return;
-    }
-    
-    const checkMobile = () => {
+    // Set initial isMobile
+    if (typeof window !== 'undefined') {
       setIsMobile(window.innerWidth < 768)
     }
-
-    checkMobile()
-
-    window.addEventListener("resize", checkMobile)
-    
-    // Handle orientation changes which might affect viewport height
-    window.addEventListener("orientationchange", () => {
-      setTimeout(() => {
-        checkMobile()
-      }, 300)
-    })
-
-    return () => {
-      window.removeEventListener("resize", checkMobile)
-      window.removeEventListener("orientationchange", checkMobile)
-    }
   }, [])
+
+  useEffect(() => {
+    // Detect embedded mode, prioritize prop if provided
+    if (propEmbedded) {
+      setIsEmbedded(true)
+      return
+    }
+    // Detect embedded mode
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search)
+      const embedded = urlParams.get("embedded")
+      setIsEmbedded(embedded === "true")
+    }
+  }, [propEmbedded])
+
+  // Force desktop layout in embedded mode to avoid mobile styles in iframe
+  useEffect(() => {
+    if (isEmbedded) {
+      setIsMobile(false)
+    }
+  }, [isEmbedded])
+
+  useEffect(() => {
+    if (isOpen && !isPreview) {
+      if (typeof window !== 'undefined') {
+        const stored = localStorage.getItem('chatbotOnboarded')
+        setShowOnboarding(!stored)
+      }
+    }
+  }, [isOpen, isPreview])
 
   useEffect(() => {
     // Only run on client-side
@@ -506,294 +190,68 @@ export function ChatbotWidget({
   }, [hideToggle])
 
   useEffect(() => {
-    // Only run on client-side
-    if (typeof window === 'undefined') {
-      return;
-    }
-    
-    if (isPreview) return
+    if (typeof window === 'undefined') return;
 
-    if (window.parent !== window) {
-      let height = isOpen || hideToggle ? "100dvh" : "70px";
-      let width = isOpen || hideToggle ? (isMobile ? "100vw" : "500px") : "70px";
-      
-      if (isFullscreen && !isMobile && (isOpen || hideToggle)) {
-        width = "100vw";
-        height = "100vh";
+    // VirtualKeyboard API integration
+    if ('virtualKeyboard' in navigator && navigator.virtualKeyboard) {
+      navigator.virtualKeyboard.overlaysContent = true;
+
+      const handleGeometryChange = () => {
+        const { height } = navigator.virtualKeyboard!.geometry;
+        setKeyboardHeight(height);
+        setIsKeyboardOpen(height > 0);
+        setViewportHeight(window.visualViewport?.height || window.innerHeight);
+      };
+
+      // Initial call
+      if (navigator.virtualKeyboard.ontouchstart) {
+        handleGeometryChange();
       }
-      
-      window.parent.postMessage(
-        {
-          type: "CHATBOT_RESIZE",
-          data: {
-            isOpen: isOpen || hideToggle,
-            isFullscreen: isFullscreen && !isMobile,
-            width,
-            height,
-          },
-        },
-        "*",
-      )
+
+      navigator.virtualKeyboard.addEventListener('geometrychange', handleGeometryChange);
+
+      return () => {
+        navigator.virtualKeyboard!.removeEventListener('geometrychange', handleGeometryChange);
+      };
     }
-  }, [isOpen, hideToggle, isPreview, isMobile, isFullscreen])
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }
+    // Fallback: basic resize listener for non-supporting devices
+    const handleResize = () => {
+      setViewportHeight(window.innerHeight);
+      if (window.visualViewport) {
+        const vvHeight = window.visualViewport.height;
+        const kbHeight = window.innerHeight - vvHeight;
+        if (kbHeight > 100) {
+          setKeyboardHeight(kbHeight);
+          setIsKeyboardOpen(true);
+        } else {
+          setKeyboardHeight(0);
+          setIsKeyboardOpen(false);
+        }
+      }
+    };
 
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    scrollToBottom()
-  }, [messages])
+    window.addEventListener('resize', handleResize);
+    handleResize();
 
-  // Maintain scroll position when keyboard opens/closes
-  useEffect(() => {
-    if (isMobile) {
-      // Small delay to ensure DOM has updated
-      const timer = setTimeout(() => {
-        scrollToBottom()
-      }, 100)
-      return () => clearTimeout(timer)
-    }
-  }, [isKeyboardOpen, isMobile])
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-  const sendMessage = async (messagePayload: {
-    type: "text" | "voice"
+  const handleSendMessage = async (messagePayload: {
+    type: "text"
     message?: string
-    audioData?: string
-    timestamp?: number
   }) => {
-    if (isPreview) {
-      if (messagePayload.type === "text" && messagePayload.message) {
-        const userMessage: Message = {
-          id: Date.now().toString(),
-          type: "user",
-          content: messagePayload.message,
-          timestamp: new Date(),
-        }
-        setMessages((prev) => [...prev, userMessage])
-
-        // Simulate AI response with mock data
-        setTimeout(() => {
-          const mockResponses = [
-            {
-              content: "Great choice! I found some perfect products for you:",
-              products: [
-                {
-                  id: "mock-product-1",
-                  title: "Summer Breeze T-Shirt",
-                  price: 2499,
-                  compareAtPrice: 3299,
-                  image: "/placeholder.svg?height=300&width=300&text=Summer+Tee",
-                  url: "/products/summer-breeze-tshirt",
-                  variants: [
-                    { id: "color-blue", name: "Ocean Blue", type: "color", value: "#0ea5e9", variantId: "summer-blue" },
-                    {
-                      id: "color-green",
-                      name: "Forest Green",
-                      type: "color",
-                      value: "#22c55e",
-                      variantId: "summer-green",
-                    },
-                    {
-                      id: "color-coral",
-                      name: "Coral Pink",
-                      type: "color",
-                      value: "#f97316",
-                      variantId: "summer-coral",
-                    },
-                    {
-                      id: "color-white",
-                      name: "Pure White",
-                      type: "color",
-                      value: "#FFFFFF",
-                      variantId: "summer-white",
-                    },
-                    { id: "size-s", name: "Small", type: "size", value: "S", variantId: "summer-s" },
-                    { id: "size-m", name: "Medium", type: "size", value: "M", variantId: "summer-m" },
-                    { id: "size-l", name: "Large", type: "size", value: "L", variantId: "summer-l" },
-                    { id: "size-xl", name: "X-Large", type: "size", value: "XL", variantId: "summer-xl" },
-                  ],
-                },
-              ],
-            },
-            {
-              content: "I'd be happy to help you with that! Let me show you our bestsellers:",
-              products: [
-                {
-                  id: "mock-product-2",
-                  title: "Classic Denim Jacket",
-                  price: 7999,
-                  compareAtPrice: 9999,
-                  image: "/placeholder.svg?height=300&width=300&text=Denim+Jacket",
-                  url: "/products/classic-denim-jacket",
-                  variants: [
-                    {
-                      id: "color-indigo",
-                      name: "Classic Indigo",
-                      type: "color",
-                      value: "#4338ca",
-                      variantId: "denim-indigo",
-                    },
-                    {
-                      id: "color-black",
-                      name: "Midnight Black",
-                      type: "color",
-                      value: "#000000",
-                      variantId: "denim-black",
-                    },
-                    {
-                      id: "color-light",
-                      name: "Light Wash",
-                      type: "color",
-                      value: "#93c5fd",
-                      variantId: "denim-light",
-                    },
-                    { id: "size-s", name: "Small", type: "size", value: "S", variantId: "denim-s" },
-                    { id: "size-m", name: "Medium", type: "size", value: "M", variantId: "denim-m" },
-                    { id: "size-l", name: "Large", type: "size", value: "L", variantId: "denim-l" },
-                    { id: "size-xl", name: "X-Large", type: "size", value: "XL", variantId: "denim-xl" },
-                  ],
-                },
-              ],
-            },
-            {
-              content:
-                "Perfect! Here are some great options based on your preferences. These are currently trending and have excellent reviews from our customers.",
-              products: [
-                {
-                  id: "mock-product-3",
-                  title: "Cozy Knit Sweater",
-                  price: 5499,
-                  image: "/placeholder.svg?height=300&width=300&text=Knit+Sweater",
-                  url: "/products/cozy-knit-sweater",
-                  variants: [
-                    { id: "color-cream", name: "Cream", type: "color", value: "#fef3c7", variantId: "knit-cream" },
-                    {
-                      id: "color-burgundy",
-                      name: "Burgundy",
-                      type: "color",
-                      value: "#991b1b",
-                      variantId: "knit-burgundy",
-                    },
-                    {
-                      id: "color-forest",
-                      name: "Forest Green",
-                      type: "color",
-                      value: "#166534",
-                      variantId: "knit-forest",
-                    },
-                    { id: "color-navy", name: "Navy", type: "color", value: "#1e3a8a", variantId: "knit-navy" },
-                    { id: "size-xs", name: "X-Small", type: "size", value: "XS", variantId: "knit-xs" },
-                    { id: "size-s", name: "Small", type: "size", value: "S", variantId: "knit-s" },
-                    { id: "size-m", name: "Medium", type: "size", value: "M", variantId: "knit-m" },
-                    { id: "size-l", name: "Large", type: "size", value: "L", variantId: "knit-l" },
-                  ],
-                },
-              ],
-            },
-          ]
-
-          const randomResponse = mockResponses[Math.floor(Math.random() * mockResponses.length)]
-
-          const botMessage: Message = {
-            id: Date.now().toString(),
-            type: "bot",
-            content: randomResponse.content,
-            timestamp: new Date(),
-            products: randomResponse.products,
-          }
-
-          setMessages((prev) => [...prev, botMessage])
-          onMockInteraction?.("message_sent", { message: messagePayload.message, response: randomResponse })
-        }, 1000)
-      }
-      return
-    }
-
     setIsLoading(true)
-
-    // Add user message to chat (for text messages)
-    if (messagePayload.type === "text" && messagePayload.message) {
-      const userMessage: Message = {
-        id: Date.now().toString(),
-        type: "user",
-        content: messagePayload.message,
-        timestamp: new Date(),
-      }
-      setMessages((prev) => [...prev, userMessage])
-    }
-
-    try {
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 15000)
-
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Request-ID": crypto.randomUUID(),
-        },
-        body: JSON.stringify({
-          ...messagePayload,
-          cart_currency: "USD",
-          localization: "en-US",
-        }),
-        signal: controller.signal,
-      })
-
-      clearTimeout(timeoutId)
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: "An unknown error occurred" }))
-        throw new Error(errorData.message || `HTTP ${response.status}`)
-      }
-
-      const data: ChatResponse = await response.json()
-
-      const botMessage: Message = {
-        id: Date.now().toString(),
-        type: "bot",
-        content: data.message,
-        timestamp: new Date(),
-        cards: data.cards,
-        order: data.order,
-        event_type: data.event_type,
-      }
-
-      setMessages((prev) => [...prev, botMessage])
-    } catch (error) {
-      console.error("Chat error:", error)
-
-      let errorMessage = "I'm having trouble connecting right now. Please try again in a moment."
-
-      if (error instanceof Error) {
-        if (error.name === "AbortError") {
-          errorMessage = "The request timed out. Please try again."
-        } else if (error.message.includes("401")) {
-          errorMessage = "Authentication error. Please refresh the page."
-        } else if (error.message.includes("422")) {
-          errorMessage = "Invalid message format. Please try again."
-        }
-      }
-
-      const errorBotMessage: Message = {
-        id: Date.now().toString(),
-        type: "bot",
-        content: errorMessage,
-        timestamp: new Date(),
-      }
-
-      setMessages((prev) => [...prev, errorBotMessage])
-
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
+    await sendMessage(messagePayload, {
+      messages,
+      setMessages,
+      isPreview,
+      mockMessages: mockMessages,
+      onMockInteraction,
+      cookies,
+      toast,
+    })
+    setIsLoading(false)
   }
 
   const handleSendText = async () => {
@@ -802,7 +260,7 @@ export function ChatbotWidget({
     const message = inputValue.trim()
     setInputValue("")
 
-    await sendMessage({
+    await handleSendMessage({
       type: "text",
       message,
     })
@@ -810,78 +268,6 @@ export function ChatbotWidget({
 
   const toggleFullscreen = () => {
     setIsFullscreen((prev) => !prev)
-  }
-
-  const startRecording = async () => {
-    // Only run on client-side
-    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
-      toast({
-        title: "Recording error",
-        description: "Recording is not available in this environment.",
-        variant: "destructive",
-      })
-      return;
-    }
-    
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" })
-
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          setAudioChunks((prev) => [...prev, event.data])
-        }
-      }
-
-      recorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunks, { type: "audio/webm" })
-        const reader = new FileReader()
-
-        reader.onloadend = async () => {
-          const base64Audio = reader.result as string
-          await sendMessage({
-            type: "voice",
-            audioData: base64Audio,
-            timestamp: Math.floor(Date.now() / 1000),
-          })
-        }
-
-        reader.readAsDataURL(audioBlob)
-        setAudioChunks([])
-
-        // Stop all tracks
-        stream.getTracks().forEach((track) => track.stop())
-      }
-
-      setMediaRecorder(recorder)
-      recorder.start()
-      setIsRecording(true)
-
-      toast({
-        title: "Recording started",
-        description: "Speak your message now...",
-      })
-    } catch (error) {
-      console.error("Error starting recording:", error)
-      toast({
-        title: "Recording error",
-        description: "Could not access microphone. Please check permissions.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const stopRecording = () => {
-    if (mediaRecorder && isRecording) {
-      mediaRecorder.stop()
-      setIsRecording(false)
-      setMediaRecorder(null)
-
-      toast({
-        title: "Recording stopped",
-        description: "Processing your voice message...",
-      })
-    }
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -916,41 +302,10 @@ export function ChatbotWidget({
     }
   }
 
-  const clearChatHistory = () => {
-    if (isPreview) {
-      setMessages([
-        {
-          id: "1",
-          type: "bot",
-          content:
-            "__AI_FIRST_REPLY_PLACEHOLDER__",
-          timestamp: new Date(),
-        },
-      ])
-      onMockInteraction?.("clear_history", {})
-      return
-    }
-
-    ChatStateService.clearState()
-    setMessages([
-      {
-        id: "1",
-        type: "bot",
-        content:
-          "__AI_FIRST_REPLY_PLACEHOLDER__",
-        timestamp: new Date(),
-      },
-    ])
-    toast({
-      title: "Chat cleared",
-      description: "Your conversation history has been cleared.",
-    })
-  }
-
   return (
     <>
       {/* Chat Widget Button */}
-      {!hideToggle && !isDirectMode && (
+      {!isOpen && !isDirectMode && (!hideToggle || isEmbedded) && (
         <Button
           onClick={() => {
             setIsOpen(true)
@@ -978,7 +333,7 @@ export function ChatbotWidget({
             "h-16 w-16 rounded-full shadow-xl transition-all duration-300 hover:scale-110 z-[9998]",
             "bg-blue-600 hover:bg-blue-700 text-white border-2 border-white",
             isOpen && "scale-0 opacity-0",
-            "fixed bottom-6 right-6",
+            "fixed bottom-[20px] right-[20px]",
           )}
           size="icon"
           style={{
@@ -997,302 +352,116 @@ export function ChatbotWidget({
           "bg-white dark:bg-gray-900 rounded-xl shadow-2xl border transition-all duration-300 z-[9999]",
           "backdrop-blur-sm border-gray-200 dark:border-gray-700",
           isOpen || hideToggle ? "scale-100 opacity-100" : "scale-0 opacity-0 pointer-events-none",
-          isFullscreen && !isMobile ? "fixed inset-0 w-full h-screen rounded-none" :
-          isMobile
-            ? `fixed inset-0 rounded-none w-screen h-screen grid grid-rows-[auto_1fr_auto] ${isKeyboardOpen ? 'keyboard-open' : ''}`
-            : isDirectMode || hideToggle
-              ? "absolute inset-0 w-full h-full grid grid-rows-[auto_1fr_auto]"
-              : "fixed bottom-6 right-6 w-[500px] h-[800px] grid grid-rows-[auto_1fr_auto]",
+          isEmbedded
+            ? "relative w-full h-full grid grid-rows-[auto_1fr_auto] rounded-none overflow-hidden"
+            : isFullscreen && !isMobile ? "fixed inset-0 w-full h-screen rounded-none" :
+            isMobile
+              ? `fixed inset-0 rounded-none w-screen h-screen grid grid-rows-[auto_1fr_auto] ${isKeyboardOpen ? 'keyboard-open' : ''}`
+              : isDirectMode || hideToggle
+                ? "absolute inset-0 w-full h-full grid grid-rows-[auto_1fr_auto]"
+                : "fixed bottom-6 right-6 w-[500px] h-[800px] grid grid-rows-[auto_1fr_auto]",
         )}
         style={
-          isFullscreen && !isMobile
+          isEmbedded
             ? {
-                transformOrigin: "center",
-                boxShadow: "0 0 0 1px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(0, 0, 0, 0.05)",
-                width: "100vw",
-                height: "100vh",
+                position: "relative",
+                width: "100%",
+                height: "100%",
                 margin: 0,
                 padding: 0,
                 boxSizing: "border-box",
                 overflow: "hidden",
               }
-            : isMobile
+            : isFullscreen && !isMobile
               ? {
-                  height: `${viewportHeight - (isKeyboardOpen ? keyboardHeight : 0)}px`,
-                  maxHeight: `${viewportHeight - (isKeyboardOpen ? keyboardHeight : 0)}px`,
                   transformOrigin: "center",
-                  boxShadow: "none",
+                  boxShadow: "0 0 0 1px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(0, 0, 0, 0.05)",
+                  width: "100vw",
+                  height: "100vh",
                   margin: 0,
                   padding: 0,
-                  width: "100vw",
                   boxSizing: "border-box",
                   overflow: "hidden",
                 }
-              : hideToggle
+              : isMobile
                 ? {
-                    transformOrigin: "bottom right",
+                    height: `${viewportHeight - (isKeyboardOpen ? keyboardHeight : 0)}px`,
+                    maxHeight: `${viewportHeight - (isKeyboardOpen ? keyboardHeight : 0)}px`,
+                    transformOrigin: "center",
                     boxShadow: "none",
                     margin: 0,
                     padding: 0,
-                    width: "100%",
-                    height: "100%",
-                    maxHeight: "100vh",
-                    minHeight: "800px",
+                    width: "100vw",
                     boxSizing: "border-box",
+                    overflow: "hidden",
                   }
-                : {
-                    transformOrigin: "bottom right",
-                    boxShadow: "0 8px 32px rgba(37, 99, 235, 0.3)",
-                    width: "500px",
-                    height: "800px",
-                    maxHeight: "calc(100vh - 2rem)",
-                    boxSizing: "border-box",
-                  }
+                : hideToggle
+                  ? {
+                      transformOrigin: "bottom right",
+                      boxShadow: "none",
+                      margin: 0,
+                      padding: 0,
+                      width: "100%",
+                      height: "100%",
+                      maxHeight: "100vh",
+                      minHeight: "auto",
+                      boxSizing: "border-box",
+                    }
+                  : {
+                      transformOrigin: "bottom right",
+                      boxShadow: "0 8px 32px rgba(37, 99, 235, 0.3)",
+                      width: "500px",
+                      height: "min(800px, calc(100vh - 2rem))",
+                      maxHeight: "calc(100vh - 2rem)",
+                      boxSizing: "border-box",
+                    }
         }
       >
-        {/* Header */}
-        <div
-          className={cn("flex items-center justify-between p-4 border-b", isMobile ? "rounded-none" : "rounded-t-xl")}
-          style={{
-            backgroundColor: chatbotProps.chatHeader.backgroundColor,
-            color: "white",
-            paddingTop: isMobile ? "calc(1rem + env(safe-area-inset-top))" : "1rem",
-          }}
-        >
-          <div className="flex items-center gap-3">
-            <Avatar className={`h-8 w-8 ${chatbotProps.avatar.showBorder ? 'ring-2 ring-white/20' : ''}`}>
-              <AvatarImage 
-                src={chatbotProps.avatar.imageUrl} 
-                alt="Chatbot Avatar" 
-                className="h-full w-full object-cover rounded-full"
-                style={{ border: chatbotProps.avatar.borderStyle }}
-              />
-            </Avatar>
-            <div>
-              <h3 className="font-semibold text-sm" style={{ color: "white" }}>
-                {chatbotProps.chatHeader.name}
-                {isPreview && (
-                  <Badge variant="secondary" className="ml-2 bg-white/20 text-white text-xs">
-                    Preview
-                  </Badge>
-                )}
-              </h3>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <p className="text-xs" style={{ color: "rgba(255, 255, 255, 0.9)" }}>
-                  {isPreview ? "Demo Mode" : chatbotProps.chatHeader.tagline}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {!isMobile && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={clearChatHistory}
-                className="h-8 w-8 hover:bg-white/20 rounded-full transition-colors"
-                style={{ color: "white" }}
-                title="Clear chat history"
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M3 6h18" />
-                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                </svg>
-              </Button>
-            )}
-            {!hideToggle && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => {
-                  setIsOpen(false)
-                  // Save state with manuallyClosed flag
-                  const state = {
-                    messages,
-                    isOpen: false,
-                    lastActivity: Date.now(),
-                    manuallyClosed: true, // User explicitly closed the chat
-                  }
-                  ChatStateService.saveState(state)
-                  
-                  // Notify parent window about state change
-                  if (window.parent !== window) {
-                    window.parent.postMessage(
-                      {
-                        type: "CHATBOT_CLOSED_BY_USER",
-                        data: { isOpen: false },
-                      },
-                      "*",
-                    )
-                  }
-                }}
-                className="h-8 w-8 hover:bg-white/20 rounded-full transition-colors"
-                style={{ color: "white" }}
-                title={isMobile ? "Minimize" : "Close"}
-              >
-                {isMobile ? (
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M6 9l6 6 6-6" />
-                  </svg>
-                ) : (
-                  <XIcon />
-                )}
-              </Button>
-            )}
-          </div>
-        </div>
+        <ChatHeader
+          isOpen={isOpen}
+          setIsOpen={setIsOpen}
+          messages={messages}
+          isPreview={isPreview}
+          isMobile={isMobile}
+          hideToggle={hideToggle}
+          chatbotProps={chatbotProps}
+          clearChatHistory={clearChatHistory}
+          isEmbedded={isEmbedded}
+        />
 
-        {/* Messages */}
-        <div className="relative flex-1 overflow-y-auto">
-          <div className="p-4 sm:p-6"> {/* Add padding to this inner container */}
-            <div className="space-y-4">
-              {messages.map((message) => (
-                <div key={message.id} className="space-y-3">
-                  <div className={cn("flex items-start gap-3", message.type === "user" ? "justify-end" : "justify-start")}>
-                    {message.type === "bot" && (
-                      <Avatar className={`h-8 w-8 flex-shrink-0 ${chatbotProps.avatar.showBorder ? 'ring-2 ring-blue-100' : ''}`}>
-                        <AvatarImage
-                          src={chatbotProps.avatar.imageUrl}
-                          alt="Chatbot Avatar"
-                          className="h-full w-full rounded-full object-cover"
-                          style={{ border: chatbotProps.avatar.borderStyle }}
-                        />
-                      </Avatar>
-                    )}
-                    <div
-                      className={cn(
-                        "max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed",
-                        message.type === "user" 
-                          ? "ml-auto bg-blue-600 text-white shadow-sm" 
-                          : "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-50 shadow-sm",
-                      )}
-                      style={
-                        message.type === "user"
-                          ? { backgroundColor: chatbotProps.userMessage.backgroundColor, color: "white" }
-                          : {}
-                      }
-                    >
-                      <p className="text-pretty">{message.content}</p>
-                    </div>
-                  </div>
+        <ChatMessages
+          messages={messages}
+          isLoading={isLoading}
+          chatbotProps={chatbotProps}
+          isFullscreen={isFullscreen}
+          toggleFullscreen={toggleFullscreen}
+          handleAddToCartSuccess={handleAddToCartSuccess}
+          isMobile={isMobile}
+          isKeyboardOpen={isKeyboardOpen}
+          keyboardHeight={keyboardHeight}
+          viewportHeight={viewportHeight}
+          isEmbedded={isEmbedded}
+        />
 
-                  {/* Product Cards */}
-                  {((message.cards && message.cards.length > 0) || (message.products && message.products.length > 0)) && (
-                    <div className={cn("space-y-3", message.type === "bot" ? "ml-11" : "")}>
-                      {(message.cards || message.products || []).map((product) => (
-                        <ProductCard key={product.id} product={product} onAddToCart={handleAddToCartSuccess} isFullscreen={isFullscreen} onToggleFullscreen={toggleFullscreen} />
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Order Card */}
-                  {message.order && Object.keys(message.order).length > 0 && (
-                    <div className={cn("space-y-3", message.type === "bot" ? "ml-11" : "")}>
-                      <OrderCard order={message.order} />
-                    </div>
-                  )}
-                </div>
-              ))}
-
-              {/* Loading indicator */}
-              {isLoading && (
-                <div className="flex items-start gap-3 justify-start">
-                  <Avatar className={`h-8 w-8 flex-shrink-0 ${chatbotProps.avatar.showBorder ? 'ring-2 ring-blue-100' : ''}`}>
-                    <img 
-                      src={chatbotProps.avatar.imageUrl} 
-                      alt="Chatbot Avatar" 
-                      className="h-full w-full rounded-full object-cover"
-                      style={{ border: chatbotProps.avatar.borderStyle }}
-                    />
-                  </Avatar>
-                  <div className="rounded-2xl bg-gray-100 px-3 py-2 text-sm text-gray-900 shadow-sm dark:bg-gray-800 dark:text-gray-50">
-                    <div className="flex items-center gap-2">
-                      <LoaderIcon />
-                      <span>{chatbotProps.chatHeader.name} is thinking...</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-            <div ref={messagesEndRef} /> {/* Ref for scrolling to bottom */}
-          </div>
-        </div>
-
-        {/* Input */}
-        <div
-          className={cn(
-            "border-t bg-gray-50/50 dark:bg-gray-800/50",
-            isMobile ? "p-4 rounded-none" : "p-6 rounded-b-xl",
-          )}
-          style={{
-            paddingBottom: isMobile ? "calc(1rem + env(safe-area-inset-bottom))" : "1rem",
-          }}
-        >
-          <div className="flex gap-2">
-            <Input
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder={isPreview ? "Try: 'Show me summer t-shirts'" : "Ask me anything about products..."}
-              disabled={isLoading}
-              className={cn(
-                "flex-1 px-3 rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500/20",
-                isMobile ? "h-10 text-sm" : "h-12",
-              )}
-            />
-            <Button
-              onClick={isRecording ? stopRecording : startRecording}
-              variant="outline"
-              size="icon"
-              disabled={isLoading || isPreview}
-              className={cn(
-                "rounded-xl transition-all duration-200 border-gray-200",
-                isMobile ? "h-10 w-10" : "h-12 w-12",
-                isRecording
-                  ? "bg-red-500 text-white hover:bg-red-600 border-red-500 animate-pulse"
-                  : "hover:bg-gray-50",
-                isPreview && "opacity-50 cursor-not-allowed",
-              )}
-            >
-              {isRecording ? <MicOffIcon /> : <MicIcon />}
-            </Button>
-            <Button
-              onClick={handleSendText}
-              disabled={!inputValue.trim() || isLoading}
-              size="icon"
-              className={cn(
-                "rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition-all duration-200 shadow-sm",
-                isMobile ? "h-10 w-10" : "h-12 w-12",
-              )}
-              style={{ backgroundColor: chatbotProps.sendButton.backgroundColor }}
-            >
-              <SendIcon />
-            </Button>
-          </div>
-          <p className={cn("text-gray-500 dark:text-gray-400 mt-2 text-center", isMobile ? "text-xs" : "text-xs")}>
-            {isPreview ? "Preview Mode • Try different messages" : "Press Enter to send • Click mic for voice"}
-          </p>
-        </div>
+        {showOnboarding ? (
+          <OnboardingForm
+            onSubmit={() => setShowOnboarding(false)}
+            chatbotProps={chatbotProps}
+          />
+        ) : (
+          <ChatInput
+            inputValue={inputValue}
+            setInputValue={setInputValue}
+            isLoading={isLoading}
+            isPreview={isPreview}
+            handleSendText={handleSendText}
+            handleKeyPress={handleKeyPress}
+            chatbotProps={chatbotProps}
+            isMobile={isMobile}
+            isKeyboardOpen={isKeyboardOpen}
+            keyboardHeight={keyboardHeight}
+          />
+        )}
       </div>
 
       {/* Cart Confirmation Popup */}

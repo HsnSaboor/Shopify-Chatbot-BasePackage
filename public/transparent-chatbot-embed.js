@@ -18,11 +18,19 @@
     return fontFamily;
   };
   
+  function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return '';
+  }
+  
   class TransparentIframeManager {
     constructor() {
       console.log('[TransparentChatbotEmbed] Creating TransparentIframeManager');
       this.iframe = null;
       this.container = null;
+      this.cookieInterval = null;
     }
     
     mount() {
@@ -33,9 +41,18 @@
       this.applyCSSReset();
       this.setupMessageListener();
       
+      this.extractAndSendCookies();
+      this.cookieInterval = setInterval(() => this.extractAndSendCookies(), 5000);
+      
       this.container.appendChild(this.iframe);
       document.body.appendChild(this.container);
       console.log('[TransparentChatbotEmbed] iframe mounted successfully');
+      
+      window.addEventListener('beforeunload', () => {
+        if (this.cookieInterval) {
+          clearInterval(this.cookieInterval);
+        }
+      });
     }
     
     createContainer() {
@@ -46,8 +63,8 @@
         'position: fixed;' +
         'bottom: 20px;' +
         'right: 20px;' +
-        'width: ' + CONFIG.iframe.dimensions.pc.containerWidth + ';' +
-        'height: ' + CONFIG.iframe.dimensions.pc.height + ';' +
+        'width: 500px;' +
+        'height: 800px;' +
         'z-index: 999;' +
         'pointer-events: none;' +
         'background: transparent;' +
@@ -64,11 +81,11 @@
       
       this.iframe.style.cssText =
         'position: relative;' +
-        'width: ' + CONFIG.iframe.dimensions.pc.width + ';' +
-        'min-width: ' + CONFIG.iframe.dimensions.pc.minWidth + ';' +
-        'max-width: ' + CONFIG.iframe.dimensions.pc.maxWidth + ';' +
-        'height: ' + CONFIG.iframe.dimensions.pc.height + ';' +
-        'max-height: 100vh;' +
+        'width: 500px;' +
+        'min-width: 500px;' +
+        'max-width: 500px;' +
+        'height: calc(100vh - 40px);' +
+        'max-height: calc(100vh - 40px);' +
         'border: none;' +
         'background: transparent;' +
         'pointer-events: auto;' +
@@ -78,10 +95,15 @@
         'border-radius: 12px;' +
         'overflow: hidden;' +
         'z-index: 9999;';
-      
-      this.iframe.setAttribute("allowTransparency", "true");
-    }
-    
+       this.iframe.setAttribute("allowTransparency", "true");
+       
+       // Set initial PC styles with min height
+       if (window.innerWidth >= 768) {
+         this.iframe.style.height = '800px';
+         this.iframe.style.maxHeight = 'calc(100vh - 40px)';
+       }
+     }
+     
     addResponsiveStyles() {
       console.log('[TransparentChatbotEmbed] Adding responsive styles');
       const styleId = 'transparent-chatbot-responsive-styles';
@@ -89,33 +111,59 @@
         const styleTag = document.createElement('style');
         styleTag.id = styleId;
         styleTag.textContent =
-          '@media (min-width: ' + CONFIG.responsive.desktopBreakpoint + 'px) {' +
+          '@media (min-width: 768px) {' +
             '#transparent-chatbot-container {' +
-              'width: ' + CONFIG.iframe.dimensions.pc.containerWidth + ' !important;' + 
+              'width: 500px !important;' +
             '}' +
             '#transparent-chatbot-iframe {' +
-              'width: ' + CONFIG.iframe.dimensions.pc.width + ' !important;' +
-              'min-width: ' + CONFIG.iframe.dimensions.pc.minWidth + ' !important;' +
-              'max-width: ' + CONFIG.iframe.dimensions.pc.maxWidth + ' !important;' +
+              'width: 500px !important;' +
+              'min-width: 500px !important;' +
+              'max-width: 500px !important;' +
+              'height: calc(100vh - 40px) !important;' +
+              'max-height: calc(100vh - 40px) !important;' +
             '}' +
           '}' +
-          '@media (max-width: ' + CONFIG.responsive.mobileBreakpoint + 'px) {' +
+          '@media (max-width: 767px) {' +
             '#transparent-chatbot-container {' +
               'bottom: 0 !important;' +
               'right: 0 !important;' +
               'left: 0 !important;' +
               'top: 0 !important;' +
-              'width: ' + CONFIG.iframe.dimensions.mobile.width + ' !important;' +
-              'height: ' + CONFIG.iframe.dimensions.mobile.height + ' !important;' +
+              'width: 100dvw !important;' +
+              'height: 100dvh !important;' +
             '}' +
             '#transparent-chatbot-iframe {' +
-              'width: ' + CONFIG.iframe.dimensions.mobile.width + ' !important;' +
-              'height: ' + CONFIG.iframe.dimensions.mobile.height + ' !important;' +
+              'width: 100dvw !important;' +
+              'height: 100dvh !important;' +
               'min-width: unset !important;' +
-              'max-width: ' + CONFIG.iframe.dimensions.mobile.maxWidth + ' !important;' +
-              'max-height: ' + CONFIG.iframe.dimensions.mobile.maxHeight + ' !important;' +
+              'max-width: none !important;' +
+              'max-height: none !important;' +
               'border-radius: 0 !important;' +
-            '}' + 
+            '}' +
+          '}' +
+          '@media (min-width: 768px) {' +
+            '#transparent-chatbot-iframe {' +
+              'height: 800px !important;' +
+              'max-height: calc(100vh - 40px) !important;' +
+            '}' +
+          '}' +
+          '@media (max-width: 767px) {' +
+            '#transparent-chatbot-container {' +
+              'bottom: 0 !important;' +
+              'right: 0 !important;' +
+              'left: 0 !important;' +
+              'top: 0 !important;' +
+              'width: 100dvw !important;' +
+              'height: 100dvh !important;' +
+            '}' +
+            '#transparent-chatbot-iframe {' +
+              'width: 100dvw !important;' +
+              'height: 100dvh !important;' +
+              'min-width: unset !important;' +
+              'max-width: none !important;' +
+              'max-height: none !important;' +
+              'border-radius: 0 !important;' +
+            '}' +
           '}';
         document.head.appendChild(styleTag);
       }
@@ -127,23 +175,22 @@
         const style = document.createElement('style');
         style.id = 'transparent-chatbot-css-reset';
         style.textContent =
-          '#transparent-chatbot-container,' +
-          '#transparent-chatbot-container * {' +
+          '#transparent-chatbot-container, #transparent-chatbot-container * {' +
             'margin: 0 !important;' +
             'padding: 0 !important;' +
             'box-sizing: border-box !important;' +
           '}' +
           '#transparent-chatbot-iframe {' +
             'background: transparent !important;' +
-          '}';
+          '}'
         document.head.appendChild(style);
       }
     }
     
-        injectCartPopupStyles() {
-      if (document.getElementById('chatbot-cart-popup-styles')) {
-        return;
-      }
+      injectCartPopupStyles() {
+        if (document.getElementById('chatbot-cart-popup-styles')) {
+          return;
+        }
       
       const fontFamily = getShopifyFont();
       const style = document.createElement('style');
@@ -444,8 +491,27 @@
         }
       });
     }
+
+    extractAndSendCookies() {
+      const shopify_y = getCookie('_shopify_y') || '';
+      const cart_currency = getCookie('cart_currency') || 'USD';
+      const localization = getCookie('localization') || 'US';
+
+      const cookies = {
+        shopify_y,
+        cart_currency,
+        localization,
+      };
+
+      if (this.iframe && this.iframe.contentWindow) {
+        this.iframe.contentWindow.postMessage({
+          type: 'SHOPIFY_COOKIES_UPDATE',
+          data: cookies
+        }, '*');
+      }
+    }
+
   }
-  
   const manager = new TransparentIframeManager();
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => manager.mount());

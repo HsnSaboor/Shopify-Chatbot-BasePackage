@@ -6,10 +6,11 @@ import { useSearchParams } from "next/navigation"
 
 function ChatbotContent() {
   const searchParams = useSearchParams()
+  const embedded = searchParams.get("embedded") === "true"
 
   return (
-    <div className="bg-transparent overflow-hidden">
-      <ChatbotWidget />
+    <div className="bg-transparent overflow-hidden h-[100dvh] relative">
+      <ChatbotWidget embedded={embedded} />
     </div>
   )
 }
