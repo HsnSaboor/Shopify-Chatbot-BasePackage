@@ -82,7 +82,7 @@ export function ChatbotWidget({
   const [keyboardHeight, setKeyboardHeight] = useState(0)
   const [viewportHeight, setViewportHeight] = useState(0)
 
-  const { messages, setMessages, isOpen, setIsOpen } = useChatbotState({ isPreview, mockMessages })
+  const { messages, setMessages, isOpen, setIsOpen } = useChatbotState({ isPreview, mockMessages, isEmbedded })
 
   const [inputValue, setInputValue] = useState("")
   const [isLoading, setIsLoading] = useState(false)

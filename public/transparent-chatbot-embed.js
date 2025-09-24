@@ -12,6 +12,9 @@
     CONFIG.iframe.src = '/chatbot?embedded=true';
   }
 
+  const PARENT_STORAGE_KEY = "shopify_chatbot_parent_state";
+  const EXPIRY_TIME = 24 * 60 * 60 * 1000; // 24 hours
+
   console.log('[TransparentChatbotEmbed] Initializing embed script');
   
   if (typeof window === 'undefined') {
@@ -576,6 +579,73 @@
       });
     }
 
+    saveParentState(state) {
+      try {
+        if (typeof window === 'undefined' || !window.localStorage) {
+          return;
+        }
+        const jsonString = JSON.stringify(state);
+        localStorage.setItem(PARENT_STORAGE_KEY, jsonString);
+        console.log('[TransparentChatbotEmbed] Saved parent chat state:', jsonString.length, 'bytes');
+      } catch (error) {
+        console.error('[TransparentChatbotEmbed] Failed to save parent chat state:', error);
+      }
+    }
+  
+    loadParentState() {
+      if (typeof window === 'undefined' || !window.localStorage) {
+        return null;
+      }
+      try {
+        const stored = localStorage.getItem(PARENT_STORAGE_KEY);
+        if (!stored) return null;
+  
+        const parsed = JSON.parse(stored);
+        console.log('[TransparentChatbotEmbed] Loaded parent state keys:', Object.keys(parsed));
+  
+        if (Date.now() - parsed.lastActivity > EXPIRY_TIME) {
+          console.log('[TransparentChatbotEmbed] Parent state expired, clearing.');
+          localStorage.removeItem(PARENT_STORAGE_KEY);
+          return null;
+        }
+  
+        // Basic validation
+        if (!Array.isArray(parsed.messages)) {
+          console.warn('[TransparentChatbotEmbed] Invalid messages array in parent state');
+          return null;
+        }
+  
+        // Simple message validation
+        const validMessages = parsed.messages.filter(msg =>
+          typeof msg === 'object' &&
+          typeof msg.id === 'string' &&
+          typeof msg.type === 'string' &&
+          typeof msg.content === 'string' &&
+          (typeof msg.timestamp === 'string' || msg.timestamp)
+        );
+  
+        if (validMessages.length !== parsed.messages.length) {
+          console.warn('[TransparentChatbotEmbed] Invalid messages in parent state, resetting messages');
+          parsed.messages = [];
+        } else {
+          parsed.messages = validMessages;
+        }
+  
+        const state = {
+          messages: parsed.messages,
+          isOpen: typeof parsed.isOpen === 'boolean' ? parsed.isOpen : false,
+          lastActivity: typeof parsed.lastActivity === 'number' ? parsed.lastActivity : Date.now(),
+          manuallyClosed: typeof parsed.manuallyClosed === 'boolean' ? parsed.manuallyClosed : false,
+        };
+  
+        console.log('[TransparentChatbotEmbed] Valid parent state loaded: isOpen:', state.isOpen, 'Messages:', state.messages.length);
+        return state;
+      } catch (error) {
+        console.warn('[TransparentChatbotEmbed] Failed to parse parent chat state:', error);
+        return null;
+      }
+    }
+  
     setupMessageListener() {
       const isAllowedOrigin = (origin) => {
         if (!origin || origin === 'null') return false;
@@ -595,23 +665,46 @@
         
         return false;
       };
-
+  
       let navigationInProgress = false;
-
+  
       window.addEventListener('message', (event) => {
         if (!event.origin || event.origin === 'null') return;
         if (!isAllowedOrigin(event.origin)) {
           console.warn('[TransparentChatbotEmbed] Message from unauthorized origin:', event.origin);
           return;
         }
-
-        const { type, success, cart } = event.data;
-
+  
+        const { type, success, cart, state: stateData } = event.data;
+  
+        // Handle chat state messages
+        if (type === 'CHAT_STATE_REQUEST') {
+          const parentState = this.loadParentState();
+          this.iframe.contentWindow.postMessage({
+            type: 'CHAT_STATE_RESPONSE',
+            state: parentState ? JSON.stringify(parentState) : null
+          }, event.origin);
+          return;
+        }
+  
+        if (type === 'CHAT_STATE_SAVE') {
+          if (stateData) {
+            const saveState = { ...stateData, lastActivity: Date.now() };
+            this.saveParentState(saveState);
+          }
+          return;
+        }
+  
+        if (type === 'CHAT_STATE_CLEAR') {
+          localStorage.removeItem(PARENT_STORAGE_KEY);
+          return;
+        }
+  
         if (type === 'SHOW_CART_POPUP') {
           this.showCartPopupInParent(event.data.cart);
           return;
         }
-
+  
         if (success && (type === 'NAVIGATE_TO_CART' || type === 'NAVIGATE_TO_CHECKOUT')) {
           if (navigationInProgress) return;
           navigationInProgress = true;

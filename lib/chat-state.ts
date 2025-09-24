@@ -7,9 +7,10 @@ export interface ChatState {
 
 export class ChatStateService {
   private static readonly STORAGE_KEY = "shopify_chatbot_state"
+  private static readonly PARENT_STORAGE_KEY = "shopify_chatbot_parent_state"
   private static readonly EXPIRY_TIME = 24 * 60 * 60 * 1000 // 24 hours
 
-  static saveState(state: ChatState): void {
+  static saveState(state: ChatState, isEmbedded = false): void {
     try {
       // Only run on client-side
       if (typeof window === 'undefined' || !window.localStorage) {
@@ -23,9 +24,15 @@ export class ChatStateService {
         lastActivity: Date.now(),
       }
       const jsonString = JSON.stringify(stateWithTimestamp);
+      console.log("ChatState save: Serialized size:", jsonString.length, "bytes; Messages count:", serializedMessages.length);
       localStorage.setItem(this.STORAGE_KEY, jsonString);
+
+      if (isEmbedded) {
+        this.syncToParent(stateWithTimestamp);
+      }
     } catch (error) {
       console.error("Failed to save chat state:", error);
+      console.log("ChatState save error details:", { stateKeys: Object.keys(state), messagesLength: state.messages?.length || 0 });
       // Save partial state without messages if serialization fails
       try {
         const partialState = {
@@ -35,27 +42,33 @@ export class ChatStateService {
           lastActivity: Date.now(),
         };
         localStorage.setItem(this.STORAGE_KEY, JSON.stringify(partialState));
+        if (isEmbedded) {
+          this.syncToParent(partialState);
+        }
       } catch (partialError) {
         console.error("Failed to save partial chat state:", partialError);
       }
     }
   }
 
-  static loadState(): ChatState | null {
+  static loadState(isEmbedded = false): ChatState | null {
     // Only run on client-side
     if (typeof window === 'undefined' || !window.localStorage) {
       return null;
     }
     
+    let stored: string | null = null;
     try {
-      const stored = localStorage.getItem(this.STORAGE_KEY)
+      stored = localStorage.getItem(this.STORAGE_KEY)
       if (!stored) return null
 
       const parsed: any = JSON.parse(stored);
+      console.log("ChatState load: Raw parsed keys:", Object.keys(parsed), "; Messages count:", parsed.messages?.length || 0);
 
       // Check if state has expired
       if (Date.now() - parsed.lastActivity > this.EXPIRY_TIME) {
-        this.clearState()
+        console.log("ChatState expired, clearing.");
+        this.clearState(isEmbedded)
         return null
       }
 
@@ -74,7 +87,7 @@ export class ChatStateService {
       );
 
       if (validMessages.length !== messages.length) {
-        console.warn("Invalid messages detected, resetting messages array");
+        console.warn("Invalid messages detected, resetting messages array. Discarded:", messages.length - validMessages.length);
         messages = [];
       } else {
         messages = validMessages;
@@ -88,15 +101,17 @@ export class ChatStateService {
         manuallyClosed: typeof parsed.manuallyClosed === 'boolean' ? parsed.manuallyClosed : false,
       };
 
+      console.log("ChatState loaded successfully: isOpen:", state.isOpen, "; Messages:", state.messages.length);
       return state;
     } catch (error) {
       console.warn("Failed to parse chat state, skipping load without clearing:", error);
+      console.log("ChatState load error details:", { storedLength: stored?.length || 0, errorMessage: (error as Error).message });
       // Do not clearState on parse error to avoid losing other potential state
       return null;
     }
   }
 
-  static clearState(): void {
+  static clearState(isEmbedded = false): void {
     // Only run on client-side
     if (typeof window === 'undefined' || !window.localStorage) {
       return;
@@ -104,8 +119,62 @@ export class ChatStateService {
     
     try {
       localStorage.removeItem(this.STORAGE_KEY)
+      if (isEmbedded && window.parent !== window) {
+        window.parent.postMessage({
+          type: 'CHAT_STATE_CLEAR'
+        }, '*');
+      }
     } catch (error) {
       console.error("Failed to clear chat state:", error)
+    }
+  }
+
+  static syncToParent(state: ChatState, targetOrigin: string = '*'): void {
+    if (typeof window === 'undefined' || window.parent === window) {
+      return;
+    }
+    const serializedState = {
+      ...state,
+      messages: this.serializeMessages(state.messages),
+      lastActivity: Date.now(),
+    };
+    window.parent.postMessage({
+      type: 'CHAT_STATE_SAVE',
+      state: serializedState
+    }, targetOrigin);
+  }
+
+  static requestStateFromParent(targetOrigin: string = '*'): void {
+    if (typeof window === 'undefined' || window.parent === window) {
+      return;
+    }
+    window.parent.postMessage({
+      type: 'CHAT_STATE_REQUEST'
+    }, targetOrigin);
+  }
+
+  static handleMessage(event: MessageEvent, onStateUpdate?: (state: ChatState | null) => void): void {
+    if (event.data.type === 'CHAT_STATE_RESPONSE') {
+      const { state: rawState } = event.data;
+      if (rawState && onStateUpdate) {
+        try {
+          const parsed: any = JSON.parse(rawState);
+          let messages: any[] = [];
+          if (parsed.messages && Array.isArray(parsed.messages)) {
+            messages = parsed.messages.map((msg: any) => this.deserializeMessage(msg)).filter(Boolean);
+          }
+          const chatState: ChatState = {
+            messages,
+            isOpen: typeof parsed.isOpen === 'boolean' ? parsed.isOpen : false,
+            lastActivity: typeof parsed.lastActivity === 'number' ? parsed.lastActivity : Date.now(),
+            manuallyClosed: typeof parsed.manuallyClosed === 'boolean' ? parsed.manuallyClosed : false,
+          };
+          onStateUpdate(chatState);
+        } catch (error) {
+          console.error('Failed to parse parent state:', error);
+          if (onStateUpdate) onStateUpdate(null);
+        }
+      }
     }
   }
 
@@ -124,24 +193,17 @@ export class ChatStateService {
       timestamp: timestamp instanceof Date ? timestamp.toISOString() : (typeof timestamp === 'string' ? timestamp : new Date().toISOString()),
     };
 
-    // Serialize rest (e.g., data with products/cards) to primitives
+    // Serialize rest (e.g., data with products/cards) using plain data serialization
     Object.entries(rest).forEach(([key, value]) => {
+      if (value === undefined) return;
       if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' || value === null) {
         serialized[key] = value;
       } else if (Array.isArray(value)) {
-        serialized[key] = value.map(this.serializeMessage);
+        serialized[key] = value.map(v => ChatStateService.serializeData(v));
       } else if (value && typeof value === 'object') {
-        // For products/cards: extract serializable parts
-        if ('id' in value) {
-          const typedValue = value as { id: string | number; title?: string; price?: number; imageUrl?: string; src?: string };
-          serialized[key] = {
-            id: String(typedValue.id),
-            title: typedValue.title || '',
-            price: typedValue.price || 0,
-            imageUrl: typedValue.imageUrl || typedValue.src || '',
-          };
-        }
-        // Add more specific handling if needed for other complex objects
+        serialized[key] = ChatStateService.serializeData(value);
+      } else {
+        console.warn("ChatState serializeMessage: Skipping non-serializable value for key", key, "type:", typeof value);
       }
     });
 
@@ -152,12 +214,16 @@ export class ChatStateService {
     if (!msg || typeof msg !== 'object') return null;
 
     const { id, type, content, timestamp, ...rest } = msg;
+    const deserializedRest: any = {};
+    Object.entries(rest).forEach(([key, value]) => {
+      deserializedRest[key] = ChatStateService.deserializeData(value);
+    });
     return {
       id: typeof id === 'string' ? id : '',
       type: typeof type === 'string' ? type : 'bot',
       content: typeof content === 'string' ? content : '',
       timestamp: typeof timestamp === 'string' ? new Date(timestamp) : (timestamp instanceof Date ? timestamp : new Date()),
-      ...rest, // Reattach serialized primitives/objects
+      ...deserializedRest,
     };
   }
 
@@ -166,5 +232,67 @@ export class ChatStateService {
     
     // Always check !manuallyClosed regardless of timeout
     return !!state && state.isOpen === true && !state.manuallyClosed
+  }
+
+  private static serializeData(data: any, depth: number = 0, maxDepth: number = 10): any {
+    if (depth > maxDepth) {
+      console.warn("ChatState serializeData: Max recursion depth exceeded at depth", depth, "for data:", data);
+      return null;
+    }
+    if (data === null || typeof data !== 'object') {
+      if (typeof data === 'function') {
+        console.warn("ChatState serializeData: Encountered function, skipping:", data);
+        return undefined;
+      }
+      return data;
+    }
+
+    if (Array.isArray(data)) {
+      return data.map((item, index) => {
+        const serialized = ChatStateService.serializeData(item, depth + 1, maxDepth);
+        if (serialized === undefined) console.warn("ChatState serializeData: Skipped array item at index", index);
+        return serialized;
+      }).filter(Boolean);
+    }
+
+    const obj: any = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (value !== undefined) {
+        const serializedValue = ChatStateService.serializeData(value, depth + 1, maxDepth);
+        if (serializedValue !== undefined) {
+          obj[key] = serializedValue;
+        } else {
+          console.warn("ChatState serializeData: Skipped property", key, "due to serialization issue");
+        }
+      }
+    }
+    return obj;
+  }
+
+  private static deserializeData(data: any): any {
+    if (data === null || typeof data !== 'object') {
+      if (typeof data === 'string') {
+        const potentialDate = new Date(data);
+        if (!isNaN(potentialDate.getTime()) && /^\d{4}-\d{2}-\d{2}/.test(data)) {
+          return potentialDate;
+        }
+      }
+      return data;
+    }
+
+    if (Array.isArray(data)) {
+      return data.map((item) => ChatStateService.deserializeData(item));
+    }
+
+    const obj: any = {};
+    for (const [key, value] of Object.entries(data)) {
+      const deserialized = ChatStateService.deserializeData(value);
+      if (deserialized !== undefined) {
+        obj[key] = deserialized;
+      } else {
+        console.warn("ChatState deserializeData: Skipped invalid deserialization for key", key);
+      }
+    }
+    return obj;
   }
 }
