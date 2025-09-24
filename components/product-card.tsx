@@ -397,6 +397,8 @@ export function ProductCard({ product, currency, onAddToCart, accentColor = "#4f
         onAddToCart
       })
     } catch (error) {
+      // Error handled by toast in addToCart
+    } finally {
       setIsAddingToCart(false)
     }
   }

@@ -161,7 +161,6 @@ export function ChatbotWidget({
       const style = document.createElement('style');
       style.textContent = `
         body, html {
-          background: ###fff !important;
           margin: 0 !important;
           padding: 0 !important;
           height: 100% !important;
@@ -378,12 +377,30 @@ export function ChatbotWidget({
       {/* Chat Window */}
       <div
         className={cn(
-          isEmbedded ? "bg-transparent relative h-full w-full grid grid-rows-[auto_1fr_auto] overflow-hidden" : "bg-white dark:bg-gray-900 rounded-xl shadow-2xl border transition-all duration-300 z-[9999]",
-          isEmbedded ? "" : "backdrop-blur-sm border-gray-200 dark:border-gray-700",
+          // --- START: MODIFIED LOGIC ---
+          // This is the core logic that was fixed.
+          // It now handles the background color based on the open state when embedded.
+          isEmbedded
+            ? // If EMBEDDED, the background depends on whether the chat is open or closed.
+              cn(
+                "relative h-full w-full grid grid-rows-[auto_1fr_auto] overflow-hidden",
+                isOpen ? "bg-white dark:bg-gray-900" : "bg-transparent"
+              )
+            : // If NOT EMBEDDED, it uses the standard solid background with shadows and borders.
+              "bg-white dark:bg-gray-900 rounded-xl shadow-2xl border backdrop-blur-sm border-gray-200 dark:border-gray-700",
+          // --- END: MODIFIED LOGIC ---
+
+          // This visibility logic remains unchanged. It controls the scale/opacity transition.
           isOpen || hideToggle ? "scale-100 opacity-100" : "scale-0 opacity-0 pointer-events-none",
+          
+          // This positioning and sizing logic for non-embedded modes remains unchanged.
           isEmbedded ? "" : isFullscreen && !isMobile ? "fixed inset-0 w-full h-screen rounded-none" : isMobile ? `fixed inset-0 rounded-none w-screen h-screen grid grid-rows-[auto_1fr_auto] ${isKeyboardOpen ? 'keyboard-open' : ''}` : isDirectMode || hideToggle ? "absolute inset-0 w-full h-full grid grid-rows-[auto_1fr_auto]" : "fixed bottom-6 right-6 w-[500px] h-[800px] grid grid-rows-[auto_1fr_auto]",
+
+          // These are universal classes that apply in almost all states.
+          "transition-all duration-300 z-[9999]"
         )}
         style={
+          // The inline style logic does not need to be changed.
           isEmbedded
             ? {
                 position: "relative",
