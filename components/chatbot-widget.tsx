@@ -358,10 +358,12 @@ export function ChatbotWidget({
             }
           }}
           className={cn(
-            "h-16 w-16 rounded-full shadow-xl transition-all duration-300 hover:scale-110 z-[9998]",
+            "absolute inset-0 w-full h-full rounded-full shadow-xl transition-all duration-300 hover:scale-110 z-[9998]",
             "bg-blue-600 hover:bg-blue-700 text-white border-2 border-white",
             isOpen && "scale-0 opacity-0",
-            "fixed bottom-[20px] right-[20px]",
+            isEmbedded && !isOpen
+              ? "" // Fill the small iframe
+              : "fixed bottom-[20px] right-[20px]",
           )}
           size="icon"
           style={{
@@ -404,12 +406,12 @@ export function ChatbotWidget({
           isEmbedded
             ? {
                 position: "relative",
-                width: "100%",
-                height: "100%",
+                width: isOpen ? "100%" : "70px",
+                height: isOpen ? "100%" : "70px",
                 margin: 0,
                 padding: 0,
                 boxSizing: "border-box",
-                overflow: "hidden",
+                overflow: "hidden !important",
               }
             : isFullscreen && !isMobile
               ? {

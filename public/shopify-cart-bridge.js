@@ -107,7 +107,11 @@
       const formData = {
         items: [{
           id: payload.variantId,
-          quantity: payload.quantity || 1
+          quantity: payload.quantity || 1,
+          properties: {
+            source: 'chatbot',
+            user_id: payload.user_id || ''
+          }
         }]
       };
       

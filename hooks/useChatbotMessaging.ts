@@ -60,6 +60,38 @@ export function useChatbotMessaging({
           // External script is managing the iframe - this is normal
           console.log('External control active for chatbot iframe')
           break
+
+        case "REQUEST_INITIAL_RESIZE":
+          // Send current resize state to parent
+          if (window.parent !== window) {
+            const isClosed = !isOpen;
+            let height = isClosed ? "70px" : (isMobile ? "100dvh" : "800px");
+            let width = isClosed ? "70px" : (isMobile ? "100vw" : "500px");
+            let maxHeight = height;
+            
+            if (!isClosed && !isMobile) {
+              maxHeight = "800px";
+            } else if (isFullscreen && !isMobile && !isClosed) {
+              width = "100vw";
+              height = "100vh";
+              maxHeight = "100vh";
+            }
+            
+            window.parent.postMessage(
+              {
+                type: "CHATBOT_RESIZE",
+                data: {
+                  isOpen: !isClosed,
+                  isFullscreen: isFullscreen && !isMobile,
+                  width,
+                  height,
+                  maxHeight,
+                },
+              },
+              "*"
+            );
+          }
+          break;
       }
     }
 
@@ -79,7 +111,7 @@ export function useChatbotMessaging({
     return () => {
       window.removeEventListener("message", handleMessage)
     }
-  }, [isPreview, setIsOpen, clearChatHistory])
+  }, [isOpen, setIsOpen, clearChatHistory, isMobile, isFullscreen])
 
   useEffect(() => {
     // Only run on client-side
@@ -109,10 +141,11 @@ export function useChatbotMessaging({
     if (isPreview) return
 
     if (window.parent !== window) {
-      let height = isOpen || hideToggle ? "100dvh" : "70px";
-      let width = isOpen || hideToggle ? (isMobile ? "100vw" : "500px") : "70px";
+      const isClosed = !isOpen;
+      let height = isClosed ? "70px" : "100dvh";
+      let width = isClosed ? "70px" : (isMobile ? "100vw" : "500px");
       
-      if (isFullscreen && !isMobile && (isOpen || hideToggle)) {
+      if (isFullscreen && !isMobile && !isClosed) {
         width = "100vw";
         height = "100vh";
       }
@@ -121,7 +154,7 @@ export function useChatbotMessaging({
         {
           type: "CHATBOT_RESIZE",
           data: {
-            isOpen: isOpen || hideToggle,
+            isOpen: !isClosed,
             isFullscreen: isFullscreen && !isMobile,
             width,
             height,
@@ -130,5 +163,5 @@ export function useChatbotMessaging({
         "*",
       )
     }
-  }, [isOpen, hideToggle, isPreview, isMobile, isFullscreen])
+  }, [isOpen, isPreview, isMobile, isFullscreen])
 }

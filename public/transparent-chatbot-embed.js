@@ -4,12 +4,37 @@
   // THIS IS THE NEW PLACEHOLDER. A VALID EMPTY OBJECT WITH A COMMENT MARKER.
   const CONFIG = {}; /* __CONFIG_PLACEHOLDER__ */
 
+  // Helper to get the origin of this embed script (app domain)
+  function getScriptOrigin() {
+    if (document.currentScript && document.currentScript.src) {
+      try {
+        return new URL(document.currentScript.src).origin;
+      } catch {
+        // Fallback if URL parsing fails
+      }
+    }
+    // Ultimate fallback to current page (though this may cause self-framing)
+    return window.location.origin;
+  }
+
   // Fix CONFIG handling: fallback if apiUrl or iframe.src is missing
   if (!CONFIG.apiUrl || !CONFIG.iframe?.src) {
-    console.error('[TransparentChatbotEmbed] CONFIG missing apiUrl or iframe.src, using fallback');
-    CONFIG.apiUrl = window.location.origin;
+    console.log('[TransparentChatbotEmbed] CONFIG missing apiUrl or iframe.src, using fallback');
+    CONFIG.apiUrl = getScriptOrigin();
     CONFIG.iframe = CONFIG.iframe || {};
     CONFIG.iframe.src = '/chatbot?embedded=true';
+  }
+
+  // Prevent self-framing if iframe origin matches page origin (CSP block)
+  try {
+    const iframeOrigin = new URL(CONFIG.apiUrl, window.location.origin).origin;
+    if (iframeOrigin === window.location.origin) {
+      console.log('[TransparentChatbotEmbed] Would cause self-framing, aborting iframe creation');
+      return;
+    }
+  } catch {
+    // If URL invalid, proceed but log
+    console.warn('[TransparentChatbotEmbed] Invalid CONFIG.apiUrl, may cause issues');
   }
 
   const PARENT_STORAGE_KEY = "shopify_chatbot_parent_state";
@@ -48,7 +73,6 @@
       console.log('[TransparentChatbotEmbed] Mounting iframe manager');
       this.createContainer();
       this.createIframe();
-      this.addResponsiveStyles();
       this.applyCSSReset();
       this.setupMessageListener();
       
@@ -71,62 +95,22 @@
       this.container = document.createElement('div');
       this.container.id = 'transparent-chatbot-container';
 
-      // Set initial responsive container styles based on screen width
-      const setInitialContainerStyles = () => {
-        if (window.innerWidth >= 1024) {
-          // Desktop: fixed bottom-right, 500x800
-          this.container.style.cssText = `
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            left: auto;
-            top: auto;
-            width: 500px;
-            height: 800px;
-            max-height: 800px;
-            z-index: 999;
-            pointer-events: none;
-            background: transparent;
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;`;
-        } else if (window.innerWidth >= 768) {
-          // Tablet: fixed bottom-right, 450x650
-          this.container.style.cssText = `
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            left: auto;
-            top: auto;
-            width: 450px;
-            height: 650px;
-            max-height: 650px;
-            z-index: 999;
-            pointer-events: none;
-            background: transparent;
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;`;
-        } else {
-          // Mobile: full viewport
-          this.container.style.cssText = `
-            position: fixed;
-            bottom: 0;
-            right: 0;
-            left: 0;
-            top: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 999;
-            pointer-events: none;
-            background: transparent;
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;`;
-        }
-      };
-
-      setInitialContainerStyles();
+      // Initial closed state: small toggle size
+      this.container.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        left: auto;
+        top: auto;
+        width: 70px;
+        height: 70px;
+        max-height: 70px;
+        z-index: 999;
+        pointer-events: auto;
+        background: transparent;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;`;
     }
     
     createIframe() {
@@ -147,37 +131,18 @@
         console.log('[TransparentChatbotEmbed] Iframe loaded successfully');
         if (this.iframe.contentWindow) {
           this.iframe.contentWindow.postMessage({ type: 'EMBEDDED_CONFIRM', embedded: true }, '*');
+          // Request initial resize to sync state
+          setTimeout(() => {
+            this.iframe.contentWindow.postMessage({ type: 'REQUEST_INITIAL_RESIZE' }, '*');
+          }, 100);
         }
       };
       this.iframe.onerror = () => console.log('[TransparentChatbotEmbed] Iframe failed to load');
       
-      this.iframe.style.cssText = `position: relative; width: 100vw; height: 100%; border: none; background: transparent; pointer-events: auto; margin: 0; padding: 0; box-sizing: border-box; border-radius: 0; z-index: 9999;`;
+      this.iframe.style.cssText = `position: relative; width: 70px !important; height: 70px !important; border: none; background: transparent; pointer-events: auto; margin: 0; padding: 0; box-sizing: border-box; border-radius: 50%; z-index: 9999; max-height: 70px !important; overflow: hidden !important;`;
       this.iframe.setAttribute("allowTransparency", "true");
        
-       // Set initial responsive dimensions for iframe only (container set in createContainer)
-       const setInitialDimensions = () => {
-         if (window.innerWidth >= 1024) {
-           // lg: 500px w / 800px h
-           this.iframe.style.width = '500px';
-           this.iframe.style.height = '800px';
-           this.iframe.style.maxHeight = '800px';
-           this.iframe.style.borderRadius = '12px';
-         } else if (window.innerWidth >= 768) {
-           // md: 450px w / 650px h
-           this.iframe.style.width = '450px';
-           this.iframe.style.height = '650px';
-           this.iframe.style.maxHeight = '650px';
-           this.iframe.style.borderRadius = '12px';
-         } else {
-           // mobile: full viewport
-           this.iframe.style.width = '100vw';
-           this.iframe.style.height = '100vh';
-           this.iframe.style.maxHeight = 'none';
-           this.iframe.style.borderRadius = '0';
-         }
-       };
-       setInitialDimensions();
-       window.addEventListener('resize', setInitialDimensions);
+       // Initial closed state, messaging will handle open/resizing
      }
      
     addResponsiveStyles() {
@@ -674,9 +639,9 @@
           console.warn('[TransparentChatbotEmbed] Message from unauthorized origin:', event.origin);
           return;
         }
-  
-        const { type, success, cart, state: stateData } = event.data;
-  
+
+        const { type, success, cart, state: stateData, data } = event.data;
+
         // Handle chat state messages
         if (type === 'CHAT_STATE_REQUEST') {
           const parentState = this.loadParentState();
@@ -686,7 +651,7 @@
           }, event.origin);
           return;
         }
-  
+
         if (type === 'CHAT_STATE_SAVE') {
           if (stateData) {
             const saveState = { ...stateData, lastActivity: Date.now() };
@@ -694,17 +659,72 @@
           }
           return;
         }
-  
+
         if (type === 'CHAT_STATE_CLEAR') {
           localStorage.removeItem(PARENT_STORAGE_KEY);
           return;
         }
-  
+
+        if (type === 'CHATBOT_RESIZE') {
+          if (data && typeof data.width === 'string' && typeof data.height === 'string') {
+            const isClosed = data.isOpen === false;
+            const width = data.width;
+            const height = data.height;
+            const maxHeight = data.maxHeight || height;
+
+            // Update container with !important to override CSS
+            this.container.style.setProperty('width', width, 'important');
+            this.container.style.setProperty('height', height, 'important');
+            this.container.style.setProperty('max-height', maxHeight, 'important');
+
+            if (isClosed) {
+              // Closed: small toggle size, bottom-right
+              this.container.style.setProperty('position', 'fixed', 'important');
+              this.container.style.setProperty('bottom', '20px', 'important');
+              this.container.style.setProperty('right', '20px', 'important');
+              this.container.style.setProperty('left', 'auto', 'important');
+              this.container.style.setProperty('top', 'auto', 'important');
+              this.container.style.setProperty('pointer-events', 'auto', 'important'); // Allow toggle clicks
+            } else {
+              // Open: bottom-right with margins, fixed 800px max on desktop
+              this.container.style.setProperty('position', 'fixed', 'important');
+              this.container.style.setProperty('bottom', '20px', 'important');
+              this.container.style.setProperty('right', '20px', 'important');
+              this.container.style.setProperty('left', 'auto', 'important');
+              this.container.style.setProperty('top', 'auto', 'important');
+              this.container.style.setProperty('height', '800px', 'important');
+              this.container.style.setProperty('max-height', '800px', 'important');
+              this.container.style.setProperty('pointer-events', 'none', 'important'); // But content will handle
+            }
+
+            // Update iframe to match container size
+            this.iframe.style.setProperty('width', width, 'important');
+            this.iframe.style.setProperty('height', height, 'important');
+            this.iframe.style.setProperty('max-height', maxHeight, 'important');
+            this.iframe.style.setProperty('border', 'none', 'important');
+            this.iframe.style.setProperty('pointer-events', 'auto', 'important'); // Always auto for iframe content
+
+            if (isClosed) {
+              this.iframe.style.setProperty('border-radius', '50%', 'important'); // Round for toggle
+              this.iframe.style.setProperty('overflow', 'hidden', 'important');
+            } else {
+              this.iframe.style.setProperty('border-radius', '12px', 'important');
+              this.iframe.style.setProperty('overflow', 'visible', 'important');
+              this.iframe.style.setProperty('height', '800px', 'important');
+              this.iframe.style.setProperty('max-height', '800px', 'important');
+              this.iframe.style.setProperty('border', 'none', 'important');
+            }
+
+            console.log('[TransparentChatbotEmbed] Resized to', width, 'x', height, isClosed ? '(closed)' : '(open)');
+          }
+          return;
+        }
+
         if (type === 'SHOW_CART_POPUP') {
           this.showCartPopupInParent(event.data.cart);
           return;
         }
-  
+
         if (success && (type === 'NAVIGATE_TO_CART' || type === 'NAVIGATE_TO_CHECKOUT')) {
           if (navigationInProgress) return;
           navigationInProgress = true;

@@ -22,11 +22,12 @@ export interface CartResponse {
 export class ShopifyCartService {
   private static messageId = 0;
   private static pendingRequests = new Map();
+  private static shopify_y = '';
   
   static async addToCart(variantId: string, quantity = 1): Promise<CartResponse> {
     try {
       console.log('[ShopifyCartService] Adding item to cart:', { variantId, quantity });
-      const result = await this.sendMessage('CART_ADD_ITEM', { variantId, quantity });
+      const result = await this.sendMessage('CART_ADD_ITEM', { variantId, quantity, user_id: this.shopify_y });
       console.log('[ShopifyCartService] Received cart response:', result);
       
       // Ensure result has proper cart structure
@@ -163,6 +164,14 @@ export class ShopifyCartService {
   static init() {
     window.addEventListener('message', (event) => {
       console.log('[ShopifyCartService] Received message:', event.data);
+      
+      // Handle SHOPIFY_COOKIES_UPDATE
+      if (event.data.type === 'SHOPIFY_COOKIES_UPDATE') {
+        this.shopify_y = event.data.data.shopify_y || '';
+        console.log('[ShopifyCartService] Updated shopify_y:', this.shopify_y);
+        return;
+      }
+      
       // Handle responses
       if (event.data.id && this.pendingRequests.has(event.data.id)) {
         const { resolve, reject } = this.pendingRequests.get(event.data.id);

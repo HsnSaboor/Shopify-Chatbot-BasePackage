@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import type { ChatRequest } from "./chat-validation"
 
-const webhookUrl = process.env.CHATBOT_WEBHOOK_URL || "https://n8n.botomation.tech/webhook-test/chat" || "__WEBHOOK_URL_PLACEHOLDER__";
+const webhookUrl = process.env.CHATBOT_WEBHOOK_URL || "__WEBHOOK_URL_PLACEHOLDER__";
 
 export async function forwardToWebhook(body: ChatRequest, request: NextRequest): Promise<{ responseText: string } | NextResponse> {
   console.log("[v0] Using webhook URL:", webhookUrl)
