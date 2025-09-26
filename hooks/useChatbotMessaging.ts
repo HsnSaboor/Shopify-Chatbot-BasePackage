@@ -69,9 +69,7 @@ export function useChatbotMessaging({
             let width = isClosed ? "70px" : (isMobile ? "100vw" : "500px");
             let maxHeight = height;
             
-            if (!isClosed && !isMobile) {
-              maxHeight = "800px";
-            } else if (isFullscreen && !isMobile && !isClosed) {
+            if (isFullscreen && !isMobile && !isClosed) {
               width = "100vw";
               height = "100vh";
               maxHeight = "100vh";

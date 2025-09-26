@@ -58,42 +58,48 @@ export async function parseResponse(responseText: string): Promise<ChatResponse 
     // Transform order if present
     let transformedOrder: ChatResponse['order'] | undefined = undefined;
     if (webhookData.order) {
-      const rawOrder = webhookData.order;
-      const lineItems = rawOrder.line_items || [];
-      
-      transformedOrder = {
-        id: rawOrder.id.toString(),
-        order_number: rawOrder.order_number || rawOrder.number || 0,
-        created_at: rawOrder.created_at,
-        fulfillment_status: rawOrder.fulfillment_status || 'unfulfilled',
-        tracking: {
-          carrier: rawOrder.fulfillments?.[0]?.tracking_company || null,
-          tracking_number: rawOrder.fulfillments?.[0]?.tracking_number || null,
-          tracking_url: rawOrder.fulfillments?.[0]?.tracking_url || null,
-        },
-        items: lineItems.map((item: any) => ({
-          product_id: item.product_id?.toString() || '',
-          title: item.title,
-          price: item.price,
-          variant_id: item.variant_id?.toString() || '',
-          quantity: item.quantity,
-        })),
-        customer: {
-          name: `${rawOrder.customer?.first_name || ''} ${rawOrder.customer?.last_name || ''}`.trim() || 'Unknown Customer',
-          email: rawOrder.customer?.email || null,
-          phone: rawOrder.customer?.phone || rawOrder.shipping_address?.phone || null,
-        },
-        shipping_address: {
-          address1: rawOrder.shipping_address?.address1 || '',
-          address2: rawOrder.shipping_address?.address2 || '',
-          city: rawOrder.shipping_address?.city || '',
-          province: rawOrder.shipping_address?.province || '',
-          zip: rawOrder.shipping_address?.zip || '',
-          country: rawOrder.shipping_address?.country || '',
-        },
-        payment_method: rawOrder.payment_gateway_names?.[0] || rawOrder.financial_status || 'Unknown',
-        currency: webhookData.currency || 'USD',
-      };
+      let rawOrder: any = webhookData.order;
+      if (Array.isArray(rawOrder)) {
+        rawOrder = rawOrder.length > 0 ? rawOrder[0] : undefined;
+      }
+      if (rawOrder) {
+        const lineItems = rawOrder.line_items || [];
+        transformedOrder = {
+          id: rawOrder.id?.toString() || '',
+          order_number: rawOrder.order_number || rawOrder.number || 0,
+          created_at: rawOrder.created_at || '',
+          fulfillment_status: rawOrder.fulfillment_status || 'unfulfilled',
+          tracking: {
+            carrier: rawOrder.fulfillments?.[0]?.tracking_company || null,
+            tracking_number: rawOrder.fulfillments?.[0]?.tracking_number || null,
+            tracking_url: rawOrder.fulfillments?.[0]?.tracking_url || null,
+          },
+          items: lineItems.map((item: any) => ({
+            product_id: item.product_id?.toString() || '',
+            title: item.title || 'Unknown Product',
+            price: item.price?.toString() || '0',
+            variant_id: item.variant_id?.toString() || '',
+            quantity: item.quantity || 0,
+          })),
+          customer: {
+            name: `${rawOrder.customer?.first_name || ''} ${rawOrder.customer?.last_name || ''}`.trim() || 'Unknown Customer',
+            email: rawOrder.customer?.email || null,
+            phone: rawOrder.customer?.phone || rawOrder.shipping_address?.phone || null,
+          },
+          shipping_address: {
+            address1: rawOrder.shipping_address?.address1 || '',
+            address2: rawOrder.shipping_address?.address2 || '',
+            city: rawOrder.shipping_address?.city || '',
+            province: rawOrder.shipping_address?.province || '',
+            zip: rawOrder.shipping_address?.zip || '',
+            country: rawOrder.shipping_address?.country || '',
+          },
+          payment_method: rawOrder.payment_gateway_names?.[0] || rawOrder.financial_status || 'Unknown',
+          currency: webhookData.currency || 'USD',
+        };
+      } else {
+        console.warn("[v0] Invalid or empty order data in webhook response");
+      }
     }
 
     // Transform products to cards array

@@ -351,22 +351,6 @@ export function ImageGallery({ galleryImages, productName, compareAtPrice, isFul
           </>
         )}
 
-        {/* Fullscreen indicator - only in non-fullscreen mode */}
-        {!isFullscreen && onToggleFullscreen && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation()
-              onToggleFullscreen()
-            }}
-            className="absolute top-2 right-2 h-8 w-8 p-0 bg-black/60 hover:bg-black/80 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
-            aria-label="Expand image gallery to fullscreen"
-            role="button"
-          >
-            <MaximizeIcon />
-          </Button>
-        )}
       </div>
 
       {/* Thumbnail navigation - only show if more than one image */}

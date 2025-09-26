@@ -76,8 +76,7 @@
       this.applyCSSReset();
       this.setupMessageListener();
       
-      this.extractAndSendCookies();
-      this.cookieInterval = setInterval(() => this.extractAndSendCookies(), 5000);
+      // Moved initial cookie send and interval to onload to ensure iframe is loaded
       
       this.container.appendChild(this.iframe);
       document.body.appendChild(this.container);
@@ -125,19 +124,42 @@
         src += '?respectClosed=true';
       }
       this.iframe.src = src;
+
+      this.iframeOrigin = new URL(src).origin;
+      console.log('[TransparentChatbotEmbed] Set iframe origin:', this.iframeOrigin);
       
       // Add load/error logging
       this.iframe.onload = () => {
         console.log('[TransparentChatbotEmbed] Iframe loaded successfully');
         if (this.iframe.contentWindow) {
-          this.iframe.contentWindow.postMessage({ type: 'EMBEDDED_CONFIRM', embedded: true }, '*');
+          console.log('[Debug] Sending postMessage type: EMBEDDED_CONFIRM to origin:', this.iframeOrigin);
+          this.iframe.contentWindow.postMessage({ type: 'EMBEDDED_CONFIRM', embedded: true }, this.iframeOrigin);
+          // Send device info
+          const isMobile = window.innerWidth < 768;
+          console.log('[Debug] Sending postMessage type: PARENT_DEVICE_INFO to origin:', this.iframeOrigin);
+          this.iframe.contentWindow.postMessage({ type: 'PARENT_DEVICE_INFO', isMobile }, this.iframeOrigin);
           // Request initial resize to sync state
           setTimeout(() => {
-            this.iframe.contentWindow.postMessage({ type: 'REQUEST_INITIAL_RESIZE' }, '*');
+            console.log('[Debug] Sending postMessage type: REQUEST_INITIAL_RESIZE to origin:', this.iframeOrigin);
+            this.iframe.contentWindow.postMessage({ type: 'REQUEST_INITIAL_RESIZE' }, this.iframeOrigin);
+            this.extractAndSendCookies();
+            this.cookieInterval = setInterval(() => this.extractAndSendCookies(), 5000);
           }, 100);
         }
       };
-      this.iframe.onerror = () => console.log('[TransparentChatbotEmbed] Iframe failed to load');
+      this.iframe.onerror = () => {
+        console.error('[TransparentChatbotEmbed] Iframe failed to load - check network/CORS');
+        // Do not start interval if load failed
+      };
+
+      // Listen for resize to update device info on orientation change
+      window.addEventListener('resize', () => {
+        if (this.iframe && this.iframe.contentWindow) {
+          const isMobile = window.innerWidth < 768;
+          console.log('[Debug] Sending postMessage type: PARENT_DEVICE_INFO (resize) to origin:', this.iframeOrigin);
+          this.iframe.contentWindow.postMessage({ type: 'PARENT_DEVICE_INFO', isMobile }, this.iframeOrigin);
+        }
+      });
       
       this.iframe.style.cssText = `position: relative; width: 70px !important; height: 70px !important; border: none; background: transparent; pointer-events: auto; margin: 0; padding: 0; box-sizing: border-box; border-radius: 50%; z-index: 9999; max-height: 70px !important; overflow: hidden !important;`;
       this.iframe.setAttribute("allowTransparency", "true");
@@ -645,6 +667,7 @@
         // Handle chat state messages
         if (type === 'CHAT_STATE_REQUEST') {
           const parentState = this.loadParentState();
+          console.log('[Debug] Sending postMessage type: CHAT_STATE_RESPONSE to origin:', event.origin);
           this.iframe.contentWindow.postMessage({
             type: 'CHAT_STATE_RESPONSE',
             state: parentState ? JSON.stringify(parentState) : null
@@ -686,15 +709,23 @@
               this.container.style.setProperty('top', 'auto', 'important');
               this.container.style.setProperty('pointer-events', 'auto', 'important'); // Allow toggle clicks
             } else {
-              // Open: bottom-right with margins, fixed 800px max on desktop
+              // Open state
               this.container.style.setProperty('position', 'fixed', 'important');
-              this.container.style.setProperty('bottom', '20px', 'important');
-              this.container.style.setProperty('right', '20px', 'important');
-              this.container.style.setProperty('left', 'auto', 'important');
-              this.container.style.setProperty('top', 'auto', 'important');
-              this.container.style.setProperty('height', '800px', 'important');
-              this.container.style.setProperty('max-height', '800px', 'important');
               this.container.style.setProperty('pointer-events', 'none', 'important'); // But content will handle
+
+              if (width.includes('vw') || width.includes('dvw')) {
+                // Full screen mode (mobile)
+                this.container.style.setProperty('left', '0', 'important');
+                this.container.style.setProperty('top', '0', 'important');
+                this.container.style.setProperty('bottom', '0', 'important');
+                this.container.style.setProperty('right', '0', 'important');
+              } else {
+                // Desktop open, bottom-right with margins
+                this.container.style.setProperty('bottom', '20px', 'important');
+                this.container.style.setProperty('right', '20px', 'important');
+                this.container.style.setProperty('left', 'auto', 'important');
+                this.container.style.setProperty('top', 'auto', 'important');
+              }
             }
 
             // Update iframe to match container size
@@ -708,10 +739,12 @@
               this.iframe.style.setProperty('border-radius', '50%', 'important'); // Round for toggle
               this.iframe.style.setProperty('overflow', 'hidden', 'important');
             } else {
-              this.iframe.style.setProperty('border-radius', '12px', 'important');
+              if (width.includes('vw') || width.includes('dvw')) {
+                this.iframe.style.setProperty('border-radius', '0', 'important');
+              } else {
+                this.iframe.style.setProperty('border-radius', '12px', 'important');
+              }
               this.iframe.style.setProperty('overflow', 'visible', 'important');
-              this.iframe.style.setProperty('height', '800px', 'important');
-              this.iframe.style.setProperty('max-height', '800px', 'important');
               this.iframe.style.setProperty('border', 'none', 'important');
             }
 
@@ -751,11 +784,14 @@
         localization,
       };
 
-      if (this.iframe && this.iframe.contentWindow) {
+      if (this.iframe && this.iframe.contentWindow && this.iframeOrigin) {
+        console.log('[Debug] Sending postMessage type: SHOPIFY_COOKIES_UPDATE to origin:', this.iframeOrigin);
         this.iframe.contentWindow.postMessage({
           type: 'SHOPIFY_COOKIES_UPDATE',
           data: cookies
-        }, '*');
+        }, this.iframeOrigin);
+      } else {
+        console.warn('[TransparentChatbotEmbed] Skipping cookie send: iframe not ready');
       }
     }
 

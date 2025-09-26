@@ -136,10 +136,23 @@ export function ChatbotWidget({
 
   useEffect(() => {
     // Set initial isMobile
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && !propEmbedded) {
       setIsMobile(window.innerWidth < 768)
     }
   }, [])
+
+  // Dynamic mobile detection with media query for resizes/orientation
+  useEffect(() => {
+    if (typeof window === 'undefined' || propEmbedded) return;
+
+    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    const handleChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+
+    mediaQuery.addEventListener('change', handleChange);
+    setIsMobile(mediaQuery.matches); // Initial set
+
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, [propEmbedded]);
 
   useEffect(() => {
     // Detect embedded mode, prioritize prop if provided
@@ -176,12 +189,19 @@ export function ChatbotWidget({
     }
   }, [isEmbedded]);
 
-  // Force desktop layout in embedded mode to avoid mobile styles in iframe
+  // Listen for parent device info in embedded mode
   useEffect(() => {
-    if (isEmbedded) {
-      setIsMobile(false)
-    }
-  }, [isEmbedded])
+    if (!isEmbedded) return;
+
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data.type === 'PARENT_DEVICE_INFO') {
+        setIsMobile(event.data.isMobile);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [isEmbedded]);
 
   useEffect(() => {
     if (isOpen && !isPreview) {
@@ -262,6 +282,35 @@ export function ChatbotWidget({
 
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Send resize dimensions to parent in embedded mode
+  useEffect(() => {
+    if (!isEmbedded || typeof window === 'undefined' || window.parent === window) return;
+
+    let width, height, maxHeight;
+    const isClosed = !isOpen;
+
+    if (isClosed) {
+      width = '70px';
+      height = '70px';
+      maxHeight = '70px';
+    } else if (isMobile) {
+      width = '100vw';
+      height = '100dvh';
+      maxHeight = '100dvh';
+    } else {
+      width = '500px';
+      height = '800px';
+      maxHeight = '800px';
+    }
+
+    window.parent.postMessage({
+      type: 'CHATBOT_RESIZE',
+      data: { width, height, maxHeight, isOpen: !isClosed }
+    }, '*');
+
+    console.log('[ChatbotWidget] Sent resize:', { width, height, maxHeight, isOpen: !isClosed });
+  }, [isOpen, isMobile, isEmbedded]);
 
   const handleSendMessage = async (messagePayload: {
     type: "text"
@@ -358,12 +407,10 @@ export function ChatbotWidget({
             }
           }}
           className={cn(
-            "absolute inset-0 w-full h-full rounded-full shadow-xl transition-all duration-300 hover:scale-110 z-[9998]",
+            "fixed bottom-[20px] right-[20px] w-[70px] h-[70px] rounded-full shadow-xl transition-all duration-300 hover:scale-110 z-[9998]",
             "bg-blue-600 hover:bg-blue-700 text-white border-2 border-white",
             isOpen && "scale-0 opacity-0",
-            isEmbedded && !isOpen
-              ? "" // Fill the small iframe
-              : "fixed bottom-[20px] right-[20px]",
+            isEmbedded && !isOpen ? "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" : "",
           )}
           size="icon"
           style={{
@@ -389,74 +436,77 @@ export function ChatbotWidget({
                 isOpen ? "bg-white dark:bg-gray-900" : "bg-transparent"
               )
             : // If NOT EMBEDDED, it uses the standard solid background with shadows and borders.
-              "bg-white dark:bg-gray-900 rounded-xl shadow-2xl border backdrop-blur-sm border-gray-200 dark:border-gray-700",
+              "bg-white dark:bg-gray-900 rounded-xl shadow-2xl border backdrop-blur-sm border-gray-200 dark:border-gray-700 max-w-[500px] max-h-[800px]",
           // --- END: MODIFIED LOGIC ---
 
           // This visibility logic remains unchanged. It controls the scale/opacity transition.
           isOpen || hideToggle ? "scale-100 opacity-100" : "scale-0 opacity-0 pointer-events-none",
           
           // This positioning and sizing logic for non-embedded modes remains unchanged.
-          isEmbedded ? "" : isFullscreen && !isMobile ? "fixed inset-0 w-full h-screen rounded-none" : isMobile ? `fixed inset-0 rounded-none w-screen h-screen grid grid-rows-[auto_1fr_auto] ${isKeyboardOpen ? 'keyboard-open' : ''}` : isDirectMode || hideToggle ? "absolute inset-0 w-full h-full grid grid-rows-[auto_1fr_auto]" : "fixed bottom-6 right-6 w-[500px] h-[800px] grid grid-rows-[auto_1fr_auto]",
+          isEmbedded ? "" : isFullscreen && !isMobile ? "fixed inset-0 w-full h-screen rounded-none" : isMobile ? `fixed inset-0 rounded-none w-screen h-[100dvh] grid grid-rows-[auto_1fr_auto] ${isKeyboardOpen ? 'keyboard-open' : ''}` : isDirectMode || hideToggle ? "absolute inset-0 w-full h-full grid grid-rows-[auto_1fr_auto]" : "fixed bottom-6 right-6 grid grid-rows-[auto_1fr_auto]",
 
           // These are universal classes that apply in almost all states.
           "transition-all duration-300 z-[9999]"
         )}
-        style={
-          // The inline style logic does not need to be changed.
-          isEmbedded
-            ? {
-                position: "relative",
-                width: isOpen ? "100%" : "70px",
-                height: isOpen ? "100%" : "70px",
-                margin: 0,
-                padding: 0,
-                boxSizing: "border-box",
-                overflow: "hidden !important",
-              }
-            : isFullscreen && !isMobile
-              ? {
-                  transformOrigin: "center",
-                  boxShadow: "0 0 0 1px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(0, 0, 0, 0.05)",
-                  width: "100vw",
-                  height: "100vh",
-                  margin: 0,
-                  padding: 0,
-                  boxSizing: "border-box",
-                  overflow: "hidden",
-                }
-              : isMobile
-                ? {
-                    height: `${viewportHeight - (isKeyboardOpen ? keyboardHeight : 0)}px`,
-                    maxHeight: `${viewportHeight - (isKeyboardOpen ? keyboardHeight : 0)}px`,
-                    transformOrigin: "center",
-                    boxShadow: "none",
-                    margin: 0,
-                    padding: 0,
-                    width: "100vw",
-                    boxSizing: "border-box",
-                    overflow: "hidden",
-                  }
-                : hideToggle
-                  ? {
-                      transformOrigin: "bottom right",
-                      boxShadow: "none",
-                      margin: 0,
-                      padding: 0,
-                      width: "100%",
-                      height: "100%",
-                      maxHeight: "100vh",
-                      minHeight: "auto",
-                      boxSizing: "border-box",
-                    }
-                  : {
-                      transformOrigin: "bottom right",
-                      boxShadow: "0 8px 32px rgba(37, 99, 235, 0.3)",
-                      width: "500px",
-                      height: "min(800px, calc(100vh - 2rem))",
-                      maxHeight: "calc(100vh - 2rem)",
-                      boxSizing: "border-box",
-                    }
-        }
+        style={{
+         // The inline style logic does not need to be changed.
+         ...(
+           isEmbedded
+             ? {
+                 position: "relative",
+                 width: isOpen ? "100%" : "70px",
+                 height: isOpen ? "100%" : "70px",
+                 margin: 0,
+                 padding: 0,
+                 boxSizing: "border-box",
+                 overflow: "hidden",
+               }
+             : isFullscreen && !isMobile
+             ? {
+                 transformOrigin: "center",
+                 boxShadow: "0 0 0 1px rgba(0, 0, 0, 0.05)",
+                 width: "100vw",
+                 height: "100vh",
+                 margin: 0,
+                 padding: 0,
+                 boxSizing: "border-box",
+                 overflow: "hidden",
+               }
+             : isMobile
+             ? {
+                 height: `100dvh`,
+                 maxHeight: `100dvh`,
+                 transformOrigin: "center",
+                 boxShadow: "none",
+                 margin: 0,
+                 padding: 0,
+                 width: "100vw",
+                 boxSizing: "border-box",
+                 overflow: "hidden",
+               }
+             : hideToggle
+             ? {
+                 transformOrigin: "bottom right",
+                 boxShadow: "none",
+                 margin: 0,
+                 padding: 0,
+                 width: "100%",
+                 height: "100%",
+                 maxHeight: "100vh",
+                 minHeight: "auto",
+                 boxSizing: "border-box",
+               }
+             : {
+                 transformOrigin: "bottom right",
+                 boxShadow: "0 8px 32px rgba(37, 99, 235, 0.3)",
+                 width: "min(500px, calc(100vw - 2.5rem))",
+                 height: "min(800px, calc(100vh - 2.5rem))",
+                 maxHeight: "800px",
+                 maxWidth: "500px",
+                 boxSizing: "border-box",
+               }
+         )
+       }}
       >
         <ChatHeader
           isOpen={isOpen}
