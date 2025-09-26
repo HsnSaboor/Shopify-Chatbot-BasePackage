@@ -69,6 +69,9 @@
         handleNavigateToCheckout(event, id);
         break;
       // Add handlers for known message types to prevent errors
+      case 'CHAT_STATE_SAVE':
+      case 'CHAT_STATE_REQUEST':
+      case 'CHAT_STATE_CLEAR':
       case 'ADD_TO_CART_SUCCESS':
       case 'CHATBOT_READY':
       case 'CHATBOT_STATE_CHANGED':

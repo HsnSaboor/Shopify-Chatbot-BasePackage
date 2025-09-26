@@ -1,7 +1,15 @@
 import type React from "react"
 import type { Metadata } from "next"
+import { Inter } from "next/font/google"
 import { Suspense } from "react"
 import "./globals.css"
+
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+  variable: '--font-inter',
+})
 
 export const metadata: Metadata = {
   title: "Shopify Chatbot",
@@ -23,12 +31,32 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="m-0 p-0 w-full h-full overflow-auto">
+    <html lang="en" className={`${inter.variable} m-0 p-0 w-full h-full overflow-auto`}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content" />
-        <link rel="preload" href="./globals.css" as="style" />
-        <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+        <style dangerouslySetInnerHTML={{ __html: `
+          html {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            overflow: auto !important;
+            box-sizing: border-box !important;
+          }
+          body {
+            font-family: var(--font-inter), sans-serif !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            background: transparent !important;
+            color: oklch(0.145 0 0) !important;
+            box-sizing: border-box !important;
+          }
+          * {
+            box-sizing: border-box !important;
+          }
+        ` }} />
       </head>
       <body className="font-sans m-0 p-0 w-full h-full">
         <Suspense fallback={<LoadingFallback />}>{children}</Suspense>
