@@ -142,90 +142,105 @@ export async function sendMessage(
     return prev
   })
 
-  try {
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 15000)
+  const maxRetries = 3;
+  let lastError = null;
 
-    let requestBody: ChatRequest = {
-      ...payload,
-      shopify_y: cookies?.shopify_y || "",
-      cart_currency: cookies?.cart_currency || "USD",
-      localization: cookies?.localization || "en-US",
-    }
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 15000 * attempt) // Increase timeout per attempt
 
-    // Add user data from localStorage if available
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('chatbotOnboarded')
-      if (stored) {
-        try {
-          const data = JSON.parse(stored)
-          if (data.user) {
-            requestBody.user = data.user
+      let requestBody: ChatRequest = {
+        ...payload,
+        shopify_y: cookies?.shopify_y || "",
+        cart_currency: cookies?.cart_currency || "USD",
+        localization: cookies?.localization || "en-US",
+      }
+
+      // Add user data from localStorage if available
+      if (typeof window !== 'undefined') {
+        const stored = localStorage.getItem('chatbotOnboarded')
+        if (stored) {
+          try {
+            const data = JSON.parse(stored)
+            if (data.user) {
+              requestBody.user = data.user
+            }
+          } catch (error) {
+            console.error('Error parsing onboarded data:', error)
           }
-        } catch (error) {
-          console.error('Error parsing onboarded data:', error)
         }
       }
-    }
 
-    const response = await fetch("/api/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Request-ID": crypto.randomUUID(),
-      },
-      body: JSON.stringify(requestBody),
-      signal: controller.signal,
-    })
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Request-ID": crypto.randomUUID(),
+        },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
+      })
 
-    clearTimeout(timeoutId)
+      clearTimeout(timeoutId)
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: "An unknown error occurred" }))
-      throw new Error(errorData.message || `HTTP ${response.status}`)
-    }
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: "An unknown error occurred" }))
+        throw new Error(errorData.message || `HTTP ${response.status}`)
+      }
 
-    const data: ChatResponse = await response.json()
+      const data: ChatResponse = await response.json()
 
-    const botMessage: Message = {
-      id: Date.now().toString(),
-      type: "bot",
-      content: data.message,
-      timestamp: new Date(),
-      cards: data.cards,
-      order: data.order,
-      event_type: data.event_type,
-    }
+      const botMessage: Message = {
+        id: Date.now().toString(),
+        type: "bot",
+        content: data.message,
+        timestamp: new Date(),
+        cards: data.cards,
+        order: data.order,
+        event_type: data.event_type,
+      }
 
-    setMessages((prev) => [...prev, botMessage])
-  } catch (error) {
-    console.error("Chat error:", error)
+      setMessages((prev) => [...prev, botMessage])
+      return; // Success, exit retry loop
+    } catch (error) {
+      console.warn(`Chat fetch attempt ${attempt} failed:`, error)
+      lastError = error;
 
-    let errorMessage = "I'm having trouble connecting right now. Please try again in a moment."
+      if (attempt === maxRetries) {
+        // Final attempt failed
+        console.error("Chat error after retries:", error)
 
-    if (error instanceof Error) {
-      if (error.name === "AbortError") {
-        errorMessage = "The request timed out. Please try again."
-      } else if (error.message.includes("401")) {
-        errorMessage = "Authentication error. Please refresh the page."
-      } else if (error.message.includes("422")) {
-        errorMessage = "Invalid message format. Please try again."
+        let errorMessage = "I'm having trouble connecting right now. Please try again in a moment."
+
+        if (error instanceof Error) {
+          if (error.name === "AbortError") {
+            errorMessage = "The request timed out. Please try again."
+          } else if (error.message.includes("401")) {
+            errorMessage = "Authentication error. Please refresh the page."
+          } else if (error.message.includes("422")) {
+            errorMessage = "Invalid message format. Please try again."
+          }
+        }
+
+        const errorBotMessage: Message = {
+          id: Date.now().toString(),
+          type: "bot",
+          content: errorMessage,
+          timestamp: new Date(),
+        }
+
+        setMessages((prev) => [...prev, errorBotMessage])
+
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        })
+      } else {
+        // Wait before retry with exponential backoff
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
       }
     }
-
-    const errorBotMessage: Message = {
-      id: Date.now().toString(),
-      type: "bot",
-      content: errorMessage,
-      timestamp: new Date(),
-    }
-
-    setMessages((prev) => [...prev, errorBotMessage])
-
-    toast({
-      title: "Error",
-      description: errorMessage,
-      variant: "destructive",
-    })
   }
 }

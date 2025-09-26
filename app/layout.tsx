@@ -26,6 +26,8 @@ export default function RootLayout({
     <html lang="en" className="m-0 p-0 w-full h-full overflow-auto">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content" />
+        <link rel="preload" href="./globals.css" as="style" />
+        <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-sans m-0 p-0 w-full h-full">
